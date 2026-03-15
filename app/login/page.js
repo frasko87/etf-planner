@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode]         = useState(searchParams.get("mode") === "signup" ? "signup" : "login");
@@ -128,5 +128,13 @@ export default function LoginPage() {
         Not financial advice. Past performance ≠ future results.
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontFamily:"DM Mono",fontSize:12,color:"var(--muted)"}}>Loading…</span></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
