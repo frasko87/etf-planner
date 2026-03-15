@@ -13,8 +13,27 @@ function LoginForm() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
   const [success, setSuccess]   = useState("");
+  const [showReset, setShowReset] = useState(false);
 
   const supabase = createClient();
+
+  const handleReset = async () => {
+    setError(""); setSuccess("");
+    if (!email) { setError("Enter your email address first."); return; }
+    setLoading(true);
+    try {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (err) throw err;
+      setSuccess("Password reset email sent! Check your inbox.");
+      setShowReset(false);
+    } catch(err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setError(""); setSuccess("");
@@ -103,10 +122,18 @@ function LoginForm() {
           <div style={{ flex:1, height:1, background:"var(--border)" }}/>
         </div>
 
-        <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:16 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:8 }}>
           <input style={inp} type="email"    value={email}    onChange={e=>setEmail(e.target.value)}    placeholder="Email address" />
           <input style={inp} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password (min. 6 characters)" />
         </div>
+
+        {mode === "login" && (
+          <div style={{ textAlign:"right", marginBottom:16 }}>
+            <button onClick={handleReset} style={{ background:"none", border:"none", color:"var(--green)", cursor:"pointer", fontFamily:"DM Sans", fontSize:12, fontWeight:500 }}>
+              Forgot password?
+            </button>
+          </div>
+        )}
 
         {error   && <div style={{ fontSize:13, color:"var(--red)", marginBottom:14, padding:"10px 14px", background:"var(--red2)", borderRadius:8, border:"1px solid rgba(232,64,64,0.2)" }}>{error}</div>}
         {success && <div style={{ fontSize:13, color:"var(--green)", marginBottom:14, padding:"10px 14px", background:"var(--green2)", borderRadius:8, border:"1px solid rgba(0,185,107,0.2)" }}>{success}</div>}
