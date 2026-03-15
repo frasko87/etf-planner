@@ -488,7 +488,7 @@ async function main() {
   const { poolData, fred } = await fetchAllETFs();
 
   // Run weekly scoring on Mondays (or manual trigger)
-  if (isMonday() || runScoring) {
+  if (shouldRunScoring() || runScoring) {
     await runWeeklySelection(poolData);
   } else {
     console.log("\n[SCORING] Not Monday — skipping weekly selection update");
@@ -506,7 +506,7 @@ async function main() {
 
   console.log(`\n${"=".repeat(60)}`);
   console.log(`Done — ${TICKERS.length} ETFs processed`);
-  console.log(`Weekly scoring: ${isMonday()||runScoring?"✓ ran":"skipped"}`);
+  console.log(`Daily scoring: ${shouldRunScoring()||runScoring?"✓ ran":"skipped"}`);
   console.log(`${"=".repeat(60)}\n`);
 }
 
