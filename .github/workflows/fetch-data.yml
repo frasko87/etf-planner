@@ -6,12 +6,10 @@ on:
     - cron: '30 13 * * 1-5'
     # Daily market CLOSE — 4:05 PM ET = 20:05 UTC
     - cron: '5 20 * * 1-5'
-    # Monday scoring run — 4:30 PM ET (after close data is in)
-    - cron: '30 20 * * 1'
   workflow_dispatch:
     inputs:
       run_scoring:
-        description: 'Force run weekly scoring engine'
+        description: 'Force run scoring engine'
         required: false
         default: 'false'
 
