@@ -1,5 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
+
+function useWindowWidth() {
+  const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+  useEffect(() => {
+    const handler = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return width;
+}
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 import { getMarketStatus, STATUS_STYLE } from "../../lib/market";
@@ -61,13 +71,33 @@ const ETF_META = {
   UPRO: { name:"3x S&P 500 (Leveraged)",   color:"#ff8c00", risk:"Very High", leveraged:true,  category:"Leveraged",    fallbackCagr:0.32,  fallbackOpt:0.55,
     topHoldings:["3x S&P 500 Swap","SPY derivatives","Daily reset"],
     description:"Delivers 3x the daily return of the S&P 500. Amplifies both gains and losses. Only suitable for short-term tactical positions." },
+  BND:  { name:"Vanguard Total Bond Market",  color:"#64748b", risk:"Very Low", leveraged:false, category:"Bonds",         fallbackCagr:0.048, fallbackOpt:0.06,
+    topHoldings:["US Treasury Bonds","Corporate Bonds","Mortgage-backed","Agency Bonds","TIPS"],
+    description:"The entire US investment-grade bond market. Stable income, low volatility, acts as a portfolio anchor in downturns." },
 };
 
 const PROFILE_CONFIG = {
-  conservative: { label:"Conservative", icon:"🛡️", desc:"Stability-first, diversified core",     accentColor:"#3b82f6" },
-  balanced:     { label:"Balanced",     icon:"⚖️", desc:"Growth with managed risk",               accentColor:"#c9a84c" },
-  aggressive:   { label:"Aggressive",   icon:"🚀", desc:"High risk · High reward",                accentColor:"#ff4757",
-    warning:"⚠️ This plan uses leveraged ETFs. These can lose 50–90% of value in a downturn. Only invest money you can afford to lose completely." },
+  conservative: {
+    label:"Conservative", icon:"🛡️", desc:"~5% annual return · Very low risk",
+    accentColor:"#3b82f6",
+    targetReturn: 0.05,
+    subtitle: "Bonds + dividend stocks. Slow, steady, reliable.",
+    warning: null,
+  },
+  balanced: {
+    label:"Balanced", icon:"⚖️", desc:"7–12% annual return · Moderate risk",
+    accentColor:"#c9a84c",
+    targetReturn: 0.09,
+    subtitle: "Mix of growth ETFs and stable large-cap stocks.",
+    warning: null,
+  },
+  aggressive: {
+    label:"Aggressive", icon:"🚀", desc:"12%+ annual return · High risk",
+    accentColor:"#ff4757",
+    targetReturn: 0.16,
+    subtitle: "Growth-focused. Includes leveraged positions.",
+    warning:"⚠️ This plan uses leveraged ETFs (TQQQ). These can lose 50–90% of value in a downturn. Only invest money you can afford to lose completely.",
+  },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -184,6 +214,9 @@ export default function DashboardPage() {
   }, []);
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/"); };
+  const width  = useWindowWidth();
+  const isMob  = width < 640;
+  const isTab  = width < 1024;
 
   if (loading) return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"var(--bg)"}}>
@@ -191,11 +224,14 @@ export default function DashboardPage() {
     </div>
   );
 
-  // Fallback allocations used before first Monday scoring run
+  // Fallback allocations — tuned for target return tiers
+  // Conservative ~5%: bonds anchor stability, dividends provide income
+  // Balanced 7-12%: large-cap growth with dividend ballast
+  // Aggressive 12%+: pure growth + leveraged exposure, no bonds
   const FALLBACK_PLANS = {
-    conservative: { tickers:["VTI","SCHD","VOO"],         allocations:{ VTI:50, SCHD:30, VOO:20 } },
-    balanced:     { tickers:["VOO","QQQ","VTI","SCHD"],   allocations:{ VOO:35, QQQ:25, VTI:25, SCHD:15 } },
-    aggressive:   { tickers:["TQQQ","SOXL","ARKK","QQQ"], allocations:{ TQQQ:35, SOXL:25, ARKK:25, QQQ:15 } },
+    conservative: { tickers:["BND","SCHD","VTI","VOO"],       allocations:{ BND:40, SCHD:30, VTI:20, VOO:10 } },
+    balanced:     { tickers:["VOO","VTI","QQQ","SCHD"],       allocations:{ VOO:40, VTI:25, QQQ:25, SCHD:10 } },
+    aggressive:   { tickers:["QQQ","VGT","TQQQ","ARKK"],      allocations:{ QQQ:35, VGT:25, TQQQ:25, ARKK:15 } },
   };
 
   // Current plan selection — use live DB data or fallback
@@ -242,9 +278,9 @@ export default function DashboardPage() {
   const tableData = Array.from({length:12},(_,i)=>{
     const m=i+1, invested=amount*m;
     const exp=project(amount,allocs,etfPool,m,false);
-    return { month:m, label:new Date(2025,i).toLocaleString("default",{month:"short"}), invested, expected:exp, optimistic:project(amount,allocs,etfPool,m,true), gain:exp-invested };
+    return { month:m, label:new Date(new Date().getFullYear(),i).toLocaleString("default",{month:"short"}), invested, expected:exp, optimistic:project(amount,allocs,etfPool,m,true), gain:exp-invested };
   });
-  const projs = { 6:{exp:project(amount,allocs,etfPool,6,false),opt:project(amount,allocs,etfPool,6,true)}, 12:{exp:project(amount,allocs,etfPool,12,false),opt:project(amount,allocs,etfPool,12,true)}, 24:{exp:project(amount,allocs,etfPool,24,false),opt:project(amount,allocs,etfPool,24,true)} };
+  const projs = { 1:{exp:project(amount,allocs,etfPool,1,false),opt:project(amount,allocs,etfPool,1,true)}, 6:{exp:project(amount,allocs,etfPool,6,false),opt:project(amount,allocs,etfPool,6,true)}, 12:{exp:project(amount,allocs,etfPool,12,false),opt:project(amount,allocs,etfPool,12,true)} };
   const pieData = curTickers.map(t=>({name:t,value:allocs[t]||0,color:ETF_META[t]?.color||"#888"}));
   const sc = STATUS_STYLE[ms.status] || STATUS_STYLE.CLOSED;
 
@@ -255,16 +291,16 @@ export default function DashboardPage() {
     <div style={{minHeight:"100vh",background:"var(--bg)",color:"var(--text)"}}>
 
       {/* Nav */}
-      <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0 32px",height:60,background:"rgba(248,248,245,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid var(--border)",position:"sticky",top:0,zIndex:100}}>
+      <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:`0 ${isMob?"16px":"32px"}`,height:60,background:"rgba(248,248,245,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid var(--border)",position:"sticky",top:0,zIndex:100}}>
         <span className="pixel" style={{fontSize:10,color:"var(--text)"}}>ETF<span style={{color:"var(--green)"}}>.</span>PLAN</span>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <span style={{fontFamily:"DM Mono",fontSize:13,color:"var(--muted)"}}>{user?.email}</span>
-          {view==="plan" && <button onClick={()=>setView("dashboard")} style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:"7px 16px",cursor:"pointer"}}>← Dashboard</button>}
-          <button onClick={handleLogout} style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:"7px 16px",cursor:"pointer"}}>Log out</button>
+        <div style={{display:"flex",alignItems:"center",gap:isMob?8:12}}>
+          {!isMob && <span style={{fontFamily:"DM Mono",fontSize:13,color:"var(--muted)",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user?.email}</span>}
+          {view==="plan" && <button onClick={()=>setView("dashboard")} style={{fontFamily:"DM Sans",fontSize:isMob?12:14,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:isMob?"6px 10px":"7px 16px",cursor:"pointer"}}>← {isMob?"Back":"Dashboard"}</button>}
+          <button onClick={handleLogout} style={{fontFamily:"DM Sans",fontSize:isMob?12:14,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:isMob?"6px 10px":"7px 16px",cursor:"pointer"}}>Log out</button>
         </div>
       </nav>
 
-      <div style={{maxWidth:1100,margin:"0 auto",padding:"32px 20px 80px"}}>
+      <div style={{maxWidth:1100,margin:"0 auto",padding:isMob?"16px 12px 60px":"32px 20px 80px"}}>
 
         {view === "dashboard" && <>
 
@@ -280,11 +316,11 @@ export default function DashboardPage() {
                 <div style={{fontFamily:"DM Sans",fontSize:15,color:"var(--muted)",lineHeight:1.7}}>{ms.detail}</div>
                 {ms.nextOpen && <div style={{fontFamily:"DM Mono",fontSize:11,color:sc.color,marginTop:10}}>Next session → {ms.nextOpen}</div>}
               </div>
-              <div style={{textAlign:"right",display:"flex",flexDirection:"column",gap:12}}>
+              <div style={{textAlign:isMob?"left":"right",display:"flex",flexDirection:isMob?"row":"column",flexWrap:"wrap",gap:isMob?16:12}}>
                 {[
                   {l:"LAST DATA FETCH",   v: fetchLog[0] ? `${fetchLog[0].trigger?.replace("_"," ")} · ${timeAgo(fetchLog[0].fetched_at)}` : "—"},
                   {l:"NEXT FETCH",        v: ms.isOpen ? "at 4:05 PM ET close" : "at next open 9:30 AM ET"},
-                  {l:"NEXT REBALANCE",    v: "Monday market close"},
+                  {l:"NEXT SELECTION",    v: "Today at 4:05 PM ET close"},
                 ].map(x=>(
                   <div key={x.l} style={{textAlign:"right"}}>
                     <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:2}}>{x.l}</div>
@@ -301,7 +337,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Plan builder + ETF selection */}
-          <div style={{display:"grid",gridTemplateColumns:"420px 1fr",gap:20,marginBottom:24,alignItems:"start"}}>
+          <div style={{display:"grid",gridTemplateColumns:isTab?"1fr":"420px 1fr",gap:isMob?16:20,marginBottom:24,alignItems:"start"}}>
 
             {/* Plan builder */}
             <div style={card}>
@@ -312,7 +348,7 @@ export default function DashboardPage() {
                 <div style={{fontFamily:"DM Sans",fontSize:15,color:"var(--muted)",fontWeight:500,marginBottom:12}}>How much per month?</div>
                 <div style={{display:"flex",gap:8,background:"var(--bg3)",borderRadius:12,padding:4}}>
                   {[50,100,150].map(v=>(
-                    <button key={v} onClick={()=>setAmount(v)} style={{flex:1,padding:"13px 0",borderRadius:9,border:"none",cursor:"pointer",transition:"all 0.2s",background:amount===v?"white":"transparent",color:amount===v?"var(--text)":"var(--muted)",fontFamily:"DM Sans",fontWeight:amount===v?700:400,fontSize:20,boxShadow:amount===v?"var(--shadow)":"none"}}>
+                    <button key={v} onClick={()=>setAmount(v)} style={{flex:1,padding:isMob?"11px 0":"13px 0",borderRadius:9,border:"none",cursor:"pointer",transition:"all 0.2s",background:amount===v?"white":"transparent",color:amount===v?"var(--text)":"var(--muted)",fontFamily:"DM Sans",fontWeight:amount===v?700:400,fontSize:isMob?17:20,boxShadow:amount===v?"var(--shadow)":"none"}}>
                       ${v}
                     </button>
                   ))}
@@ -323,7 +359,7 @@ export default function DashboardPage() {
               <div style={{background:"var(--bg3)",borderRadius:12,padding:"14px 16px",marginBottom:24,border:`1px solid ${pc.accentColor}22`}}>
                 <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:10,letterSpacing:1}}>LIVE PROJECTION PREVIEW</div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-                  {[{l:"6 mo",mo:6},{l:"12 mo",mo:12},{l:"24 mo",mo:24}].map(x=>{
+                  {[{l:"1 mo",mo:1},{l:"6 mo",mo:6},{l:"12 mo",mo:12}].map(x=>{
                     const exp  = project(amount,allocs,etfPool,x.mo,false);
                     const gain = exp - amount*x.mo;
                     return (
@@ -360,7 +396,8 @@ export default function DashboardPage() {
                               <span style={{fontFamily:"DM Sans",fontWeight:600,fontSize:16,color:isActive?"var(--text)":"var(--muted)"}}>{p.label}</span>
                               {key==="aggressive" && <span style={{fontFamily:"DM Mono",fontSize:8,padding:"2px 6px",borderRadius:4,background:"rgba(255,71,87,0.08)",color:"#ff4757",border:"1px solid rgba(255,71,87,0.2)"}}>HIGH RISK</span>}
                             </div>
-                            <div style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted2)"}}>{p.desc}</div>
+                            <div style={{fontFamily:"DM Sans",fontSize:12,color:isActive?"var(--muted)":"var(--muted2)",marginBottom:1}}>{p.desc}</div>
+                            <div style={{fontFamily:"DM Sans",fontSize:11,color:"var(--muted2)"}}>{p.subtitle}</div>
                           </div>
                         </div>
                         <div style={{textAlign:"right"}}>
@@ -389,7 +426,7 @@ export default function DashboardPage() {
                 >
                   <div>View Full {pc.label} Plan →</div>
                   <div style={{fontFamily:"DM Mono",fontSize:11,opacity:0.85,marginTop:3}}>
-                    {fmt(amount)}/mo · expected {fmt(projs[12].exp)} in 12 months
+                    {fmt(amount)}/mo · target ~{Math.round((pc.targetReturn||0.09)*100)}% annually
                   </div>
                 </button>
               </div>
@@ -399,10 +436,10 @@ export default function DashboardPage() {
             <div style={card}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
                 <div style={lbl}>
-                  {pc.label.toUpperCase()} SELECTION — WEEK OF {currentSel?.week_start || "—"}
+                  {pc.label.toUpperCase()} SELECTION — {currentSel?.week_start ? new Date(currentSel.week_start).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "ESTIMATED"}
                 </div>
                 {currentSel?.changed && (
-                  <span style={{fontFamily:"DM Mono",fontSize:9,padding:"3px 10px",borderRadius:10,background:"rgba(0,185,107,0.08)",color:"var(--green)",border:"1px solid rgba(0,185,107,0.2)"}}>UPDATED THIS WEEK</span>
+                  <span style={{fontFamily:"DM Mono",fontSize:9,padding:"3px 10px",borderRadius:10,background:"rgba(0,185,107,0.08)",color:"var(--green)",border:"1px solid rgba(0,185,107,0.2)"}}>UPDATED TODAY</span>
                 )}
               </div>
 
@@ -416,7 +453,7 @@ export default function DashboardPage() {
               {/* This week */}
               <div style={{marginBottom:16}}>
                 <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:10,letterSpacing:1}}>THIS WEEK</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
+                <div style={{display:"grid",gridTemplateColumns:isMob?"repeat(2,1fr)":"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
                   {curTickers.map(t=>(
                     <EtfCompareCard
                       key={t} ticker={t}
@@ -431,7 +468,7 @@ export default function DashboardPage() {
               {/* Last week — only show if something changed */}
               {prevTickers.length > 0 && (
                 <div>
-                  <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:10,letterSpacing:1}}>LAST WEEK {currentSel?.changed ? "(REPLACED)" : "(SAME)"}</div>
+                  <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:10,letterSpacing:1}}>YESTERDAY {currentSel?.changed ? "(CHANGED)" : "(SAME)"}</div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
                     {prevTickers.map(t=>(
                       <EtfCompareCard
@@ -460,7 +497,7 @@ export default function DashboardPage() {
             <div style={{...card,padding:"14px 20px",marginBottom:20}}>
               <div style={{display:"flex",gap:32,flexWrap:"wrap",alignItems:"center"}}>
                 <div style={lbl}>MACRO — FRED</div>
-                <div style={{display:"flex",gap:32,flexWrap:"wrap"}}>
+                <div style={{display:"flex",gap:isMob?16:32,flexWrap:"wrap"}}>
                   {[
                     {l:"CPI Inflation",  v:fmtPct(macroData.inflation), c:"#ff4757"},
                     {l:"Fed Funds Rate", v:fmtPct(macroData.fed_rate),  c:"#8b5cf6"},
@@ -482,7 +519,7 @@ export default function DashboardPage() {
         {view === "plan" && <>
 
           {/* Plan header */}
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,borderBottom:"1px solid var(--border)",paddingBottom:20,flexWrap:"wrap",gap:16}}>
+          <div style={{display:"flex",flexDirection:isMob?"column":"row",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,borderBottom:"1px solid var(--border)",paddingBottom:20,gap:16}}>
             <div>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                 <div style={{background:pc.accentColor==="var(--gold)"?"linear-gradient(135deg,#c9a84c,#e8c96a)":pc.accentColor,padding:"6px 14px",display:"inline-block"}}>
@@ -490,14 +527,17 @@ export default function DashboardPage() {
                 </div>
                 <span style={{fontSize:28}}>{pc.icon}</span>
               </div>
-              <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:34,color:"var(--text)",margin:0,letterSpacing:"-0.5px"}}>Investment Plan</h2>
+              <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:isMob?26:34,color:"var(--text)",margin:0,letterSpacing:"-0.5px"}}>Investment Plan</h2>
               <div style={{fontFamily:"DM Mono",fontSize:12,color:"var(--muted)",marginTop:6}}>
-                {fmt(amount)}/month · {currentSel?.week_start ? `Week of ${currentSel.week_start}` : "Estimated"} · {etfPool.length>0?"Live data":"Estimated data"}
+                {fmt(amount)}/month · {currentSel?.week_start ? `As of ${new Date(currentSel.week_start).toLocaleDateString('en-US',{month:'short',day:'numeric'})}` : "Estimated"} · {etfPool.length>0?"Live data":"Estimated data"}
               </div>
             </div>
             <div style={{textAlign:"right"}}>
-              <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted2)",marginBottom:4}}>12-MONTH EXPECTED</div>
-              <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:48,color:projs[12].exp > amount*12 ? "var(--green)" : "#ff4757",lineHeight:1}}>{fmt(projs[12].exp)}</div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted2)"}}>12-MONTH EXPECTED</div>
+                <div style={{fontFamily:"DM Mono",fontSize:9,padding:"2px 8px",borderRadius:10,background:`${pc.accentColor}15`,color:pc.accentColor}}>~{Math.round((pc.targetReturn||0.09)*100)}% / year target</div>
+              </div>
+              <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:isMob?36:48,color:projs[12].exp > amount*12 ? "var(--green)" : "#ff4757",lineHeight:1}}>{fmt(projs[12].exp)}</div>
               <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)",marginTop:4}}>optimistic → {fmt(projs[12].opt)}</div>
               <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)",marginTop:2}}>+{fmt(projs[12].exp - amount*12)} gain</div>
             </div>
@@ -511,8 +551,8 @@ export default function DashboardPage() {
           )}
 
           {/* Projection cards */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:24}}>
-            {[6,12,24].map(mo=>(
+          <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":isTab?"repeat(3,1fr)":"repeat(3,1fr)",gap:isMob?10:14,marginBottom:24}}>
+            {[1,6,12].map(mo=>(
               <div key={mo} style={card}>
                 <div style={lbl}>{mo} MONTHS</div>
                 <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)"}}>Invested</div>
@@ -650,7 +690,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Pie + Table */}
-          <div style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:14}}>
+          <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":isTab?"1fr":"240px 1fr",gap:14}}>
             <div style={card}>
               <div style={lbl}>ALLOCATION</div>
               <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
