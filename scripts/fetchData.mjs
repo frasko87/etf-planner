@@ -63,6 +63,7 @@ const ETF_POOL = {
   SOXL: { name:"3x Semiconductors (Lev.)", category:"leveraged",     risk:"very_high", leveraged:true,  fallbackCagr:0.35,  fallbackOpt:0.60  },
   ARKK: { name:"ARK Innovation",           category:"aggressive",    risk:"high",      leveraged:false, fallbackCagr:0.22,  fallbackOpt:0.45  },
   UPRO: { name:"3x S&P 500 (Leveraged)",   category:"leveraged",     risk:"very_high", leveraged:true,  fallbackCagr:0.32,  fallbackOpt:0.55  },
+  BND:  { name:"Vanguard Total Bond Market", category:"bonds",         risk:"very_low",  leveraged:false, fallbackCagr:0.048, fallbackOpt:0.06  },
 };
 
 const TICKERS = Object.keys(ETF_POOL);
@@ -73,25 +74,29 @@ const TICKERS = Object.keys(ETF_POOL);
 // ─────────────────────────────────────────────────────────────────────────────
 const PROFILES = {
   conservative: {
-    eligible:    ["total_market","large_cap","dividend"],
+    eligible:    ["bonds","dividend","total_market","large_cap"],
+    // Bonds MUST be included — they anchor the ~5% target
+    required:    ["BND"],
     count:       4,
-    weights:     { momentum:0.20, stability:0.55, trend:0.25 },
-    // Stability is most important — penalize volatile ETFs heavily
-    description: "Low volatility, dividend-paying, broad market",
+    weights:     { momentum:0.10, stability:0.70, trend:0.20 },
+    targetCagr:  0.05,
+    description: "~5% annual return — bonds + dividend stocks",
   },
   balanced: {
-    eligible:    ["total_market","large_cap","tech_growth","dividend","sector"],
-    count:       5,
+    eligible:    ["total_market","large_cap","tech_growth","dividend"],
+    required:    [],
+    count:       4,
     weights:     { momentum:0.40, stability:0.35, trend:0.25 },
-    // Balance growth and stability
-    description: "Mix of growth and stability",
+    targetCagr:  0.09,
+    description: "7-12% annual return — growth + stability",
   },
   aggressive: {
     eligible:    ["leveraged","aggressive","tech_growth"],
+    required:    [],
     count:       4,
-    weights:     { momentum:0.60, stability:0.10, trend:0.30 },
-    // Momentum is king — volatility is acceptable
-    description: "High momentum leveraged ETFs",
+    weights:     { momentum:0.65, stability:0.05, trend:0.30 },
+    targetCagr:  0.16,
+    description: "12%+ annual return — high conviction growth",
   },
 };
 
@@ -125,9 +130,9 @@ function getWeekStart(date = new Date()) {
   return d.toISOString().split("T")[0];
 }
 
-function isMonday() {
-  const d = new Date(new Date().toLocaleString("en-US",{timeZone:"America/New_York"}));
-  return d.getDay() === 1;
+function shouldRunScoring() {
+  // Run scoring every trading day at close — selections update daily
+  return true;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -367,8 +372,8 @@ async function fetchAllETFs() {
 // WEEKLY SELECTION JOB — runs on Monday
 // ─────────────────────────────────────────────────────────────────────────────
 async function runWeeklySelection(poolData) {
-  const weekStart = getWeekStart();
-  console.log(`\n[WEEKLY SELECTION] Week of ${weekStart}`);
+  const weekStart = new Date().toISOString().split('T')[0]; // today's date
+  console.log(`\n[DAILY SELECTION] Date: ${weekStart}`);
 
   // Get last week's selections for comparison
   const { data: prevSelections } = await supabase
@@ -387,7 +392,9 @@ async function runWeeklySelection(poolData) {
     console.log(`\n  Scoring profile: ${profile.toUpperCase()}`);
 
     // Filter eligible ETFs
-    const eligible = TICKERS.filter(t => cfg.eligible.includes(ETF_POOL[t].category));
+    const eligible = TICKERS.filter(t => ETF_POOL[t] && cfg.eligible.includes(ETF_POOL[t]?.category));
+    // Ensure required ETFs are always included
+    const required = cfg.required || [];
 
     // Score each eligible ETF
     const scores = {};
@@ -464,14 +471,14 @@ async function updateMarketStatus() {
 // ─────────────────────────────────────────────────────────────────────────────
 async function main() {
   const isManual = process.argv.includes("--fetch-now");
-  const runScoring = process.argv.includes("--score-now") || isMonday();
+  const runScoring = process.argv.includes("--score-now") || shouldRunScoring();
   const ms = getMarketStatus();
 
   console.log(`\n${"=".repeat(60)}`);
   console.log(`ETF PLANNER — DATA FETCH`);
   console.log(`Time:    ${new Date().toLocaleString("en-US",{timeZone:"America/New_York"})} ET`);
   console.log(`Market:  ${ms.status} — ${ms.reason}`);
-  console.log(`Monday:  ${isMonday()} → scoring engine will ${isMonday()||isManual?"RUN":"SKIP"}`);
+  console.log(`Scoring: will RUN after close data fetch`);
   console.log(`${"=".repeat(60)}\n`);
 
   // Update market status
