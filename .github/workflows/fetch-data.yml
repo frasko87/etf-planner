@@ -1,0 +1,51 @@
+name: Fetch ETF Market Data
+
+on:
+  schedule:
+    # Daily market OPEN — 9:30 AM ET = 13:30 UTC
+    - cron: '30 13 * * 1-5'
+    # Daily market CLOSE — 4:05 PM ET = 20:05 UTC
+    - cron: '5 20 * * 1-5'
+    # Monday scoring run — 4:30 PM ET (after close data is in)
+    - cron: '30 20 * * 1'
+  workflow_dispatch:
+    inputs:
+      run_scoring:
+        description: 'Force run weekly scoring engine'
+        required: false
+        default: 'false'
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ETF data fetch
+        env:
+          SUPABASE_URL:           ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY:   ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ALPHA_VANTAGE_KEY:      ${{ secrets.ALPHA_VANTAGE_KEY }}
+          FINNHUB_KEY:            ${{ secrets.FINNHUB_KEY }}
+          POLYGON_KEY:            ${{ secrets.POLYGON_KEY }}
+          FRED_KEY:               ${{ secrets.FRED_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.run_scoring }}" = "true" ]; then
+            node scripts/fetchData.mjs --score-now
+          else
+            node scripts/fetchData.mjs
+          fi
+
+      - name: Done
+        run: echo "Fetch complete at $(date)"

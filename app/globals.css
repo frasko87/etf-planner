@@ -1,42 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg:       #f8f8f5;
+  --bg2:      #ffffff;
+  --bg3:      #f2f2ee;
+  --border:   #e8e8e2;
+  --border2:  #d4d4cc;
+  --text:     #1a1a2e;
+  --muted:    #7a7a8a;
+  --muted2:   #aaaabc;
+  --green:    #00b96b;
+  --green2:   #e6f9f0;
+  --gold:     #c9a84c;
+  --gold2:    #fff8e6;
+  --red:      #e84040;
+  --red2:     #fef0f0;
+  --blue:     #3b82f6;
+  --shadow:   0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  --shadow2:  0 2px 8px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.06);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+html, body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
+.mono { font-family: 'DM Mono', monospace; }
+.pixel { font-family: 'Press Start 2P', monospace; }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+a { text-decoration: none; color: inherit; }
+button:focus, input:focus { outline: 2px solid var(--green); outline-offset: 2px; }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+@keyframes fadeUp   { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes ticker   { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }

@@ -1,0 +1,721 @@
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "../../lib/supabase/client";
+import { getMarketStatus, STATUS_STYLE } from "../../lib/market";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+
+// ── ETF full metadata (all 18) ────────────────────────────────────────────────
+const ETF_META = {
+  VTI:  { name:"Vanguard Total Market",    color:"#00b96b", risk:"Low",       leveraged:false, category:"Total Market", fallbackCagr:0.135, fallbackOpt:0.18,
+    topHoldings:["Apple","Microsoft","Nvidia","Amazon","Alphabet"],
+    description:"Tracks the entire US stock market — over 3,700 stocks across all sectors and sizes." },
+  ITOT: { name:"iShares Core S&P Total",   color:"#22c55e", risk:"Low",       leveraged:false, category:"Total Market", fallbackCagr:0.133, fallbackOpt:0.175,
+    topHoldings:["Apple","Microsoft","Nvidia","Amazon","Meta"],
+    description:"Broad exposure to the entire US equity market, similar to VTI from iShares." },
+  VOO:  { name:"Vanguard S&P 500",         color:"#3b82f6", risk:"Low",       leveraged:false, category:"Large Cap",    fallbackCagr:0.132, fallbackOpt:0.175,
+    topHoldings:["Apple","Microsoft","Nvidia","Amazon","Alphabet"],
+    description:"Tracks the S&P 500 — the 500 largest US companies. The gold standard of index investing." },
+  SPY:  { name:"SPDR S&P 500",             color:"#60a5fa", risk:"Low",       leveraged:false, category:"Large Cap",    fallbackCagr:0.131, fallbackOpt:0.172,
+    topHoldings:["Apple","Microsoft","Nvidia","Amazon","Meta"],
+    description:"The original S&P 500 ETF. Tracks the same 500 companies as VOO with slightly higher fees." },
+  QQQ:  { name:"Nasdaq-100",               color:"#8b5cf6", risk:"Medium",    leveraged:false, category:"Tech Growth",  fallbackCagr:0.18,  fallbackOpt:0.25,
+    topHoldings:["Apple","Microsoft","Nvidia","Amazon","Meta"],
+    description:"Top 100 non-financial Nasdaq companies. Heavy tech concentration — the growth engine of the US market." },
+  VGT:  { name:"Vanguard Info Tech",       color:"#a78bfa", risk:"Medium",    leveraged:false, category:"Tech",         fallbackCagr:0.20,  fallbackOpt:0.28,
+    topHoldings:["Apple","Nvidia","Microsoft","Broadcom","Salesforce"],
+    description:"Pure technology sector exposure. Focuses on semiconductors, software, and IT services." },
+  XLK:  { name:"Tech Select SPDR",         color:"#7c3aed", risk:"Medium",    leveraged:false, category:"Tech",         fallbackCagr:0.195, fallbackOpt:0.27,
+    topHoldings:["Nvidia","Apple","Microsoft","Broadcom","Salesforce"],
+    description:"Technology sector of the S&P 500. Similar to VGT with slightly different weightings." },
+  SCHD: { name:"Schwab Dividend",          color:"#c9a84c", risk:"Low",       leveraged:false, category:"Dividend",     fallbackCagr:0.12,  fallbackOpt:0.16,
+    topHoldings:["Altria","Cisco","Verizon","Coca-Cola","AbbVie"],
+    description:"High-quality dividend stocks screened for consistent payout growth. Steady income + growth." },
+  VYM:  { name:"Vanguard High Dividend",   color:"#d97706", risk:"Low",       leveraged:false, category:"Dividend",     fallbackCagr:0.115, fallbackOpt:0.155,
+    topHoldings:["JPMorgan","ExxonMobil","Johnson & Johnson","Procter & Gamble","Home Depot"],
+    description:"Focuses on stocks with above-average dividend yields. Defensive and income-generating." },
+  DGRO: { name:"iShares Dividend Growth",  color:"#f59e0b", risk:"Low",       leveraged:false, category:"Dividend",     fallbackCagr:0.125, fallbackOpt:0.165,
+    topHoldings:["Microsoft","Apple","JPMorgan","Exxon","UnitedHealth"],
+    description:"Companies with 5+ years of consecutive dividend growth. Quality filter for stable compounders." },
+  XLE:  { name:"Energy Select SPDR",       color:"#10b981", risk:"Medium",    leveraged:false, category:"Energy",       fallbackCagr:0.10,  fallbackOpt:0.22,
+    topHoldings:["ExxonMobil","Chevron","ConocoPhillips","EOG Resources","Schlumberger"],
+    description:"US energy sector — oil, gas, and energy equipment companies. Cyclical but high dividend yields." },
+  XLF:  { name:"Financial Select SPDR",    color:"#06b6d4", risk:"Medium",    leveraged:false, category:"Financials",   fallbackCagr:0.115, fallbackOpt:0.19,
+    topHoldings:["Berkshire Hathaway","JPMorgan","Visa","Mastercard","Bank of America"],
+    description:"US financial sector — banks, insurance, and payment processors. Benefits from rising rates." },
+  XLV:  { name:"Health Care Select SPDR",  color:"#ec4899", risk:"Medium",    leveraged:false, category:"Healthcare",   fallbackCagr:0.105, fallbackOpt:0.17,
+    topHoldings:["UnitedHealth","Johnson & Johnson","Eli Lilly","AbbVie","Thermo Fisher"],
+    description:"US healthcare sector — pharma, biotech, medical devices, and health insurers. Defensive growth." },
+  XLI:  { name:"Industrial Select SPDR",   color:"#14b8a6", risk:"Medium",    leveraged:false, category:"Industrials",  fallbackCagr:0.112, fallbackOpt:0.18,
+    topHoldings:["GE Aerospace","Caterpillar","RTX","Honeywell","Union Pacific"],
+    description:"US industrial companies — aerospace, defense, transportation, and machinery manufacturers." },
+  TQQQ: { name:"3x Nasdaq (Leveraged)",    color:"#ff6b35", risk:"Very High", leveraged:true,  category:"Leveraged",    fallbackCagr:0.38,  fallbackOpt:0.65,
+    topHoldings:["3x Nasdaq-100 Swap","QQQ derivatives","Daily reset"],
+    description:"Delivers 3x the daily return of the Nasdaq-100. Extreme gains in bull markets, extreme losses in downturns. Not for long-term hold." },
+  SOXL: { name:"3x Semiconductors (Lev.)", color:"#ff4757", risk:"Very High", leveraged:true,  category:"Leveraged",    fallbackCagr:0.35,  fallbackOpt:0.60,
+    topHoldings:["3x PHLX Semiconductor Swap","Nvidia","AMD","ASML","TSMC derivatives"],
+    description:"3x daily return of semiconductor stocks. Maximum AI/chip exposure. Extremely volatile — weekly monitoring required." },
+  ARKK: { name:"ARK Innovation",           color:"#ff6b9d", risk:"High",      leveraged:false, category:"Innovation",   fallbackCagr:0.22,  fallbackOpt:0.45,
+    topHoldings:["Tesla","Roku","Coinbase","UiPath","Palantir"],
+    description:"Cathie Wood's flagship fund. Bets on disruptive innovation — AI, genomics, fintech, robotics. High conviction, high volatility." },
+  UPRO: { name:"3x S&P 500 (Leveraged)",   color:"#ff8c00", risk:"Very High", leveraged:true,  category:"Leveraged",    fallbackCagr:0.32,  fallbackOpt:0.55,
+    topHoldings:["3x S&P 500 Swap","SPY derivatives","Daily reset"],
+    description:"Delivers 3x the daily return of the S&P 500. Amplifies both gains and losses. Only suitable for short-term tactical positions." },
+};
+
+const PROFILE_CONFIG = {
+  conservative: { label:"Conservative", icon:"🛡️", desc:"Stability-first, diversified core",     accentColor:"#3b82f6" },
+  balanced:     { label:"Balanced",     icon:"⚖️", desc:"Growth with managed risk",               accentColor:"#c9a84c" },
+  aggressive:   { label:"Aggressive",   icon:"🚀", desc:"High risk · High reward",                accentColor:"#ff4757",
+    warning:"⚠️ This plan uses leveraged ETFs. These can lose 50–90% of value in a downturn. Only invest money you can afford to lose completely." },
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const fmt     = n => n!=null ? n.toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}) : "—";
+const fmtD    = n => n!=null ? `$${Number(n).toFixed(2)}` : "—";
+const fmtPct  = n => n!=null ? `${n>=0?"+":""}${(n*100).toFixed(2)}%` : "—";
+const timeAgo = iso => { if(!iso) return "—"; const s=Math.floor((Date.now()-new Date(iso))/1000); return s<60?`${s}s ago`:s<3600?`${Math.floor(s/60)}m ago`:`${Math.floor(s/3600)}h ago`; };
+
+function project(monthly, allocations, etfPool, months, opt=false) {
+  if (!allocations || Object.keys(allocations).length === 0) return monthly * months;
+  const rate = Object.entries(allocations).reduce((acc,[t,pct]) => {
+    const row    = etfPool?.find(r=>r.ticker===t);
+    const meta   = ETF_META[t];
+    const pctNum = parseFloat(pct) || 0;
+    const annual = opt
+      ? (row?.optimistic    ?? meta?.fallbackOpt  ?? 0.18)
+      : (row?.cagr          ?? meta?.fallbackCagr ?? 0.13);
+    return acc + (annual/12)*(pctNum/100);
+  }, 0);
+  if (rate === 0) return monthly * months;
+  let total = 0;
+  for (let i=0;i<months;i++) total=(total+monthly)*(1+rate);
+  return total;
+}
+
+const ChartTip = ({active,payload,label}) => {
+  if (!active||!payload?.length) return null;
+  return (
+    <div style={{background:"#fff",border:"1px solid #e8e8e2",borderRadius:8,padding:"10px 14px",boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
+      <p style={{fontFamily:"DM Mono",fontSize:11,color:"#7a7a8a",marginBottom:6}}>Month {label}</p>
+      {payload.map(p=><p key={p.name} style={{fontFamily:"DM Mono",fontSize:12,color:p.color,margin:"2px 0"}}>{p.name}: {fmt(p.value)}</p>)}
+    </div>
+  );
+};
+
+// ── ETF Comparison Card ───────────────────────────────────────────────────────
+function EtfCompareCard({ ticker, isNew, isRemoved, poolRow }) {
+  const meta = ETF_META[ticker] || { name:ticker, color:"#888", risk:"—", leveraged:false, category:"—" };
+  return (
+    <div style={{
+      background: isNew ? "rgba(0,185,107,0.04)" : isRemoved ? "rgba(255,71,87,0.04)" : "white",
+      border: `1.5px solid ${isNew ? "rgba(0,185,107,0.3)" : isRemoved ? "rgba(255,71,87,0.3)" : "#e8e8e2"}`,
+      borderRadius:12, padding:14, position:"relative", opacity: isRemoved ? 0.6 : 1,
+    }}>
+      {isNew     && <div style={{position:"absolute",top:-8,right:8,fontFamily:"DM Mono",fontSize:9,background:"#00b96b",color:"white",padding:"2px 8px",borderRadius:10}}>NEW</div>}
+      {isRemoved && <div style={{position:"absolute",top:-8,right:8,fontFamily:"DM Mono",fontSize:9,background:"#ff4757",color:"white",padding:"2px 8px",borderRadius:10}}>OUT</div>}
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+        <div style={{width:8,height:8,borderRadius:"50%",background:meta.color}}/>
+        <span style={{fontFamily:"DM Mono",fontSize:13,color:meta.color,fontWeight:500}}>{ticker}</span>
+        {meta.leveraged && <span style={{fontFamily:"DM Mono",fontSize:8,padding:"1px 5px",borderRadius:3,background:"rgba(255,71,87,0.1)",color:"#ff4757"}}>3X</span>}
+      </div>
+      <div style={{fontFamily:"DM Sans",fontSize:11,color:"#7a7a8a",marginBottom:8}}>{meta.name}</div>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <div>
+          <div style={{fontFamily:"DM Mono",fontSize:9,color:"#aaaabc",marginBottom:2}}>CAGR</div>
+          <div style={{fontFamily:"DM Mono",fontSize:12,color:"#1a1a2e"}}>{fmtPct(poolRow?.cagr)}</div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div style={{fontFamily:"DM Mono",fontSize:9,color:"#aaaabc",marginBottom:2}}>1M MOM</div>
+          <div style={{fontFamily:"DM Mono",fontSize:12,color:poolRow?.mom_1m>=0?"#00b96b":"#ff4757"}}>{fmtPct(poolRow?.mom_1m)}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main dashboard ────────────────────────────────────────────────────────────
+export default function DashboardPage() {
+  const router   = useRouter();
+  const supabase = createClient();
+
+  const [user,         setUser]         = useState(null);
+  const [etfPool,      setEtfPool]      = useState([]);
+  const [selections,   setSelections]   = useState({});   // { conservative: {...}, balanced: {...}, aggressive: {...} }
+  const [macroData,    setMacroData]    = useState(null);
+  const [fetchLog,     setFetchLog]     = useState([]);
+  const [ms,           setMs]           = useState(getMarketStatus());
+  const [loading,      setLoading]      = useState(true);
+
+  // UI state
+  const [amount,       setAmount]       = useState(100);
+  const [risk,         setRisk]         = useState("balanced");
+  const [view,         setView]         = useState("dashboard");
+  const [activeMonth,  setActiveMonth]  = useState(1);
+  const [showScores,   setShowScores]   = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data:{ user } } = await supabase.auth.getUser();
+      if (!user) { router.push("/login"); return; }
+      setUser(user);
+
+      const [{ data:pool }, { data:sels }, { data:macro }, { data:logs }] = await Promise.all([
+        supabase.from("etf_pool").select("*").order("ticker"),
+        supabase.from("weekly_selections").select("*").eq("is_current", true),
+        supabase.from("macro_data").select("*").eq("id","current").single(),
+        supabase.from("fetch_log").select("*").order("fetched_at",{ascending:false}).limit(3),
+      ]);
+
+      setEtfPool(pool || []);
+
+      // Index selections by profile
+      const selByProfile = {};
+      (sels || []).forEach(s => { selByProfile[s.profile] = s; });
+      setSelections(selByProfile);
+
+      setMacroData(macro);
+      setFetchLog(logs || []);
+      setLoading(false);
+    };
+    load();
+    const t = setInterval(()=>setMs(getMarketStatus()), 60_000);
+    return ()=>clearInterval(t);
+  }, []);
+
+  const handleLogout = async () => { await supabase.auth.signOut(); router.push("/"); };
+
+  if (loading) return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"var(--bg)"}}>
+      <span style={{fontFamily:"DM Mono",fontSize:12,color:"var(--muted)"}}>Loading your dashboard…</span>
+    </div>
+  );
+
+  // Fallback allocations used before first Monday scoring run
+  const FALLBACK_PLANS = {
+    conservative: { tickers:["VTI","SCHD","VOO"],         allocations:{ VTI:50, SCHD:30, VOO:20 } },
+    balanced:     { tickers:["VOO","QQQ","VTI","SCHD"],   allocations:{ VOO:35, QQQ:25, VTI:25, SCHD:15 } },
+    aggressive:   { tickers:["TQQQ","SOXL","ARKK","QQQ"], allocations:{ TQQQ:35, SOXL:25, ARKK:25, QQQ:15 } },
+  };
+
+  // Current plan selection — use live DB data or fallback
+  const currentSel   = selections[risk];
+  const fallback     = FALLBACK_PLANS[risk];
+  const curTickers   = currentSel?.tickers   || fallback.tickers;
+  const prevTickers  = currentSel?.prev_tickers || [];
+  const usingFallback = !currentSel;
+  const pc           = PROFILE_CONFIG[risk];
+
+  // Normalize allocations — handle JSONB from Supabase (may have string values or missing keys)
+  const rawAllocs = currentSel?.allocations || {};
+  const allocSum  = Object.values(rawAllocs).reduce((a,b) => a + (parseFloat(b)||0), 0);
+  const allocs    = (() => {
+    // If DB has valid allocations with correct tickers, use them
+    if (allocSum > 50 && curTickers.every(t => rawAllocs[t] != null)) {
+      const normalized = {};
+      curTickers.forEach(t => { normalized[t] = parseFloat(rawAllocs[t]) || 0; });
+      return normalized;
+    }
+    // Otherwise distribute equally among selected tickers
+    const equal = {};
+    const base  = Math.floor(100 / curTickers.length / 5) * 5;
+    let rem     = 100;
+    curTickers.forEach((t,i) => {
+      equal[t] = i === curTickers.length-1 ? rem : base;
+      rem -= base;
+    });
+    return equal;
+  })();
+  const prevAllocs = currentSel?.prev_allocations || {};
+
+  // Added / removed this week
+  const addedETFs   = curTickers.filter(t => !prevTickers.includes(t));
+  const removedETFs = prevTickers.filter(t => !curTickers.includes(t));
+  const unchangedETFs = curTickers.filter(t => prevTickers.includes(t));
+
+  // Chart + table
+  const chartData = Array.from({length:25},(_,m)=>({
+    month:m, invested:amount*m,
+    expected:   m===0?0:project(amount,allocs,etfPool,m,false),
+    optimistic: m===0?0:project(amount,allocs,etfPool,m,true),
+  }));
+  const tableData = Array.from({length:12},(_,i)=>{
+    const m=i+1, invested=amount*m;
+    const exp=project(amount,allocs,etfPool,m,false);
+    return { month:m, label:new Date(2025,i).toLocaleString("default",{month:"short"}), invested, expected:exp, optimistic:project(amount,allocs,etfPool,m,true), gain:exp-invested };
+  });
+  const projs = { 6:{exp:project(amount,allocs,etfPool,6,false),opt:project(amount,allocs,etfPool,6,true)}, 12:{exp:project(amount,allocs,etfPool,12,false),opt:project(amount,allocs,etfPool,12,true)}, 24:{exp:project(amount,allocs,etfPool,24,false),opt:project(amount,allocs,etfPool,24,true)} };
+  const pieData = curTickers.map(t=>({name:t,value:allocs[t]||0,color:ETF_META[t]?.color||"#888"}));
+  const sc = STATUS_STYLE[ms.status] || STATUS_STYLE.CLOSED;
+
+  const card  = {background:"white",border:"1px solid var(--border)",borderRadius:14,padding:20,boxShadow:"var(--shadow)"};
+  const lbl   = {fontFamily:"DM Mono",fontSize:11,letterSpacing:1.5,color:"var(--muted2)",marginBottom:14};
+
+  return (
+    <div style={{minHeight:"100vh",background:"var(--bg)",color:"var(--text)"}}>
+
+      {/* Nav */}
+      <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0 32px",height:60,background:"rgba(248,248,245,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid var(--border)",position:"sticky",top:0,zIndex:100}}>
+        <span className="pixel" style={{fontSize:10,color:"var(--text)"}}>ETF<span style={{color:"var(--green)"}}>.</span>PLAN</span>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <span style={{fontFamily:"DM Mono",fontSize:13,color:"var(--muted)"}}>{user?.email}</span>
+          {view==="plan" && <button onClick={()=>setView("dashboard")} style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:"7px 16px",cursor:"pointer"}}>← Dashboard</button>}
+          <button onClick={handleLogout} style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:"7px 16px",cursor:"pointer"}}>Log out</button>
+        </div>
+      </nav>
+
+      <div style={{maxWidth:1100,margin:"0 auto",padding:"32px 20px 80px"}}>
+
+        {view === "dashboard" && <>
+
+          {/* Market status */}
+          <div style={{background:sc.bg,border:`1px solid ${sc.border}`,borderRadius:16,padding:"20px 28px",marginBottom:24}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16}}>
+              <div>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                  <span style={{color:sc.color,fontSize:13,animation:sc.pulse?"pulse 1.5s infinite":"none"}}>{sc.icon}</span>
+                  <span style={{fontFamily:"DM Mono",fontSize:12,color:sc.color,letterSpacing:1.5}}>{ms.status.replace("_"," ")}</span>
+                </div>
+                <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:20,color:"var(--text)",marginBottom:6}}>{ms.reason}</div>
+                <div style={{fontFamily:"DM Sans",fontSize:15,color:"var(--muted)",lineHeight:1.7}}>{ms.detail}</div>
+                {ms.nextOpen && <div style={{fontFamily:"DM Mono",fontSize:11,color:sc.color,marginTop:10}}>Next session → {ms.nextOpen}</div>}
+              </div>
+              <div style={{textAlign:"right",display:"flex",flexDirection:"column",gap:12}}>
+                {[
+                  {l:"LAST DATA FETCH",   v: fetchLog[0] ? `${fetchLog[0].trigger?.replace("_"," ")} · ${timeAgo(fetchLog[0].fetched_at)}` : "—"},
+                  {l:"NEXT FETCH",        v: ms.isOpen ? "at 4:05 PM ET close" : "at next open 9:30 AM ET"},
+                  {l:"NEXT REBALANCE",    v: "Monday market close"},
+                ].map(x=>(
+                  <div key={x.l} style={{textAlign:"right"}}>
+                    <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:2}}>{x.l}</div>
+                    <div style={{fontFamily:"DM Mono",fontSize:12,color:"var(--muted)"}}>{x.v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {!ms.isOpen && (
+              <div style={{marginTop:16,padding:"12px 16px",background:"rgba(0,0,0,0.03)",borderRadius:10,fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",lineHeight:1.7,border:"1px solid var(--border)"}}>
+                📊 Prices shown are from the last market close. Projections and ETF selections remain valid — they use multi-year historical data, not live ticks.
+              </div>
+            )}
+          </div>
+
+          {/* Plan builder + ETF selection */}
+          <div style={{display:"grid",gridTemplateColumns:"420px 1fr",gap:20,marginBottom:24,alignItems:"start"}}>
+
+            {/* Plan builder */}
+            <div style={card}>
+              <div style={lbl}>BUILD YOUR PLAN</div>
+
+              {/* Amount */}
+              <div style={{marginBottom:24}}>
+                <div style={{fontFamily:"DM Sans",fontSize:15,color:"var(--muted)",fontWeight:500,marginBottom:12}}>How much per month?</div>
+                <div style={{display:"flex",gap:8,background:"var(--bg3)",borderRadius:12,padding:4}}>
+                  {[50,100,150].map(v=>(
+                    <button key={v} onClick={()=>setAmount(v)} style={{flex:1,padding:"13px 0",borderRadius:9,border:"none",cursor:"pointer",transition:"all 0.2s",background:amount===v?"white":"transparent",color:amount===v?"var(--text)":"var(--muted)",fontFamily:"DM Sans",fontWeight:amount===v?700:400,fontSize:20,boxShadow:amount===v?"var(--shadow)":"none"}}>
+                      ${v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Live preview strip — updates as user picks */}
+              <div style={{background:"var(--bg3)",borderRadius:12,padding:"14px 16px",marginBottom:24,border:`1px solid ${pc.accentColor}22`}}>
+                <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:10,letterSpacing:1}}>LIVE PROJECTION PREVIEW</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+                  {[{l:"6 mo",mo:6},{l:"12 mo",mo:12},{l:"24 mo",mo:24}].map(x=>{
+                    const exp  = project(amount,allocs,etfPool,x.mo,false);
+                    const gain = exp - amount*x.mo;
+                    return (
+                      <div key={x.l} style={{textAlign:"center"}}>
+                        <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:4}}>{x.l}</div>
+                        <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:18,color:"var(--text)"}}>{fmt(exp)}</div>
+                        <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)"}}>+{fmt(gain)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Risk profiles — each shows projected return */}
+              <div>
+                <div style={{fontFamily:"DM Sans",fontSize:15,color:"var(--muted)",fontWeight:500,marginBottom:12}}>Choose your risk level</div>
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  {Object.entries(PROFILE_CONFIG).map(([key,p])=>{
+                    const sel      = selections[key];
+                    const fb       = {conservative:{VTI:50,SCHD:30,VOO:20},balanced:{VOO:35,QQQ:25,VTI:25,SCHD:15},aggressive:{TQQQ:35,SOXL:25,ARKK:25,QQQ:15}}[key];
+                    const rawA     = sel?.allocations || {};
+                    const aSum     = Object.values(rawA).reduce((a,b)=>a+(parseFloat(b)||0),0);
+                    const tickers  = sel?.tickers || Object.keys(fb);
+                    const profAllocs = (aSum > 50 && tickers.every(t=>rawA[t]!=null)) ? Object.fromEntries(tickers.map(t=>[t,parseFloat(rawA[t])||0])) : fb;
+                    const exp12    = project(amount, profAllocs, etfPool, 12, false);
+                    const gain12   = exp12 - amount*12;
+                    const isActive = risk===key;
+                    return (
+                      <button key={key} onClick={()=>setRisk(key)} style={{padding:"14px 16px",borderRadius:12,cursor:"pointer",border:`2px solid ${isActive?p.accentColor:"var(--border)"}`,background:isActive?`${p.accentColor}08`:"white",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all 0.2s",boxShadow:isActive?`0 0 0 3px ${p.accentColor}15`:"none"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:12}}>
+                          <div style={{width:36,height:36,borderRadius:10,background:`${p.accentColor}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{p.icon}</div>
+                          <div style={{textAlign:"left"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                              <span style={{fontFamily:"DM Sans",fontWeight:600,fontSize:16,color:isActive?"var(--text)":"var(--muted)"}}>{p.label}</span>
+                              {key==="aggressive" && <span style={{fontFamily:"DM Mono",fontSize:8,padding:"2px 6px",borderRadius:4,background:"rgba(255,71,87,0.08)",color:"#ff4757",border:"1px solid rgba(255,71,87,0.2)"}}>HIGH RISK</span>}
+                            </div>
+                            <div style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted2)"}}>{p.desc}</div>
+                          </div>
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:18,color:p.accentColor}}>{fmt(exp12)}</div>
+                          <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)"}}>+{fmt(gain12)} / 12mo</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* CTA */}
+              <div style={{marginTop:24,position:"relative"}}>
+                <button
+                  onClick={()=>setView("plan")}
+                  style={{
+                    width:"100%", padding:"18px 0", borderRadius:12, border:"none", cursor:"pointer",
+                    background: pc.accentColor==="var(--gold)" ? "linear-gradient(135deg,#c9a84c,#e8c96a)" : pc.accentColor,
+                    color:"white", fontFamily:"DM Sans", fontWeight:700, fontSize:17,
+                    boxShadow:`0 6px 24px ${pc.accentColor}44`,
+                    transition:"transform 0.15s, box-shadow 0.15s",
+                  }}
+                  onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 10px 32px ${pc.accentColor}55`;}}
+                  onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=`0 6px 24px ${pc.accentColor}44`;}}
+                >
+                  <div>View Full {pc.label} Plan →</div>
+                  <div style={{fontFamily:"DM Mono",fontSize:11,opacity:0.85,marginTop:3}}>
+                    {fmt(amount)}/mo · expected {fmt(projs[12].exp)} in 12 months
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* This week vs last week */}
+            <div style={card}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                <div style={lbl}>
+                  {pc.label.toUpperCase()} SELECTION — WEEK OF {currentSel?.week_start || "—"}
+                </div>
+                {currentSel?.changed && (
+                  <span style={{fontFamily:"DM Mono",fontSize:9,padding:"3px 10px",borderRadius:10,background:"rgba(0,185,107,0.08)",color:"var(--green)",border:"1px solid rgba(0,185,107,0.2)"}}>UPDATED THIS WEEK</span>
+                )}
+              </div>
+
+              {/* Change summary banner */}
+              {currentSel?.change_summary && currentSel.changed && (
+                <div style={{padding:"10px 14px",background:"rgba(0,185,107,0.04)",border:"1px solid rgba(0,185,107,0.15)",borderRadius:10,marginBottom:16}}>
+                  <span style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)"}}>↻ {currentSel.change_summary}</span>
+                </div>
+              )}
+
+              {/* This week */}
+              <div style={{marginBottom:16}}>
+                <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:10,letterSpacing:1}}>THIS WEEK</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
+                  {curTickers.map(t=>(
+                    <EtfCompareCard
+                      key={t} ticker={t}
+                      isNew={addedETFs.includes(t)}
+                      isRemoved={false}
+                      poolRow={etfPool.find(r=>r.ticker===t)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Last week — only show if something changed */}
+              {prevTickers.length > 0 && (
+                <div>
+                  <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:10,letterSpacing:1}}>LAST WEEK {currentSel?.changed ? "(REPLACED)" : "(SAME)"}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
+                    {prevTickers.map(t=>(
+                      <EtfCompareCard
+                        key={t} ticker={t}
+                        isNew={false}
+                        isRemoved={removedETFs.includes(t)}
+                        poolRow={etfPool.find(r=>r.ticker===t)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {usingFallback && (
+                <div style={{padding:"12px 16px",background:"var(--gold2)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:10,marginTop:12}}>
+                  <span style={{fontFamily:"DM Mono",fontSize:10,color:"#8a6a1a"}}>
+                    🕐 Using estimated allocations — live selections populate after first Monday market close
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Macro strip */}
+          {macroData && (
+            <div style={{...card,padding:"14px 20px",marginBottom:20}}>
+              <div style={{display:"flex",gap:32,flexWrap:"wrap",alignItems:"center"}}>
+                <div style={lbl}>MACRO — FRED</div>
+                <div style={{display:"flex",gap:32,flexWrap:"wrap"}}>
+                  {[
+                    {l:"CPI Inflation",  v:fmtPct(macroData.inflation), c:"#ff4757"},
+                    {l:"Fed Funds Rate", v:fmtPct(macroData.fed_rate),  c:"#8b5cf6"},
+                    {l:"Real Drag",      v:`−${fmtPct(macroData.inflation)}`, c:"#c9a84c"},
+                    {l:"CPI Date",       v:macroData.cpi_date||"—",     c:"var(--muted)"},
+                  ].map(x=>(
+                    <div key={x.l}>
+                      <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:3}}>{x.l}</div>
+                      <div style={{fontFamily:"DM Mono",fontSize:15,color:x.c}}>{x.v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+        </>}
+
+        {view === "plan" && <>
+
+          {/* Plan header */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,borderBottom:"1px solid var(--border)",paddingBottom:20,flexWrap:"wrap",gap:16}}>
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                <div style={{background:pc.accentColor==="var(--gold)"?"linear-gradient(135deg,#c9a84c,#e8c96a)":pc.accentColor,padding:"6px 14px",display:"inline-block"}}>
+                  <span style={{fontFamily:"'Press Start 2P', monospace",fontSize:10,color:"white",letterSpacing:1}}>{pc.label.toUpperCase()}</span>
+                </div>
+                <span style={{fontSize:28}}>{pc.icon}</span>
+              </div>
+              <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:34,color:"var(--text)",margin:0,letterSpacing:"-0.5px"}}>Investment Plan</h2>
+              <div style={{fontFamily:"DM Mono",fontSize:12,color:"var(--muted)",marginTop:6}}>
+                {fmt(amount)}/month · {currentSel?.week_start ? `Week of ${currentSel.week_start}` : "Estimated"} · {etfPool.length>0?"Live data":"Estimated data"}
+              </div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted2)",marginBottom:4}}>12-MONTH EXPECTED</div>
+              <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:48,color:projs[12].exp > amount*12 ? "var(--green)" : "#ff4757",lineHeight:1}}>{fmt(projs[12].exp)}</div>
+              <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)",marginTop:4}}>optimistic → {fmt(projs[12].opt)}</div>
+              <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)",marginTop:2}}>+{fmt(projs[12].exp - amount*12)} gain</div>
+            </div>
+          </div>
+
+          {/* Risk warning */}
+          {pc.warning && (
+            <div style={{marginBottom:24,padding:"14px 18px",background:"rgba(255,71,87,0.04)",border:"1.5px solid rgba(255,71,87,0.2)",borderRadius:12}}>
+              <div style={{fontFamily:"DM Sans",fontSize:13,color:"#cc3344",lineHeight:1.7}}>{pc.warning}</div>
+            </div>
+          )}
+
+          {/* Projection cards */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:24}}>
+            {[6,12,24].map(mo=>(
+              <div key={mo} style={card}>
+                <div style={lbl}>{mo} MONTHS</div>
+                <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)"}}>Invested</div>
+                <div style={{fontFamily:"DM Sans",fontSize:22,color:"var(--muted)",marginBottom:10}}>{fmt(amount*mo)}</div>
+                <div style={{height:1,background:"var(--border)",marginBottom:10}}/>
+                <div style={{display:"flex",justifyContent:"space-between"}}>
+                  <div>
+                    <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted2)"}}>Expected</div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:28,color:"var(--text)"}}>{fmt(projs[mo].exp)}</div>
+                    <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)"}}>+{fmt(projs[mo].exp-amount*mo)}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted2)"}}>Optimistic</div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:28,color:"var(--green)"}}>{fmt(projs[mo].opt)}</div>
+                    <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--green)"}}>+{fmt(projs[mo].opt-amount*mo)}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Chart */}
+          <div style={{...card,marginBottom:24}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:18,color:"var(--text)"}}>24-Month Growth Projection</div>
+              <div style={{display:"flex",gap:16}}>
+                {[{l:"Invested",c:"#d4d4cc"},{l:"Expected",c:"#3b82f6"},{l:"Optimistic",c:"#00b96b"}].map(x=>(
+                  <div key={x.l} style={{display:"flex",alignItems:"center",gap:6}}>
+                    <div style={{width:20,height:2,background:x.c}}/>
+                    <span style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted)"}}>{x.l}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={chartData}>
+                <defs>
+                  {[["gO","#00b96b"],["gE","#3b82f6"],["gI","#d4d4cc"]].map(([id,c])=>(
+                    <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor={c} stopOpacity={0.15}/>
+                      <stop offset="95%" stopColor={c} stopOpacity={0}/>
+                    </linearGradient>
+                  ))}
+                </defs>
+                <XAxis dataKey="month" tick={{fontFamily:"DM Mono",fontSize:9,fill:"var(--muted2)"}} axisLine={false} tickLine={false} tickFormatter={v=>`M${v}`}/>
+                <YAxis tick={{fontFamily:"DM Mono",fontSize:9,fill:"var(--muted2)"}} axisLine={false} tickLine={false} tickFormatter={v=>`$${(v/1000).toFixed(1)}k`}/>
+                <Tooltip content={<ChartTip/>}/>
+                <Area type="monotone" dataKey="invested"   stroke="#d4d4cc" strokeWidth={1.5} fill="url(#gI)" name="Invested"/>
+                <Area type="monotone" dataKey="expected"   stroke="#3b82f6" strokeWidth={2}   fill="url(#gE)" name="Expected"/>
+                <Area type="monotone" dataKey="optimistic" stroke="#00b96b" strokeWidth={2}   fill="url(#gO)" name="Optimistic" strokeDasharray="5 3"/>
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* ETF breakdown */}
+          <div style={{marginBottom:24}}>
+            <div style={lbl}>THIS WEEK'S ETF SELECTION</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:16}}>
+              {curTickers.map(t=>{
+                const row   = etfPool.find(r=>r.ticker===t);
+                const meta  = ETF_META[t]||{name:t,color:"#888",leveraged:false,risk:"—",category:"—",fallbackCagr:0.13,fallbackOpt:0.18,topHoldings:[],description:""};
+                const isNew = addedETFs.includes(t);
+                const pct   = typeof allocs[t] === "number" ? allocs[t] : parseInt(allocs[t]) || 0;
+                const cagr  = row?.cagr ?? meta.fallbackCagr;
+                const realC = row?.real_cagr ?? (meta.fallbackCagr - 0.03);
+                return (
+                  <div key={t} style={{...card,border:`1.5px solid ${isNew?"rgba(0,185,107,0.35)":meta.color+"44"}`,padding:20,position:"relative"}}>
+                    {isNew && <div style={{position:"absolute",top:-10,right:12,fontFamily:"DM Mono",fontSize:9,background:"#00b96b",color:"white",padding:"3px 10px",borderRadius:10,boxShadow:"0 2px 8px rgba(0,185,107,0.3)"}}>NEW THIS WEEK</div>}
+
+                    {/* Header */}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontFamily:"DM Mono",fontSize:18,color:meta.color,fontWeight:500}}>{t}</span>
+                        {meta.leveraged && <span style={{fontFamily:"DM Mono",fontSize:9,padding:"2px 7px",borderRadius:4,background:"rgba(255,71,87,0.1)",color:"#ff4757",border:"1px solid rgba(255,71,87,0.2)"}}>3X LEV</span>}
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontFamily:"DM Mono",fontSize:16,color:"var(--text)",fontWeight:500}}>{fmtD(row?.price)}</div>
+                        <div style={{fontFamily:"DM Mono",fontSize:10,color:row?.change_pct>=0?"var(--green)":"#ff4757"}}>{fmtPct(row?.change_pct)}</div>
+                      </div>
+                    </div>
+
+                    {/* Name + description */}
+                    <div style={{fontFamily:"DM Sans",fontWeight:500,fontSize:15,color:"var(--text)",marginBottom:4}}>{meta.name}</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",lineHeight:1.6,marginBottom:14}}>{meta.description}</div>
+
+                    {/* Stats grid */}
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
+                      {[
+                        {l:"CAGR",   v:fmtPct(cagr),                             c:"var(--text)"},
+                        {l:"Real",   v:fmtPct(realC),                            c:"var(--green)"},
+                        {l:"1M Mom", v:fmtPct(row?.mom_1m),                      c:(row?.mom_1m??0)>=0?"var(--green)":"#ff4757"},
+                        {l:"YTD",    v:fmtPct(row?.ytd),                         c:(row?.ytd??0)>=0?"var(--green)":"#ff4757"},
+                      ].map(x=>(
+                        <div key={x.l} style={{background:"var(--bg3)",borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
+                          <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:3}}>{x.l}</div>
+                          <div style={{fontFamily:"DM Mono",fontSize:13,color:x.c,fontWeight:500}}>{x.v}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Top holdings */}
+                    {meta.topHoldings?.length > 0 && (
+                      <div style={{marginBottom:14}}>
+                        <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:6,letterSpacing:1}}>TOP HOLDINGS</div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                          {meta.topHoldings.map(h=>(
+                            <span key={h} style={{fontFamily:"DM Sans",fontSize:12,padding:"4px 10px",background:"var(--bg3)",borderRadius:6,color:"var(--muted)",border:"1px solid var(--border)"}}>{h}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Allocation bar */}
+                    <div style={{background:"var(--bg3)",borderRadius:10,padding:"10px 12px"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                        <span style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",fontWeight:500}}>Your allocation</span>
+                        <div style={{textAlign:"right"}}>
+                          <span style={{fontFamily:"DM Mono",fontSize:16,color:meta.color,fontWeight:600}}>{pct}%</span>
+                          <span style={{fontFamily:"DM Mono",fontSize:13,color:"var(--muted)",marginLeft:8}}>{fmt((amount*pct)/100)}/mo</span>
+                        </div>
+                      </div>
+                      <div style={{height:4,borderRadius:2,background:"var(--border)"}}>
+                        <div style={{height:"100%",width:`${pct}%`,background:meta.color,borderRadius:2,transition:"width 0.4s ease"}}/>
+                      </div>
+                    </div>
+
+                    <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginTop:10,display:"flex",justifyContent:"space-between"}}>
+                      <span>{meta.risk} risk</span>
+                      <span>{meta.category}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Pie + Table */}
+          <div style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:14}}>
+            <div style={card}>
+              <div style={lbl}>ALLOCATION</div>
+              <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
+                <PieChart width={130} height={130}>
+                  <Pie data={pieData} dataKey="value" cx={65} cy={65} innerRadius={38} outerRadius={60} paddingAngle={3}>
+                    {pieData.map((e,i)=><Cell key={i} fill={e.color}/>)}
+                  </Pie>
+                </PieChart>
+              </div>
+              {curTickers.map(t=>{
+                const pct = typeof allocs[t]==="number" ? allocs[t] : parseInt(allocs[t])||0;
+                return (
+                  <div key={t} style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{width:8,height:8,borderRadius:"50%",background:ETF_META[t]?.color||"#888"}}/>
+                      <span style={{fontFamily:"DM Mono",fontSize:13,color:ETF_META[t]?.color||"#888"}}>{t}</span>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <span style={{fontFamily:"DM Mono",fontSize:15,color:"var(--text)",fontWeight:500}}>{pct}%</span>
+                      <span style={{fontFamily:"DM Mono",fontSize:12,color:"var(--muted2)",marginLeft:8}}>{fmt((amount*pct)/100)}/mo</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{...card,overflowX:"auto"}}>
+              <div style={lbl}>MONTH-BY-MONTH PLAN</div>
+              <table style={{width:"100%",borderCollapse:"collapse"}}>
+                <thead>
+                  <tr>{["Month","Invested","Expected","Optimistic","Gain"].map(h=>(
+                    <th key={h} style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted2)",textAlign:"left",paddingBottom:12,letterSpacing:1,fontWeight:400}}>{h.toUpperCase()}</th>
+                  ))}</tr>
+                </thead>
+                <tbody>
+                  {tableData.map(row=>{
+                    const active=row.month===activeMonth;
+                    return (
+                      <tr key={row.month} onClick={()=>setActiveMonth(row.month)} style={{background:active?"rgba(0,185,107,0.03)":"transparent",cursor:"pointer",borderTop:"1px solid var(--border)"}}>
+                        <td style={{padding:"9px 8px"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <div style={{width:4,height:4,borderRadius:"50%",background:active?"var(--green)":"transparent"}}/>
+                            <span style={{fontFamily:"DM Mono",fontSize:14,color:active?"var(--green)":"var(--muted)"}}>{row.label}</span>
+                          </div>
+                        </td>
+                        <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:11,color:"var(--muted)"}}>{fmt(row.invested)}</td>
+                        <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:11,color:"var(--text)"}}>{fmt(row.expected)}</td>
+                        <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:11,color:"var(--green)"}}>{fmt(row.optimistic)}</td>
+                        <td style={{padding:"9px 8px"}}>
+                          <span style={{fontFamily:"DM Mono",fontSize:12,color:"var(--green)",background:"rgba(0,185,107,0.06)",padding:"4px 9px",borderRadius:4}}>+{fmt(row.gain)}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <p style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted2)",textAlign:"center",marginTop:28,lineHeight:1.6}}>
+            ⚠️ Selections updated weekly based on momentum, volatility and trend scoring across 18 ETFs.
+            Past performance does not guarantee future results. Not financial advice.
+          </p>
+        </>}
+      </div>
+    </div>
+  );
+}
