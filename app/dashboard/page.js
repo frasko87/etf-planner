@@ -159,9 +159,12 @@ function EtfCompareCard({ ticker, isNew, isRemoved, poolRow }) {
   return (
     <div style={{
       background: isNew ? "rgba(0,185,107,0.03)" : isRemoved ? "rgba(255,71,87,0.03)" : "white",
-      border: `1.5px solid ${isNew ? "rgba(0,185,107,0.3)" : isRemoved ? "rgba(255,71,87,0.3)" : meta.color+"22"}`,
-      borderRadius:12, padding:"clamp(12px,2vw,16px)", position:"relative", opacity: isRemoved ? 0.6 : 1,
-    }}>
+      border: `1.5px solid ${isNew ? "rgba(0,185,107,0.3)" : isRemoved ? "rgba(255,71,87,0.3)" : meta.color+"33"}`,
+      borderRadius:14, padding:"clamp(14px,2vw,18px)", position:"relative", opacity: isRemoved ? 0.6 : 1,
+      transition:"transform 0.15s, box-shadow 0.15s",
+    }}
+    onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="var(--shadow2)";}}
+    onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="none";}}>
       {isNew     && <div style={{position:"absolute",top:-9,right:10,fontFamily:"DM Mono",fontSize:9,background:"#00b96b",color:"white",padding:"2px 8px",borderRadius:10,boxShadow:"0 2px 8px rgba(0,185,107,0.3)"}}>NEW</div>}
       {isRemoved && <div style={{position:"absolute",top:-9,right:10,fontFamily:"DM Mono",fontSize:9,background:"#ff4757",color:"white",padding:"2px 8px",borderRadius:10}}>OUT</div>}
 
@@ -399,14 +402,14 @@ export default function DashboardPage() {
         {view === "dashboard" && <>
 
           {/* Dashboard greeting header */}
-          <div style={{background:"var(--text)",borderRadius:16,padding:"20px 28px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+          <div style={{background:"var(--text)",borderRadius:16,padding:"clamp(20px,3vw,28px) clamp(20px,4vw,32px)",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
             <div>
-              <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.35)",letterSpacing:2,marginBottom:6}}>YOUR DASHBOARD</div>
-              <h1 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:isMob?"clamp(20px,5vw,24px)":"clamp(22px,3vw,30px)",color:"white",margin:0,letterSpacing:"-0.5px"}}>
+              <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:2,marginBottom:8}}>YOUR DASHBOARD</div>
+              <h1 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(24px,4vw,34px)",color:"white",margin:0,letterSpacing:"-1px",lineHeight:1.1}}>
                 {user?.email?.split("@")[0] ? `Hi, ${user.email.split("@")[0].charAt(0).toUpperCase() + user.email.split("@")[0].slice(1)} 👋` : "Your ETF Plan"}
               </h1>
-              <p style={{fontFamily:"DM Sans",fontSize:14,color:"rgba(255,255,255,0.45)",margin:"4px 0 0",lineHeight:1.5}}>
-                Build your plan, track your ETFs, grow your savings.
+              <p style={{fontFamily:"DM Sans",fontSize:15,color:"rgba(255,255,255,0.4)",margin:"6px 0 0",lineHeight:1.5}}>
+                Save smarter. Grow your money monthly.
               </p>
             </div>
             <div style={{display:"flex",gap:10}}>
@@ -423,14 +426,14 @@ export default function DashboardPage() {
           </div>
 
           {/* Market status */}
-          <div style={{background:sc.bg,border:`1px solid ${sc.border}`,borderRadius:16,padding:"20px 28px",marginBottom:24}}>
+          <div style={{background:sc.bg,border:`1.5px solid ${sc.border}`,borderRadius:16,padding:"clamp(16px,3vw,24px) clamp(16px,3vw,28px)",marginBottom:24,boxShadow:"var(--shadow)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16}}>
               <div>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                   <span style={{color:sc.color,fontSize:13,animation:sc.pulse?"pulse 1.5s infinite":"none"}}>{sc.icon}</span>
-                  <span style={{fontFamily:"DM Mono",fontSize:12,color:sc.color,letterSpacing:1.5}}>{ms.status.replace("_"," ")}</span>
+                  <span style={{fontFamily:"DM Mono",fontSize:12,color:sc.color,letterSpacing:2,fontWeight:500}}>{ms.status.replace("_"," ")}</span>
                 </div>
-                <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(20px,3vw,26px)",color:"var(--text)",marginBottom:6}}>{ms.reason}</div>
+                <div style={{fontFamily:"DM Sans",fontWeight:800,fontSize:"clamp(22px,3.5vw,30px)",color:"var(--text)",marginBottom:6,letterSpacing:"-0.5px"}}>{ms.reason}</div>
                 <div style={{fontFamily:"DM Sans",fontSize:16,color:"var(--muted)",lineHeight:1.7}}>{ms.detail}</div>
                 {ms.nextOpen && <div style={{fontFamily:"DM Mono",fontSize:11,color:sc.color,marginTop:10}}>Next session → {ms.nextOpen}</div>}
               </div>
@@ -515,9 +518,9 @@ export default function DashboardPage() {
                         <div key={t} style={{background:"rgba(255,255,255,0.07)",borderRadius:10,padding:"12px 14px",border:`1px solid ${meta.color}33`}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                             <a href={`/etf/${t}`} style={{fontFamily:"DM Mono",fontSize:13,color:meta.color,fontWeight:600,textDecoration:"none"}}>{t}</a>
-                            <span style={{fontFamily:"DM Sans",fontWeight:700,fontSize:15,color:"white"}}>${dollars}</span>
+                            <span style={{fontFamily:"DM Sans",fontWeight:700,fontSize:17,color:"white"}}>${dollars}</span>
                           </div>
-                          <div style={{fontFamily:"DM Sans",fontSize:11,color:"rgba(255,255,255,0.4)"}}>{pct}% of your ${amount}</div>
+                          <div style={{fontFamily:"DM Sans",fontSize:12,color:"rgba(255,255,255,0.4)"}}>{pct}% of your ${amount}</div>
                         </div>
                       );
                     })}
@@ -533,7 +536,7 @@ export default function DashboardPage() {
                   ].map(s=>(
                     <div key={s.l} style={{textAlign:"center"}}>
                       <div className="mono" style={{fontSize:9,color:"rgba(255,255,255,0.3)",marginBottom:4}}>{s.l.toUpperCase()}</div>
-                      <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:isMob?14:16,color:s.gain?"white":pc.accentColor}}>{s.v}</div>
+                      <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:isMob?15:18,color:s.gain?"white":pc.accentColor}}>{s.v}</div>
                       {s.gain && <div className="mono" style={{fontSize:9,color:"var(--green)",marginTop:2}}>+{s.gain} gain</div>}
                     </div>
                   ))}
@@ -541,31 +544,29 @@ export default function DashboardPage() {
               </div>
 
               {/* Right: Current ETF selection panel */}
-              <div style={card}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+              <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(18px,3vw,24px)",boxShadow:"var(--shadow2)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <div style={{height:3,width:20,background:pc.accentColor,borderRadius:2}}/>
-                    <div className="mono" style={{fontSize:10,letterSpacing:2,color:"var(--muted2)"}}>
-                      THIS WEEK'S PICKS
-                    </div>
+                    <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--muted2)"}}>THIS WEEK'S PICKS</div>
                   </div>
                   {currentSel?.changed && (
-                    <span style={{fontFamily:"DM Mono",fontSize:9,padding:"3px 10px",borderRadius:10,background:"rgba(0,185,107,0.08)",color:"var(--green)",border:"1px solid rgba(0,185,107,0.2)"}}>UPDATED TODAY</span>
+                    <span style={{fontFamily:"DM Mono",fontSize:9,padding:"4px 12px",borderRadius:10,background:"rgba(0,185,107,0.08)",color:"var(--green)",border:"1px solid rgba(0,185,107,0.2)"}}>UPDATED TODAY</span>
                   )}
                 </div>
                 {currentSel?.change_summary && currentSel.changed && (
-                  <div style={{padding:"8px 12px",background:"rgba(0,185,107,0.04)",border:"1px solid rgba(0,185,107,0.15)",borderRadius:8,marginBottom:14}}>
+                  <div style={{padding:"10px 14px",background:"rgba(0,185,107,0.04)",border:"1px solid rgba(0,185,107,0.15)",borderRadius:10,marginBottom:16}}>
                     <span style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)"}}>↻ {currentSel.change_summary}</span>
                   </div>
                 )}
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8}}>
+                <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"repeat(auto-fill,minmax(min(100%,180px),1fr))",gap:10}}>
                   {curTickers.map(t=>(
                     <EtfCompareCard key={t} ticker={t} isNew={addedETFs.includes(t)} isRemoved={false} poolRow={etfPool.find(r=>r.ticker===t)}/>
                   ))}
                 </div>
                 {usingFallback && (
-                  <div style={{padding:"10px 12px",background:"var(--gold2)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:8,marginTop:12}}>
-                    <span style={{fontFamily:"DM Mono",fontSize:9,color:"#8a6a1a"}}>🕐 Live picks update at today's market close</span>
+                  <div style={{padding:"10px 14px",background:"var(--gold2)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:10,marginTop:14}}>
+                    <span style={{fontFamily:"DM Mono",fontSize:10,color:"#8a6a1a"}}>🕐 Live picks update at today's market close</span>
                   </div>
                 )}
               </div>
@@ -624,7 +625,7 @@ export default function DashboardPage() {
             <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(18px,3vw,24px)",boxShadow:"var(--shadow2)",marginBottom:20}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}>
                 <div style={{height:3,width:20,background:"var(--gold)",borderRadius:2}}/>
-                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--muted2)"}}>YOUR MONTHLY HISTORY</div>
+                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--text)",fontWeight:500}}>YOUR MONTHLY HISTORY</div>
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:14}}>
                 {monthlyHistory.map((action) => {
@@ -645,8 +646,9 @@ export default function DashboardPage() {
                   return (
                     <div key={action.month_key} style={{
                       border:`1.5px solid ${isCurrentMonth?"rgba(0,185,107,0.3)":"var(--border)"}`,
-                      background: isCurrentMonth?"rgba(0,185,107,0.02)":"var(--bg3)",
+                      background: isCurrentMonth?"rgba(0,185,107,0.02)":"white",
                       borderRadius:14,padding:"clamp(14px,2.5vw,20px)",
+                      boxShadow:"var(--shadow)",
                     }}>
                       {/* Header */}
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
@@ -729,8 +731,8 @@ export default function DashboardPage() {
             <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(18px,3vw,24px)",boxShadow:"var(--shadow2)",marginBottom:20}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/>
-                  <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--muted2)"}}>PORTFOLIO GROWTH</div>
+                  <div style={{height:3,width:24,background:"var(--green)",borderRadius:2}}/>
+                  <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--text)",fontWeight:500}}>PORTFOLIO GROWTH</div>
                 </div>
                 <button onClick={()=>setShowComparison(!showComparison)} style={{
                   fontFamily:"DM Mono",fontSize:10,color:"var(--green)",
@@ -771,7 +773,7 @@ export default function DashboardPage() {
                         ].map(s=>(
                           <div key={s.l} style={{background:"var(--bg3)",borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
                             <div className="mono" style={{fontSize:9,color:"var(--muted2)",marginBottom:4}}>{s.l}</div>
-                            <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(16px,3vw,22px)",color:s.c}}>{s.v}</div>
+                            <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(18px,3vw,26px)",color:s.c}}>{s.v}</div>
                           </div>
                         ))}
                       </div>
@@ -863,11 +865,11 @@ export default function DashboardPage() {
           )}
 
         {/* ── Market News ───────────────────────────────────────────────────── */}
-          <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(16px,3vw,22px)",boxShadow:"var(--shadow2)",marginBottom:0}}>
+          <div style={{background:"var(--bg3)",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(16px,3vw,22px)",marginBottom:0}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/>
-                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--muted2)"}}>MARKET NEWS</div>
+                <div style={{height:3,width:24,background:"var(--green)",borderRadius:2}}/>
+                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--text)",fontWeight:500}}>MARKET NEWS</div>
               </div>
               <a href="https://finance.yahoo.com/topic/etfs/" target="_blank" rel="noreferrer"
                 style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",letterSpacing:0.5,whiteSpace:"nowrap"}}>
@@ -886,11 +888,11 @@ export default function DashboardPage() {
               <div style={{display:"flex",flexDirection:"column"}}>
                 {news.map((item,i)=>(
                   <a key={i} href={item.link} target="_blank" rel="noreferrer"
-                    style={{display:"block",textDecoration:"none",padding:"clamp(10px,2vw,13px) 0",borderBottom:i<news.length-1?"1px solid var(--bg3)":"none"}}>
+                    style={{display:"block",textDecoration:"none",padding:"clamp(10px,2vw,13px) 0",borderBottom:i<news.length-1?"1px solid var(--border)":"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:isMob?8:16}}>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{
-                          fontFamily:"DM Sans",fontSize:"clamp(13px,2vw,14px)",fontWeight:500,
+                          fontFamily:"DM Sans",fontSize:"clamp(14px,2vw,15px)",fontWeight:500,
                           color:"var(--text)",lineHeight:1.55,marginBottom:isMob?0:3,
                           // On mobile: clamp to 2 lines
                           display:"-webkit-box",WebkitLineClamp:isMob?2:3,
@@ -933,7 +935,7 @@ export default function DashboardPage() {
                     {l:"CPI Date",       v:macroData.cpi_date||"—",     c:"rgba(255,255,255,0.4)"},
                   ].map(x=>(
                     <div key={x.l}>
-                      <div style={{fontFamily:"DM Mono",fontSize:9,color:"rgba(255,255,255,0.3)",marginBottom:4,letterSpacing:0.5}}>{x.l}</div>
+                      <div style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.3)",marginBottom:4,letterSpacing:0.5}}>{x.l}</div>
                       <div style={{fontFamily:"DM Mono",fontSize:isMob?14:17,fontWeight:600,color:x.c}}>{x.v}</div>
                     </div>
                   ))}
