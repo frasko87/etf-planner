@@ -42,6 +42,7 @@ const tape = [...ETFS,...ETFS,...ETFS];
 export default function HomePage() {
   const [amount, setAmount] = useState(100);
   const p = PROJECTIONS[amount];
+  const isMob = typeof window !== "undefined" && window.innerWidth < 640;
 
   return (
     <div style={{minHeight:"100vh",background:"var(--bg)"}}>
@@ -317,6 +318,189 @@ export default function HomePage() {
               <div style={{fontFamily:"DM Sans",fontSize:13,color:"rgba(255,255,255,0.45)",marginTop:6}}>{s.l}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── What you get inside ─────────────────────────────────────────────── */}
+      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(60px,8vw,100px)",maxWidth:1060,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:48}}>
+          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:12,letterSpacing:1.5}}>WHAT YOU GET WHEN YOU SIGN UP</div>
+          <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(28px,5vw,48px)",color:"var(--text)",letterSpacing:"-1px",lineHeight:1.1,marginBottom:14}}>
+            Everything you need.<br/>
+            <span style={{color:"var(--green)"}}>Nothing you don't.</span>
+          </h2>
+          <p style={{fontFamily:"DM Sans",fontSize:"clamp(15px,2vw,18px)",color:"var(--muted)",maxWidth:520,margin:"0 auto",lineHeight:1.7}}>
+            Free account. Your personalised ETF plan in 2 minutes. Here's exactly what's inside.
+          </p>
+        </div>
+
+        {/* Feature 1 — Your Plan */}
+        <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"1fr 1fr",gap:16,marginBottom:16,alignItems:"stretch"}}>
+          <div style={{background:"var(--text)",borderRadius:20,padding:"clamp(24px,4vw,36px)",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:0,right:0,width:200,height:200,background:"radial-gradient(circle,rgba(0,185,107,0.15) 0%,transparent 70%)",pointerEvents:"none"}}/>
+            <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.35)",letterSpacing:2,marginBottom:12}}>01 · YOUR PLAN</div>
+            <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(20px,3vw,28px)",color:"white",marginBottom:10,letterSpacing:"-0.5px",lineHeight:1.2}}>
+              A personalised ETF plan, updated every month
+            </h3>
+            <p style={{fontFamily:"DM Sans",fontSize:"clamp(13px,2vw,15px)",color:"rgba(255,255,255,0.55)",lineHeight:1.75,marginBottom:24}}>
+              Tell us your monthly amount and risk level. We build your plan, score 42 ETFs daily, and tell you exactly which ones to buy.
+            </p>
+            {/* Mini plan mockup */}
+            <div style={{background:"rgba(255,255,255,0.06)",borderRadius:12,padding:"16px",border:"1px solid rgba(255,255,255,0.08)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                <div>
+                  <div className="mono" style={{fontSize:9,color:"rgba(255,255,255,0.35)",marginBottom:4}}>YOUR PLAN</div>
+                  <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:18,color:"white"}}>⚖️ Balanced</div>
+                  <div className="mono" style={{fontSize:10,color:"#c9a84c"}}>~9%/yr target</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div className="mono" style={{fontSize:9,color:"rgba(255,255,255,0.35)",marginBottom:4}}>MONTHLY</div>
+                  <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:28,color:"white"}}>$100</div>
+                </div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6}}>
+                {[{t:"VOO",d:"$40"},{t:"VTI",d:"$25"},{t:"QQQ",d:"$25"},{t:"SCHD",d:"$10"}].map(e=>(
+                  <div key={e.t} style={{background:"rgba(255,255,255,0.05)",borderRadius:8,padding:"8px 10px",display:"flex",justifyContent:"space-between"}}>
+                    <span className="mono" style={{fontSize:12,color:"var(--green)",fontWeight:600}}>{e.t}</span>
+                    <span style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white"}}>{e.d}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            {/* Feature 2 — Monthly email */}
+            <div style={{background:"white",border:"1px solid var(--border)",borderRadius:20,padding:"clamp(20px,3vw,28px)",boxShadow:"var(--shadow2)",flex:1}}>
+              <div className="mono" style={{fontSize:10,color:"var(--muted2)",letterSpacing:2,marginBottom:10}}>02 · MONTHLY REMINDER</div>
+              <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(17px,2.5vw,22px)",color:"var(--text)",marginBottom:8,letterSpacing:"-0.3px"}}>
+                Email on the 1st of every month
+              </h3>
+              <p style={{fontFamily:"DM Sans",fontSize:"clamp(12px,1.8vw,14px)",color:"var(--muted)",lineHeight:1.7,marginBottom:16}}>
+                "Time to invest! Here's what to buy this month." We send the picks, you execute in 5 minutes.
+              </p>
+              {/* Mini email mockup */}
+              <div style={{background:"var(--bg3)",borderRadius:10,padding:"12px 14px",border:"1px solid var(--border)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <div style={{width:28,height:28,borderRadius:"50%",background:"var(--text)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0}}>📧</div>
+                  <div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:12,color:"var(--text)"}}>ETF.PLAN</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:11,color:"var(--muted2)"}}>⏰ April — your ETF picks are ready</div>
+                  </div>
+                </div>
+                <div style={{fontFamily:"DM Sans",fontSize:11,color:"var(--muted)",lineHeight:1.6}}>
+                  Your Balanced plan picks for April: <strong style={{color:"var(--text)"}}>VOO $40 · VTI $25 · QQQ $25 · SCHD $10</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 3 — Portfolio tracker */}
+            <div style={{background:"white",border:"1px solid var(--border)",borderRadius:20,padding:"clamp(20px,3vw,28px)",boxShadow:"var(--shadow2)",flex:1}}>
+              <div className="mono" style={{fontSize:10,color:"var(--muted2)",letterSpacing:2,marginBottom:10}}>03 · PORTFOLIO TRACKER</div>
+              <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(17px,2.5vw,22px)",color:"var(--text)",marginBottom:8,letterSpacing:"-0.3px"}}>
+                Watch your money grow month by month
+              </h3>
+              <p style={{fontFamily:"DM Sans",fontSize:"clamp(12px,1.8vw,14px)",color:"var(--muted)",lineHeight:1.7,marginBottom:16}}>
+                Every month is tracked. See your real gains, allocation breakdown and portfolio growth chart.
+              </p>
+              {/* Mini tracker mockup */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+                {[{l:"Invested",v:"$600",c:"var(--muted)"},{l:"Value",v:"$638",c:"var(--text)"},{l:"Gain",v:"+6.3%",c:"var(--green)"}].map(s=>(
+                  <div key={s.l} style={{background:"var(--bg3)",borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
+                    <div className="mono" style={{fontSize:8,color:"var(--muted2)",marginBottom:3}}>{s.l}</div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:14,color:s.c}}>{s.v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2 */}
+        <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"repeat(3,1fr)",gap:16,marginBottom:16}}>
+          {/* Feature 4 — Market news */}
+          <div style={{background:"white",border:"1px solid var(--border)",borderRadius:20,padding:"clamp(20px,3vw,28px)",boxShadow:"var(--shadow2)"}}>
+            <div className="mono" style={{fontSize:10,color:"var(--muted2)",letterSpacing:2,marginBottom:10}}>04 · MARKET NEWS</div>
+            <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(16px,2.5vw,20px)",color:"var(--text)",marginBottom:8,letterSpacing:"-0.3px"}}>
+              Daily ETF & market news
+            </h3>
+            <p style={{fontFamily:"DM Sans",fontSize:"clamp(12px,1.8vw,13px)",color:"var(--muted)",lineHeight:1.7,marginBottom:16}}>
+              Fresh headlines every day from Yahoo Finance — only what matters for ETF investors.
+            </p>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {[
+                "This Schwab ETF yields more than most savings accounts",
+                "Goldman Sachs resets S&P 500 price target",
+                "VONG vs QQQ: which growth ETF is the better buy?",
+              ].map((h,i)=>(
+                <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",paddingBottom:8,borderBottom:i<2?"1px solid var(--bg3)":"none"}}>
+                  <div style={{width:4,height:4,borderRadius:"50%",background:"var(--green)",flexShrink:0,marginTop:6}}/>
+                  <div style={{fontFamily:"DM Sans",fontSize:12,color:"var(--text)",lineHeight:1.5}}>{h}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Feature 5 — Stock of month */}
+          <div style={{background:"linear-gradient(135deg,#1a1a2e,#16213e)",borderRadius:20,padding:"clamp(20px,3vw,28px)",boxShadow:"var(--shadow2)"}}>
+            <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.35)",letterSpacing:2,marginBottom:10}}>05 · STOCK OF THE MONTH</div>
+            <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(16px,2.5vw,20px)",color:"white",marginBottom:8,letterSpacing:"-0.3px"}}>
+              Best performer, explained simply
+            </h3>
+            <p style={{fontFamily:"DM Sans",fontSize:"clamp(12px,1.8vw,13px)",color:"rgba(255,255,255,0.5)",lineHeight:1.7,marginBottom:16}}>
+              Every month we auto-select the best performing S&P 500 stock and explain why it matters.
+            </p>
+            <div style={{background:"rgba(255,255,255,0.06)",borderRadius:12,padding:"14px",border:"1px solid rgba(118,185,0,0.3)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                <div>
+                  <div className="mono" style={{fontSize:18,color:"#76b900",fontWeight:700}}>NVDA</div>
+                  <div style={{fontFamily:"DM Sans",fontSize:11,color:"rgba(255,255,255,0.5)"}}>Nvidia Corporation</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:16,color:"white"}}>$875</div>
+                  <div className="mono" style={{fontSize:10,color:"#00ff88"}}>+18.2% MTD</div>
+                </div>
+              </div>
+              <div style={{fontFamily:"DM Sans",fontSize:11,color:"rgba(255,255,255,0.45)",lineHeight:1.6}}>
+                The dominant AI chip maker. Powers ChatGPT, Gemini and every major AI model.
+              </div>
+            </div>
+          </div>
+
+          {/* Feature 6 — Library */}
+          <div style={{background:"white",border:"1px solid var(--border)",borderRadius:20,padding:"clamp(20px,3vw,28px)",boxShadow:"var(--shadow2)"}}>
+            <div className="mono" style={{fontSize:10,color:"var(--muted2)",letterSpacing:2,marginBottom:10}}>06 · LEARNING LIBRARY</div>
+            <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(16px,2.5vw,20px)",color:"var(--text)",marginBottom:8,letterSpacing:"-0.3px"}}>
+              Guides for complete beginners
+            </h3>
+            <p style={{fontFamily:"DM Sans",fontSize:"clamp(12px,1.8vw,13px)",color:"var(--muted)",lineHeight:1.7,marginBottom:16}}>
+              Everything you need to go from zero to investor — step by step, in plain English.
+            </p>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {[
+                {icon:"🧭",t:"What are ETFs?",tag:"Beginner"},
+                {icon:"⚖️",t:"Picking your risk level",tag:"Beginner"},
+                {icon:"🏦",t:"Which platform to use",tag:"Beginner"},
+                {icon:"📈",t:"Dollar-cost averaging",tag:"Strategy"},
+              ].map(g=>(
+                <div key={g.t} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"var(--bg3)",borderRadius:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:14}}>{g.icon}</span>
+                    <span style={{fontFamily:"DM Sans",fontSize:12,color:"var(--text)",fontWeight:500}}>{g.t}</span>
+                  </div>
+                  <span className="mono" style={{fontSize:9,color:"var(--green)"}}>→</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom CTA */}
+        <div style={{textAlign:"center",marginTop:12}}>
+          <Link href="/login?mode=signup" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:700,fontSize:17,color:"white",background:"var(--green)",padding:"16px clamp(32px,5vw,56px)",borderRadius:12,textDecoration:"none",boxShadow:"0 6px 28px rgba(0,185,107,0.4)"}}>
+            Get everything free →
+          </Link>
+          <p className="mono" style={{fontSize:11,color:"var(--muted2)",marginTop:12}}>Free forever · No credit card · 2 min setup</p>
         </div>
       </section>
 
