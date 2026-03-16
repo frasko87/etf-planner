@@ -79,21 +79,21 @@ const ETF_META = {
 const PROFILE_CONFIG = {
   conservative: {
     label:"Conservative", icon:"🛡️", desc:"~5% annual return · Very low risk",
-    accentColor:"#3b82f6",
-    targetReturn: 0.05,
+    accentColor:"#3b82f6", rate:"~5%/yr",
+    targetReturn: 0.055,
     subtitle: "Bonds + dividend stocks. Slow, steady, reliable.",
     warning: null,
   },
   balanced: {
     label:"Balanced", icon:"⚖️", desc:"7–12% annual return · Moderate risk",
-    accentColor:"#c9a84c",
+    accentColor:"#c9a84c", rate:"~9%/yr",
     targetReturn: 0.09,
     subtitle: "Mix of growth ETFs and stable large-cap stocks.",
     warning: null,
   },
   aggressive: {
     label:"Aggressive", icon:"🚀", desc:"12%+ annual return · High risk",
-    accentColor:"#ff4757",
+    accentColor:"#ff4757", rate:"~16%/yr",
     targetReturn: 0.16,
     subtitle: "Growth-focused. Includes leveraged positions.",
     warning:"⚠️ This plan uses leveraged ETFs (TQQQ). These can lose 50–90% of value in a downturn. Only invest money you can afford to lose completely.",
@@ -107,45 +107,38 @@ const fmtPct  = n => n!=null ? `${n>=0?"+":""}${(n*100).toFixed(2)}%` : "—";
 const timeAgo = iso => { if(!iso) return "—"; const s=Math.floor((Date.now()-new Date(iso))/1000); return s<60?`${s}s ago`:s<3600?`${Math.floor(s/60)}m ago`:`${Math.floor(s/3600)}h ago`; };
 
 // ── Projection engine ────────────────────────────────────────────────────────
-// Uses a blend of live DB data + profile target rate
-// This ensures Conservative always looks like ~5-7%, Balanced 7-12%, Aggressive 12%+
-// even when market momentum is temporarily negative
+// profileTarget drives the projection — this is the declared annual target
+// Conservative ~5%, Balanced ~9%, Aggressive ~16%
+// Live ETF data only adjusts the OPTIMISTIC scenario, not the base projection
 function project(monthly, allocations, etfPool, months, opt=false, profileTarget=null) {
   if (!allocations || Object.keys(allocations).length === 0) return monthly * months;
 
-  // Compute live rate from actual ETF data
-  const liveRate = Object.entries(allocations).reduce((acc,[t,pct]) => {
-    const row    = etfPool?.find(r=>r.ticker===t);
-    const meta   = ETF_META[t];
-    const pctNum = parseFloat(pct) || 0;
-    const annual = opt
-      ? (row?.optimistic ?? meta?.fallbackOpt  ?? 0.18)
-      : (row?.cagr       ?? meta?.fallbackCagr ?? 0.10);
-    return acc + (annual/12)*(pctNum/100);
-  }, 0);
+  let monthlyRate;
 
-  // Blend: 40% live data + 60% profile target
-  // This keeps projections grounded in real data while guaranteeing differentiation
-  let annualRate;
   if (profileTarget !== null) {
-    const targetMonthly = profileTarget / 12;
-    const blended = liveRate * 0.4 + targetMonthly * 0.6;
-    // Hard clamp to profile range — conservative never shows 13%, aggressive never shows 3%
-    const ranges = {
-      conservative: { min: 0.04/12, max: 0.07/12 },
-      balanced:     { min: 0.07/12, max: 0.12/12 },
-      aggressive:   { min: 0.12/12, max: 0.35/12 },
-    };
-    const key = profileTarget <= 0.07 ? "conservative" : profileTarget <= 0.12 ? "balanced" : "aggressive";
-    const range = ranges[key];
-    annualRate = Math.min(Math.max(blended, range.min), range.max);
+    if (opt) {
+      // Optimistic: target + 30% upside
+      monthlyRate = (profileTarget * 1.30) / 12;
+    } else {
+      // Expected: exactly the profile target — clear and honest
+      monthlyRate = profileTarget / 12;
+    }
   } else {
-    annualRate = liveRate;
+    // No profile target — use live CAGR weighted by allocation
+    monthlyRate = Object.entries(allocations).reduce((acc,[t,pct]) => {
+      const row    = etfPool?.find(r=>r.ticker===t);
+      const meta   = ETF_META[t];
+      const pctNum = parseFloat(pct) || 0;
+      const annual = opt
+        ? (row?.optimistic ?? meta?.fallbackOpt  ?? 0.18)
+        : (row?.cagr       ?? meta?.fallbackCagr ?? 0.10);
+      return acc + (annual/12)*(pctNum/100);
+    }, 0);
   }
 
-  if (annualRate === 0) return monthly * months;
+  if (monthlyRate === 0) return monthly * months;
   let total = 0;
-  for (let i=0;i<months;i++) total=(total+monthly)*(1+annualRate);
+  for (let i=0;i<months;i++) total=(total+monthly)*(1+monthlyRate);
   return total;
 }
 
@@ -314,12 +307,12 @@ export default function DashboardPage() {
     const exp=project(amount,allocs,etfPool,m,false,pc.targetReturn);
     return { month:m, label:new Date(new Date().getFullYear(),i).toLocaleString("default",{month:"short"}), invested, expected:exp, optimistic:project(amount,allocs,etfPool,m,true,pc.targetReturn), gain:exp-invested };
   });
-  const projs = { 1:{exp:project(amount,allocs,etfPool,1,false,pc.targetReturn),opt:project(amount,allocs,etfPool,1,true,pc.targetReturn)}, 6:{exp:project(amount,allocs,etfPool,6,false,pc.targetReturn),opt:project(amount,allocs,etfPool,6,true,pc.targetReturn)}, 12:{exp:project(amount,allocs,etfPool,12,false,pc.targetReturn),opt:project(amount,allocs,etfPool,12,true,pc.targetReturn)} };
+  const projs = { 1:{exp:project(amount,allocs,etfPool,1,false,pc.targetReturn),opt:project(amount,allocs,etfPool,1,true,pc.targetReturn)}, 6:{exp:project(amount,allocs,etfPool,6,false,pc.targetReturn),opt:project(amount,allocs,etfPool,6,true,pc.targetReturn)}, 12:{exp:project(amount,allocs,etfPool,12,false,pc.targetReturn),opt:project(amount,allocs,etfPool,12,true,pc.targetReturn)}, 60:{exp:project(amount,allocs,etfPool,60,false,pc.targetReturn),opt:project(amount,allocs,etfPool,60,true,pc.targetReturn)} };
   const pieData = curTickers.map(t=>({name:t,value:allocs[t]||0,color:ETF_META[t]?.color||"#888"}));
   const sc = STATUS_STYLE[ms.status] || STATUS_STYLE.CLOSED;
 
-  const card  = {background:"white",border:"1px solid var(--border)",borderRadius:14,padding:20,boxShadow:"var(--shadow)"};
-  const lbl   = {fontFamily:"DM Mono",fontSize:11,letterSpacing:1.5,color:"var(--muted2)",marginBottom:14};
+  const card  = {background:"white",border:"1px solid var(--border)",borderRadius:16,padding:22,boxShadow:"var(--shadow2)"};
+  const lbl   = {fontFamily:"DM Mono",fontSize:11,letterSpacing:1.5,color:"var(--muted2)",marginBottom:16};
 
   return (
     <div style={{minHeight:"100vh",background:"var(--bg)",color:"var(--text)"}}>
@@ -346,7 +339,7 @@ export default function DashboardPage() {
                   <span style={{color:sc.color,fontSize:13,animation:sc.pulse?"pulse 1.5s infinite":"none"}}>{sc.icon}</span>
                   <span style={{fontFamily:"DM Mono",fontSize:12,color:sc.color,letterSpacing:1.5}}>{ms.status.replace("_"," ")}</span>
                 </div>
-                <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:20,color:"var(--text)",marginBottom:6}}>{ms.reason}</div>
+                <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:22,color:"var(--text)",marginBottom:6}}>{ms.reason}</div>
                 <div style={{fontFamily:"DM Sans",fontSize:15,color:"var(--muted)",lineHeight:1.7}}>{ms.detail}</div>
                 {ms.nextOpen && <div style={{fontFamily:"DM Mono",fontSize:11,color:sc.color,marginTop:10}}>Next session → {ms.nextOpen}</div>}
               </div>
@@ -375,14 +368,14 @@ export default function DashboardPage() {
 
             {/* Plan builder */}
             <div style={card}>
-              <div style={lbl}>BUILD YOUR PLAN</div>
+              <div className="mono" style={{fontSize:10,letterSpacing:2,color:"var(--muted2)",marginBottom:16}}>BUILD YOUR PLAN</div>
 
               {/* Amount */}
               <div style={{marginBottom:24}}>
                 <div style={{fontFamily:"DM Sans",fontSize:15,color:"var(--muted)",fontWeight:500,marginBottom:12}}>How much per month?</div>
                 <div style={{display:"flex",gap:8,background:"var(--bg3)",borderRadius:12,padding:4}}>
                   {[50,100,150].map(v=>(
-                    <button key={v} onClick={()=>setAmount(v)} style={{flex:1,padding:isMob?"11px 0":"13px 0",borderRadius:9,border:"none",cursor:"pointer",transition:"all 0.2s",background:amount===v?"white":"transparent",color:amount===v?"var(--text)":"var(--muted)",fontFamily:"DM Sans",fontWeight:amount===v?700:400,fontSize:isMob?17:20,boxShadow:amount===v?"var(--shadow)":"none"}}>
+                    <button key={v} onClick={()=>setAmount(v)} style={{flex:1,padding:isMob?"11px 0":"13px 0",borderRadius:9,border:"none",cursor:"pointer",transition:"all 0.2s",background:amount===v?"white":"transparent",color:amount===v?"var(--text)":"var(--muted)",fontFamily:"DM Sans",fontWeight:amount===v?700:400,fontSize:isMob?18:22,boxShadow:amount===v?"var(--shadow2)":"none"}}>
                       ${v}
                     </button>
                   ))}
@@ -390,17 +383,17 @@ export default function DashboardPage() {
               </div>
 
               {/* Live preview strip — updates as user picks */}
-              <div style={{background:"var(--bg3)",borderRadius:12,padding:"14px 16px",marginBottom:24,border:`1px solid ${pc.accentColor}22`}}>
-                <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:10,letterSpacing:1}}>LIVE PROJECTION PREVIEW</div>
+              <div style={{background:"var(--text)",borderRadius:12,padding:"16px 18px",marginBottom:24,border:`1px solid ${pc.accentColor}44`}}>
+                <div style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:10,letterSpacing:1}}>LIVE PROJECTION PREVIEW</div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
                   {[{l:"1 mo",mo:1},{l:"6 mo",mo:6},{l:"12 mo",mo:12}].map(x=>{
                     const exp  = project(amount,allocs,etfPool,x.mo,false,pc.targetReturn);
                     const gain = exp - amount*x.mo;
                     return (
                       <div key={x.l} style={{textAlign:"center"}}>
-                        <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:4}}>{x.l}</div>
-                        <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:18,color:"var(--text)"}}>{fmt(exp)}</div>
-                        <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)"}}>+{fmt(gain)}</div>
+                        <div style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4}}>{x.l}</div>
+                        <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:18,color:"white"}}>{fmt(exp)}</div>
+                        <div style={{fontFamily:"DM Mono",fontSize:10,color:"#00ff88"}}>+{fmt(gain)}</div>
                       </div>
                     );
                   })}
@@ -436,8 +429,9 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div style={{textAlign:"right"}}>
-                          <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:18,color:p.accentColor}}>{fmt(exp12)}</div>
-                          <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)"}}>+{fmt(gain12)} / 12mo</div>
+                          <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:2}}>{p.rate || p.desc.split(" ")[0]}</div>
+                          <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:20,color:p.accentColor}}>+{fmt(project(amount,profAllocs,etfPool,60,false,profTarget)-amount*60)}</div>
+                          <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)"}}>gain over 5 years</div>
                         </div>
                       </button>
                     );
@@ -450,7 +444,7 @@ export default function DashboardPage() {
                 <button
                   onClick={()=>setView("plan")}
                   style={{
-                    width:"100%", padding:"18px 0", borderRadius:12, border:"none", cursor:"pointer",
+                    width:"100%", padding:"20px 0", borderRadius:12, border:"none", cursor:"pointer",
                     background: pc.accentColor==="var(--gold)" ? "linear-gradient(135deg,#c9a84c,#e8c96a)" : pc.accentColor,
                     color:"white", fontFamily:"DM Sans", fontWeight:700, fontSize:17,
                     boxShadow:`0 6px 24px ${pc.accentColor}44`,
@@ -632,10 +626,10 @@ export default function DashboardPage() {
           )}
 
           {/* Projection cards */}
-          <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":isTab?"repeat(3,1fr)":"repeat(3,1fr)",gap:isMob?10:14,marginBottom:24}}>
+          <div style={{display:"grid",gridTemplateColumns:isMob?"repeat(2,1fr)":"repeat(4,1fr)",gap:isMob?10:14,marginBottom:24}}>
             {[1,6,12].map(mo=>(
               <div key={mo} style={card}>
-                <div style={lbl}>{mo} MONTHS</div>
+                <div style={lbl}>{mo===60?"5 YEARS":mo+" MONTH"+(mo===1?"":"S")}</div>
                 <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)"}}>Invested</div>
                 <div style={{fontFamily:"DM Sans",fontSize:22,color:"var(--muted)",marginBottom:10}}>{fmt(amount*mo)}</div>
                 <div style={{height:1,background:"var(--border)",marginBottom:10}}/>
