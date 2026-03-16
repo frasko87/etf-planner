@@ -155,31 +155,54 @@ const ChartTip = ({active,payload,label}) => {
 
 // ── ETF Comparison Card ───────────────────────────────────────────────────────
 function EtfCompareCard({ ticker, isNew, isRemoved, poolRow }) {
-  const meta = ETF_META[ticker] || { name:ticker, color:"#888", risk:"—", leveraged:false, category:"—" };
+  const meta = ETF_META[ticker] || { name:ticker, color:"#888", risk:"—", leveraged:false, category:"—", topHoldings:[], description:"" };
   return (
     <div style={{
-      background: isNew ? "rgba(0,185,107,0.04)" : isRemoved ? "rgba(255,71,87,0.04)" : "white",
-      border: `1.5px solid ${isNew ? "rgba(0,185,107,0.3)" : isRemoved ? "rgba(255,71,87,0.3)" : "#e8e8e2"}`,
-      borderRadius:12, padding:14, position:"relative", opacity: isRemoved ? 0.6 : 1,
+      background: isNew ? "rgba(0,185,107,0.03)" : isRemoved ? "rgba(255,71,87,0.03)" : "white",
+      border: `1.5px solid ${isNew ? "rgba(0,185,107,0.3)" : isRemoved ? "rgba(255,71,87,0.3)" : meta.color+"22"}`,
+      borderRadius:12, padding:"clamp(12px,2vw,16px)", position:"relative", opacity: isRemoved ? 0.6 : 1,
     }}>
-      {isNew     && <div style={{position:"absolute",top:-8,right:8,fontFamily:"DM Mono",fontSize:9,background:"#00b96b",color:"white",padding:"2px 8px",borderRadius:10}}>NEW</div>}
-      {isRemoved && <div style={{position:"absolute",top:-8,right:8,fontFamily:"DM Mono",fontSize:9,background:"#ff4757",color:"white",padding:"2px 8px",borderRadius:10}}>OUT</div>}
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-        <div style={{width:8,height:8,borderRadius:"50%",background:meta.color}}/>
-        <span style={{fontFamily:"DM Mono",fontSize:13,color:meta.color,fontWeight:500}}>{ticker}</span>
-        {meta.leveraged && <span style={{fontFamily:"DM Mono",fontSize:8,padding:"1px 5px",borderRadius:3,background:"rgba(255,71,87,0.1)",color:"#ff4757"}}>3X</span>}
-      </div>
-      <div style={{fontFamily:"DM Sans",fontSize:11,color:"#7a7a8a",marginBottom:8}}>{meta.name}</div>
-      <div style={{display:"flex",justifyContent:"space-between"}}>
-        <div>
-          <div style={{fontFamily:"DM Mono",fontSize:9,color:"#aaaabc",marginBottom:2}}>CAGR</div>
-          <div style={{fontFamily:"DM Mono",fontSize:12,color:"#1a1a2e"}}>{fmtPct(poolRow?.cagr)}</div>
+      {isNew     && <div style={{position:"absolute",top:-9,right:10,fontFamily:"DM Mono",fontSize:9,background:"#00b96b",color:"white",padding:"2px 8px",borderRadius:10,boxShadow:"0 2px 8px rgba(0,185,107,0.3)"}}>NEW</div>}
+      {isRemoved && <div style={{position:"absolute",top:-9,right:10,fontFamily:"DM Mono",fontSize:9,background:"#ff4757",color:"white",padding:"2px 8px",borderRadius:10}}>OUT</div>}
+
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontFamily:"DM Mono",fontSize:14,color:meta.color,fontWeight:600}}>{ticker}</span>
+          {meta.leveraged && <span style={{fontFamily:"DM Mono",fontSize:8,padding:"1px 5px",borderRadius:3,background:"rgba(255,71,87,0.1)",color:"#ff4757"}}>3X</span>}
         </div>
         <div style={{textAlign:"right"}}>
-          <div style={{fontFamily:"DM Mono",fontSize:9,color:"#aaaabc",marginBottom:2}}>1M MOM</div>
-          <div style={{fontFamily:"DM Mono",fontSize:13,fontWeight:500,color:poolRow?.mom_1m>=0?"#00b96b":"#ff4757"}}>{fmtPct(poolRow?.mom_1m)}</div>
+          <div style={{fontFamily:"DM Mono",fontSize:12,color:"var(--text)",fontWeight:500}}>{fmtD(poolRow?.price)}</div>
+          <div style={{fontFamily:"DM Mono",fontSize:9,color:poolRow?.change_pct>=0?"var(--green)":"#ff4757"}}>{fmtPct(poolRow?.change_pct)}</div>
         </div>
       </div>
+
+      {/* Name */}
+      <div style={{fontFamily:"DM Sans",fontWeight:500,fontSize:12,color:"var(--text)",marginBottom:4}}>{meta.name}</div>
+
+      {/* Stats */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:10}}>
+        <div style={{background:"var(--bg3)",borderRadius:6,padding:"5px 8px"}}>
+          <div style={{fontFamily:"DM Mono",fontSize:8,color:"var(--muted2)",marginBottom:1}}>CAGR</div>
+          <div style={{fontFamily:"DM Mono",fontSize:12,color:"var(--text)",fontWeight:500}}>{fmtPct(poolRow?.cagr ?? meta.fallbackCagr)}</div>
+        </div>
+        <div style={{background:"var(--bg3)",borderRadius:6,padding:"5px 8px"}}>
+          <div style={{fontFamily:"DM Mono",fontSize:8,color:"var(--muted2)",marginBottom:1}}>1M MOM</div>
+          <div style={{fontFamily:"DM Mono",fontSize:12,fontWeight:500,color:(poolRow?.mom_1m??0)>=0?"var(--green)":"#ff4757"}}>{fmtPct(poolRow?.mom_1m)}</div>
+        </div>
+      </div>
+
+      {/* Top holdings */}
+      {meta.topHoldings?.length > 0 && (
+        <div>
+          <div style={{fontFamily:"DM Mono",fontSize:8,color:"var(--muted2)",marginBottom:5,letterSpacing:0.5}}>TOP HOLDINGS</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+            {meta.topHoldings.slice(0,3).map(h=>(
+              <span key={h} style={{fontFamily:"DM Sans",fontSize:10,padding:"2px 7px",background:"var(--bg3)",borderRadius:4,color:"var(--muted)",border:"1px solid var(--border)"}}>{h}</span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -570,82 +593,100 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Macro strip */}
-          {macroData && (
-            <div style={{...card,padding:"14px 20px",marginBottom:20}}>
-              <div style={{display:"flex",gap:32,flexWrap:"wrap",alignItems:"center"}}>
-                <div style={{...lbl,marginBottom:0}}>MACRO — FRED</div>
-                <div style={{display:"flex",gap:isMob?16:32,flexWrap:"wrap"}}>
-                  {[
-                    {l:"CPI Inflation",  v:fmtPct(macroData.inflation), c:"#ff4757"},
-                    {l:"Fed Funds Rate", v:fmtPct(macroData.fed_rate),  c:"#8b5cf6"},
-                    {l:"Real Drag",      v:`−${fmtPct(macroData.inflation)}`, c:"#c9a84c"},
-                    {l:"CPI Date",       v:macroData.cpi_date||"—",     c:"var(--muted)"},
-                  ].map(x=>(
-                    <div key={x.l}>
-                      <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:4}}>{x.l}</div>
-                      <div style={{fontFamily:"DM Mono",fontSize:17,fontWeight:600,color:x.c}}>{x.v}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
         {/* ── Monthly History ─────────────────────────────────────────────── */}
           {monthlyHistory.length > 0 && (
-            <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(16px,3vw,22px)",boxShadow:"var(--shadow2)",marginTop:20}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:18}}>
+            <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(18px,3vw,24px)",boxShadow:"var(--shadow2)",marginBottom:20}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}>
                 <div style={{height:3,width:20,background:"var(--gold)",borderRadius:2}}/>
                 <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--muted2)"}}>YOUR MONTHLY HISTORY</div>
               </div>
-              <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                {monthlyHistory.map((action, i) => {
-                  const monthLabel = new Date(action.month_key + "-01").toLocaleDateString("en-US", {month:"long", year:"numeric"});
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                {monthlyHistory.map((action) => {
+                  const monthLabel = new Date(action.month_key+"-01").toLocaleDateString("en-US",{month:"long",year:"numeric"});
                   const isCurrentMonth = action.month_key === new Date().toISOString().slice(0,7);
                   const tickers = action.tickers || [];
+                  const totalPct = tickers.reduce((s,t)=>s+(parseFloat(action.allocations?.[t])||0),0)||100;
+                  // Build pie segments
+                  let cumulative = 0;
+                  const segments = tickers.map(t=>{
+                    const pct = (parseFloat(action.allocations?.[t])||25)/totalPct*100;
+                    const meta = ETF_META[t]||{color:"#888"};
+                    const start = cumulative;
+                    cumulative += pct;
+                    return {t, pct, color:meta.color, start};
+                  });
+
                   return (
                     <div key={action.month_key} style={{
-                      border:`1px solid ${isCurrentMonth?"rgba(0,185,107,0.25)":"var(--border)"}`,
-                      background: isCurrentMonth ? "rgba(0,185,107,0.02)" : "var(--bg3)",
-                      borderRadius:12, padding:"14px 16px",
+                      border:`1.5px solid ${isCurrentMonth?"rgba(0,185,107,0.3)":"var(--border)"}`,
+                      background: isCurrentMonth?"rgba(0,185,107,0.02)":"var(--bg3)",
+                      borderRadius:14,padding:"clamp(14px,2.5vw,20px)",
                     }}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <div className="mono" style={{fontSize:12,color:"var(--text)",fontWeight:500}}>{monthLabel}</div>
-                          {isCurrentMonth && <span style={{fontFamily:"DM Mono",fontSize:9,padding:"2px 8px",borderRadius:6,background:"rgba(0,185,107,0.1)",color:"var(--green)"}}>THIS MONTH</span>}
+                      {/* Header */}
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+                        <div style={{display:"flex",alignItems:"center",gap:10}}>
+                          <div className="mono" style={{fontSize:14,color:"var(--text)",fontWeight:500}}>{monthLabel}</div>
+                          {isCurrentMonth && <span style={{fontFamily:"DM Mono",fontSize:9,padding:"3px 10px",borderRadius:10,background:"rgba(0,185,107,0.1)",color:"var(--green)",border:"1px solid rgba(0,185,107,0.2)"}}>THIS MONTH</span>}
                         </div>
-                        <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:15,color:"var(--text)"}}>
-                          ${action.amount} invested
+                        <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:18,color:"var(--text)"}}>${action.amount} <span style={{fontSize:13,fontWeight:400,color:"var(--muted)"}}>invested</span></div>
+                      </div>
+
+                      <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"160px 1fr",gap:16,alignItems:"center"}}>
+                        {/* Pie chart */}
+                        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+                          <svg viewBox="0 0 120 120" width={isMob?100:120} height={isMob?100:120} style={{transform:"rotate(-90deg)"}}>
+                            <circle cx="60" cy="60" r="44" fill="none" stroke="var(--bg3)" strokeWidth="22"/>
+                            {segments.map((seg,i)=>{
+                              const circ = 2*Math.PI*44;
+                              const dash = (seg.pct/100)*circ;
+                              const offset = circ - (seg.start/100)*circ;
+                              return (
+                                <circle key={i} cx="60" cy="60" r="44" fill="none"
+                                  stroke={seg.color} strokeWidth="22"
+                                  strokeDasharray={`${dash} ${circ-dash}`}
+                                  strokeDashoffset={offset}/>
+                              );
+                            })}
+                          </svg>
+                          <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",textAlign:"center"}}>allocation</div>
+                        </div>
+
+                        {/* ETF list */}
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+                          {tickers.map(t=>{
+                            const meta = ETF_META[t]||{color:"#888",name:t};
+                            const pct  = parseFloat(action.allocations?.[t])||25;
+                            const dollars = action.amounts_invested?.[t] || Math.round(action.amount*pct/100);
+                            const entryPrice = action.entry_prices?.[t];
+                            const currentPrice = etfPool.find(r=>r.ticker===t)?.price;
+                            const gain = entryPrice&&currentPrice ? ((currentPrice-entryPrice)/entryPrice*dollars) : null;
+                            return (
+                              <div key={t} style={{background:"white",borderRadius:10,padding:"10px 12px",border:`1.5px solid ${meta.color}22`}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                                  <span className="mono" style={{fontSize:13,color:meta.color,fontWeight:600}}>{t}</span>
+                                  <span style={{fontFamily:"DM Sans",fontWeight:600,fontSize:14,color:"var(--text)"}}>${dollars}</span>
+                                </div>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                  <span className="mono" style={{fontSize:10,color:"var(--muted2)"}}>{Math.round(pct)}%</span>
+                                  {gain!==null
+                                    ? <span className="mono" style={{fontSize:10,color:gain>=0?"var(--green)":"#ff4757",fontWeight:500}}>{gain>=0?"+":""}{gain.toFixed(2)}</span>
+                                    : <span className="mono" style={{fontSize:9,color:"var(--muted2)"}}>pending</span>
+                                  }
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                        {tickers.map(t => {
-                          const alloc = action.allocations?.[t] || 0;
-                          const invested = action.amounts_invested?.[t] || Math.round(action.amount * alloc / 100);
-                          const entryPrice = action.entry_prices?.[t];
-                          const currentPrice = etfPool.find(r=>r.ticker===t)?.price;
-                          const gain = entryPrice && currentPrice ? ((currentPrice - entryPrice) / entryPrice * invested) : null;
-                          const meta = ETF_META[t] || {color:"#888"};
+
+                      {/* Legend */}
+                      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14,paddingTop:12,borderTop:"1px solid var(--border)"}}>
+                        {tickers.map(t=>{
+                          const meta = ETF_META[t]||{color:"#888",name:t};
                           return (
-                            <div key={t} style={{
-                              background:"white",border:`1px solid ${meta.color}22`,
-                              borderRadius:8,padding:"8px 12px",
-                              display:"flex",flexDirection:"column",gap:2,
-                              minWidth:isMob?"calc(50% - 3px)":0,flex:isMob?"1 1 calc(50% - 3px)":"0 0 auto",
-                            }}>
-                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-                                <span className="mono" style={{fontSize:12,color:meta.color,fontWeight:600}}>{t}</span>
-                                <span className="mono" style={{fontSize:11,color:"var(--text)"}}>${invested}</span>
-                              </div>
-                              {gain !== null && (
-                                <div className="mono" style={{fontSize:10,color:gain>=0?"var(--green)":"#ff4757"}}>
-                                  {gain>=0?"+":""}{gain.toFixed(2)}
-                                </div>
-                              )}
-                              {!entryPrice && !isCurrentMonth && (
-                                <div className="mono" style={{fontSize:9,color:"var(--muted2)"}}>price data pending</div>
-                              )}
+                            <div key={t} style={{display:"flex",alignItems:"center",gap:6}}>
+                              <div style={{width:8,height:8,borderRadius:"50%",background:meta.color}}/>
+                              <span style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted)"}}>{t} — {meta.name}</span>
                             </div>
                           );
                         })}
@@ -656,7 +697,6 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
-
 
         {/* ── Market News ───────────────────────────────────────────────────── */}
           <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(16px,3vw,22px)",boxShadow:"var(--shadow2)",marginBottom:0}}>
@@ -714,6 +754,30 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+
+
+          {/* Macro strip — dark style like homepage */}
+          {macroData && (
+            <div style={{background:"var(--text)",borderRadius:16,padding:"clamp(18px,3vw,24px) clamp(16px,3vw,28px)",marginTop:4}}>
+              <div style={{display:"flex",gap:isMob?16:40,flexWrap:"wrap",alignItems:"center",justifyContent:"space-between"}}>
+                <div className="mono" style={{fontSize:10,letterSpacing:2,color:"rgba(255,255,255,0.3)"}}>MACRO — FRED</div>
+                <div style={{display:"flex",gap:isMob?20:40,flexWrap:"wrap"}}>
+                  {[
+                    {l:"CPI Inflation",  v:fmtPct(macroData.inflation), c:"#ff6b6b"},
+                    {l:"Fed Funds Rate", v:fmtPct(macroData.fed_rate),  c:"#a78bfa"},
+                    {l:"Real Drag",      v:`−${fmtPct(macroData.inflation)}`, c:"#fbbf24"},
+                    {l:"CPI Date",       v:macroData.cpi_date||"—",     c:"rgba(255,255,255,0.4)"},
+                  ].map(x=>(
+                    <div key={x.l}>
+                      <div style={{fontFamily:"DM Mono",fontSize:9,color:"rgba(255,255,255,0.3)",marginBottom:4,letterSpacing:0.5}}>{x.l}</div>
+                      <div style={{fontFamily:"DM Mono",fontSize:isMob?14:17,fontWeight:600,color:x.c}}>{x.v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
 
         </>}
 
