@@ -2,290 +2,347 @@
 import Link from "next/link";
 import { useState } from "react";
 
-// ── SEO metadata exported from a separate file since this is "use client"
-// metadata is in layout or a separate page wrapper — handled in layout.js
-
-const ETFS = [
-  { ticker:"VTI",  name:"Total Market",  ret12:"+14.2%", real:"+11.8%", color:"#00b96b" },
-  { ticker:"VOO",  name:"S&P 500",       ret12:"+13.8%", real:"+11.4%", color:"#3b82f6" },
-  { ticker:"QQQ",  name:"Nasdaq-100",    ret12:"+19.2%", real:"+16.8%", color:"#8b5cf6" },
-  { ticker:"SCHD", name:"Dividend",      ret12:"+12.4%", real:"+10.0%", color:"#c9a84c" },
-  { ticker:"VGT",  name:"Info Tech",     ret12:"+21.0%", real:"+18.6%", color:"#ec4899" },
-];
-
-const AMOUNTS = {
-  50:  {
-    r1:"$51",   r1gain:"+$1",
-    r6:"$313",  r6gain:"+$13",
-    r12:"$663", r12gain:"+$63",
-  },
-  100: {
-    r1:"$101",   r1gain:"+$1",
-    r6:"$626",   r6gain:"+$26",
-    r12:"$1,282", r12gain:"+$82",
-  },
-  150: {
-    r1:"$152",   r1gain:"+$2",
-    r6:"$939",   r6gain:"+$39",
-    r12:"$1,922", r12gain:"+$122",
-  },
+// Returns for $50/$100/$150 at ~9% balanced rate (1mo/6mo/12mo)
+const PROJECTIONS = {
+  50:  { r1:"$50",   g1:"+$0",  r6:"$308",  g6:"+$8",   r12:"$628",  g12:"+$28"  },
+  100: { r1:"$101",  g1:"+$1",  r6:"$617",  g6:"+$17",  r12:"$1,256", g12:"+$56" },
+  150: { r1:"$151",  g1:"+$1",  r6:"$926",  g6:"+$26",  r12:"$1,884", g12:"+$84" },
 };
 
-const PAIN_POINTS = [
-  { icon:"🧭", label:"Don't know where to start", desc:"We pick the ETFs, set the allocations, tell you exactly what to buy each month." },
-  { icon:"⏰", label:"No time to manage it", desc:"Set-and-forget. Buy once a month, hold. Our engine monitors the market daily." },
-  { icon:"💰", label:"Want to save while you earn", desc:"$100/month at 12% grows to $23k in 10 years. A savings account gets you $14k." },
+// Savings comparison — what your money does in each vehicle
+const SAVINGS_COMPARE = [
+  { label:"Regular savings account", rate:"0.5%",  y1:"$1,203",  y5:"$6,152",  y10:"$12,558", color:"rgba(255,255,255,0.25)", dim:true  },
+  { label:"High-yield savings",       rate:"4.5%",  y1:"$1,230",  y5:"$6,642",  y10:"$15,103", color:"rgba(255,255,255,0.4)",  dim:true  },
+  { label:"Conservative ETF plan",    rate:"~5%",   y1:"$1,233",  y5:"$6,800",  y10:"$15,528", color:"#60a5fa",               dim:false },
+  { label:"Balanced ETF plan",        rate:"~9%",   y1:"$1,256",  y5:"$7,597",  y10:"$19,351", color:"#00b96b",               dim:false },
 ];
 
-const STEPS = [
-  { n:"01", title:"Pick your amount", desc:"$50, $100 or $150/month. No minimums, no lock-in.", color:"var(--green)" },
-  { n:"02", title:"Choose your risk", desc:"Conservative (~5%), Balanced (7–12%) or Aggressive (12%+).", color:"#c9a84c" },
-  { n:"03", title:"Follow the plan", desc:"Each month we tell you exactly what to buy and how much.", color:"#3b82f6" },
+const PLANS = [
+  { icon:"🛡️", name:"Conservative",  rate:"~5%/yr",  desc:"Similar to a high-yield savings, but slightly better. Bonds + dividend stocks.",  color:"#3b82f6", risk:"Very Low"  },
+  { icon:"⚖️", name:"Balanced",       rate:"7–12%/yr", desc:"The sweet spot. Steady growth, manageable risk. Our most popular plan.",          color:"#c9a84c", risk:"Low–Med"  },
+  { icon:"🚀", name:"Aggressive",     rate:"12%+/yr",  desc:"Growth-focused. Higher upside but more volatility month to month.",               color:"#ff4757", risk:"Medium"   },
 ];
 
-const btn = { base: { display:"inline-block", fontFamily:"DM Sans", fontWeight:500, fontSize:15, borderRadius:10, padding:"12px 24px", cursor:"pointer", border:"none", transition:"all 0.15s" } };
+const WHY_ETFS = [
+  { icon:"🏦", title:"Not gambling — it's structured saving", desc:"ETFs hold hundreds of companies at once. If one fails, others cover it. It's the opposite of betting on a single stock." },
+  { icon:"📈", title:"Historically beats inflation every year",  desc:"The S&P 500 has averaged 10–13% annually for decades. Inflation is 2–3%. ETFs are one of the few ways to actually grow your money in real terms." },
+  { icon:"🔒", title:"Low fees, fully regulated",              desc:"Broad market ETFs charge as little as 0.03%/year. That's $0.30 per $1,000. Compared to managed funds that take 1–2%, you keep almost everything you earn." },
+  { icon:"⏰", title:"Set it once, grow every month",          desc:"You don't need to watch the market. Buy once a month, hold. Our engine picks the ETFs — you just contribute and let time do the work." },
+];
+
+const ETFS = [
+  { ticker:"VTI",  name:"Total Market",  ret:"~13.5%/yr", color:"#00b96b", risk:"Low"  },
+  { ticker:"VOO",  name:"S&P 500",       ret:"~13.2%/yr", color:"#3b82f6", risk:"Low"  },
+  { ticker:"BND",  name:"Bonds",         ret:"~4.8%/yr",  color:"#64748b", risk:"VLow" },
+  { ticker:"QQQ",  name:"Nasdaq-100",    ret:"~18.0%/yr", color:"#8b5cf6", risk:"Med"  },
+  { ticker:"SCHD", name:"Dividends",     ret:"~12.0%/yr", color:"#c9a84c", risk:"Low"  },
+];
+
+const tape = [...ETFS,...ETFS,...ETFS];
 
 export default function HomePage() {
   const [amount, setAmount] = useState(100);
-  const row = AMOUNTS[amount];
-  const tape = [...ETFS, ...ETFS];
+  const p = PROJECTIONS[amount];
 
   return (
-    <div style={{ minHeight:"100vh", background:"var(--bg)" }}>
+    <div style={{minHeight:"100vh",background:"var(--bg)"}}>
 
-      {/* ── Nav ── */}
-      <nav style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0 clamp(16px,4vw,40px)", height:60, background:"rgba(248,248,245,0.95)", backdropFilter:"blur(12px)", borderBottom:"1px solid var(--border)", position:"sticky", top:0, zIndex:100 }}>
-        <Link href="/" className="pixel" style={{ fontSize:11, color:"var(--text)" }}>
-          ETF<span style={{ color:"var(--green)" }}>.</span>PLAN
+      {/* ── Nav ─────────────────────────────────────────────────────────────── */}
+      <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0 clamp(16px,4vw,40px)",height:60,background:"rgba(248,248,245,0.96)",backdropFilter:"blur(12px)",borderBottom:"1px solid var(--border)",position:"sticky",top:0,zIndex:100}}>
+        <Link href="/" className="pixel" style={{fontSize:11,color:"var(--text)"}}>
+          ETF<span style={{color:"var(--green)"}}>.</span>PLAN
         </Link>
-        <div style={{ display:"flex", gap:"clamp(4px,2vw,16px)", alignItems:"center" }}>
-          <Link href="/learn" style={{ fontFamily:"DM Sans", fontSize:14, color:"var(--muted)", padding:"8px clamp(6px,1.5vw,14px)" }}>What are ETFs?</Link>
-          <Link href="/login" style={{ fontFamily:"DM Sans", fontSize:14, color:"var(--muted)", padding:"8px clamp(6px,1.5vw,14px)" }}>Log in</Link>
-          <Link href="/login?mode=signup" style={{ ...btn.base, background:"var(--text)", color:"white", fontSize:13, padding:"9px clamp(10px,2vw,20px)" }}>Get started free</Link>
+        <div style={{display:"flex",gap:"clamp(4px,2vw,20px)",alignItems:"center"}}>
+          <Link href="/learn" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>What are ETFs?</Link>
+          <Link href="/login" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>Log in</Link>
+          <Link href="/login?mode=signup" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"var(--green)",padding:"9px clamp(12px,2vw,20px)",borderRadius:8}}>
+            Start saving free →
+          </Link>
         </div>
       </nav>
 
-      {/* ── Ticker tape ── */}
-      <div style={{ overflow:"hidden", background:"var(--text)", padding:"9px 0" }}>
-        <div style={{ display:"flex", gap:40, animation:"ticker 24s linear infinite", width:"max-content" }}>
+      {/* ── Ticker tape ─────────────────────────────────────────────────────── */}
+      <div style={{overflow:"hidden",background:"var(--text)",padding:"9px 0"}}>
+        <div style={{display:"flex",gap:40,animation:"ticker 28s linear infinite",width:"max-content"}}>
           {tape.map((e,i)=>(
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:12, whiteSpace:"nowrap" }}>
-              <span className="mono" style={{ fontSize:11, color:"rgba(255,255,255,0.5)" }}>{e.ticker}</span>
-              <span className="mono" style={{ fontSize:12, color:"#00ff88" }}>{e.ret12}</span>
-              <span style={{ color:"rgba(255,255,255,0.15)" }}>|</span>
+            <div key={i} style={{display:"flex",alignItems:"center",gap:12,whiteSpace:"nowrap"}}>
+              <span className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>{e.ticker}</span>
+              <span className="mono" style={{fontSize:11,color:"#00ff88"}}>{e.ret}</span>
+              <span style={{color:"rgba(255,255,255,0.12)"}}>·</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── Hero ── */}
-      <section style={{ textAlign:"center", padding:"clamp(48px,8vw,90px) clamp(16px,4vw,20px) clamp(40px,6vw,70px)", maxWidth:700, margin:"0 auto" }}>
-        <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"var(--green2)", border:"1px solid rgba(0,185,107,0.25)", borderRadius:100, padding:"6px 16px", marginBottom:24 }}>
-          <span style={{ width:6, height:6, borderRadius:"50%", background:"var(--green)", display:"inline-block", animation:"pulse 2s infinite" }}/>
-          <span className="mono" style={{ fontSize:10, color:"var(--green)" }}>LIVE NYSE DATA · UPDATED DAILY · 42 ETFs TRACKED</span>
+      {/* ── Hero ────────────────────────────────────────────────────────────── */}
+      <section style={{textAlign:"center",padding:"clamp(52px,9vw,100px) clamp(16px,4vw,20px) clamp(40px,6vw,72px)",maxWidth:740,margin:"0 auto"}}>
+        <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"var(--green2)",border:"1px solid rgba(0,185,107,0.25)",borderRadius:100,padding:"6px 16px",marginBottom:24}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:"var(--green)",display:"inline-block",animation:"pulse 2s infinite"}}/>
+          <span className="mono" style={{fontSize:10,color:"var(--green)"}}>LIVE MARKET DATA · 42 ETFs TRACKED DAILY</span>
         </div>
-        <h1 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(34px,7vw,68px)", color:"var(--text)", lineHeight:1.05, letterSpacing:"-2px", marginBottom:20 }}>
-          Your first ETF plan.<br />
-          <span style={{ color:"var(--green)" }}>From $50 a month.</span>
+
+        <h1 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(36px,8vw,72px)",color:"var(--text)",lineHeight:1.0,letterSpacing:"-2.5px",marginBottom:24}}>
+          Your savings account<br/>
+          <span style={{color:"var(--green)"}}>is losing the game.</span>
         </h1>
-        <p style={{ fontFamily:"DM Sans", fontWeight:300, fontSize:"clamp(15px,2.5vw,19px)", color:"var(--muted)", lineHeight:1.8, marginBottom:36, maxWidth:520, margin:"0 auto 36px" }}>
-          Stop leaving money in a savings account. ETF.PLAN builds you a personalised monthly investment plan based on real market data — no experience needed.
+
+        <p style={{fontFamily:"DM Sans",fontWeight:300,fontSize:"clamp(16px,2.5vw,20px)",color:"var(--muted)",lineHeight:1.8,maxWidth:520,margin:"0 auto 16px"}}>
+          While your money sits in a savings account earning 0.5–4%, ETF plans have historically returned 9–13% per year. That's not a risk — that's 50 years of data.
         </p>
-        <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
-          <Link href="/login?mode=signup" style={{ ...btn.base, background:"var(--green)", color:"white", fontSize:16, padding:"14px clamp(20px,4vw,36px)", boxShadow:"0 4px 20px rgba(0,185,107,0.3)" }}>
-            Build my free plan →
+        <p style={{fontFamily:"DM Sans",fontWeight:500,fontSize:"clamp(14px,2vw,17px)",color:"var(--text)",marginBottom:36}}>
+          We build your personalised plan. You contribute from <strong>$50/month</strong>.
+        </p>
+
+        <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap",marginBottom:16}}>
+          <Link href="/login?mode=signup" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:700,fontSize:16,color:"white",background:"var(--green)",padding:"15px clamp(24px,4vw,40px)",borderRadius:12,boxShadow:"0 4px 24px rgba(0,185,107,0.35)"}}>
+            Start saving smarter — free →
           </Link>
-          <Link href="/learn" style={{ ...btn.base, background:"white", color:"var(--text)", border:"1px solid var(--border)", fontSize:15, padding:"14px clamp(16px,3vw,28px)", boxShadow:"var(--shadow)" }}>
-            What are ETFs?
+          <Link href="/learn" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:400,fontSize:15,color:"var(--text)",background:"white",border:"1px solid var(--border)",padding:"15px clamp(16px,3vw,28px)",borderRadius:12,boxShadow:"var(--shadow)"}}>
+            How does it work?
           </Link>
         </div>
-        <p style={{ fontFamily:"DM Mono", fontSize:11, color:"var(--muted2)", marginTop:16 }}>
-          Free forever · No credit card · 2 minutes to set up
+        <p className="mono" style={{fontSize:11,color:"var(--muted2)"}}>
+          Free forever · No credit card · 2 min setup
         </p>
       </section>
 
-      {/* ── Pain points ── */}
-      <section style={{ padding:"0 clamp(16px,4vw,20px) clamp(40px,6vw,64px)", maxWidth:900, margin:"0 auto" }}>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:12 }}>
-          {PAIN_POINTS.map(p=>(
-            <div key={p.label} style={{ background:"white", border:"1px solid var(--border)", borderRadius:14, padding:"20px 22px", boxShadow:"var(--shadow)", display:"flex", gap:14, alignItems:"flex-start" }}>
-              <span style={{ fontSize:22, flexShrink:0 }}>{p.icon}</span>
+      {/* ── The big comparison ──────────────────────────────────────────────── */}
+      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)",maxWidth:820,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:12,letterSpacing:1}}>THE NUMBERS DON'T LIE</div>
+          <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(26px,5vw,44px)",color:"var(--text)",letterSpacing:"-1px",lineHeight:1.1}}>
+            What happens to $100/month<br/>over time?
+          </h2>
+        </div>
+
+        <div style={{background:"var(--text)",borderRadius:20,padding:"clamp(28px,4vw,40px)",overflow:"hidden"}}>
+          {/* Header row */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr repeat(3,minmax(60px,80px))",gap:8,marginBottom:16,paddingBottom:14,borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+            <div/>
+            {["1 year","5 years","10 years"].map(h=>(
+              <div key={h} className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.3)",textAlign:"right"}}>{h}</div>
+            ))}
+          </div>
+
+          {/* Data rows */}
+          {SAVINGS_COMPARE.map((row,i)=>(
+            <div key={row.label} style={{display:"grid",gridTemplateColumns:"1fr repeat(3,minmax(60px,80px))",gap:8,padding:"clamp(12px,2vw,16px) 0",borderBottom:i<SAVINGS_COMPARE.length-1?"1px solid rgba(255,255,255,0.06)":"none",alignItems:"center",background:!row.dim?"rgba(0,185,107,0.04)":"transparent",marginLeft:row.dim?0:-8,marginRight:row.dim?0:-8,paddingLeft:row.dim?0:8,paddingRight:row.dim?0:8,borderRadius:row.dim?0:8}}>
               <div>
-                <div style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:15, color:"var(--text)", marginBottom:6 }}>{p.label}</div>
-                <div style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", lineHeight:1.7 }}>{p.desc}</div>
+                <div style={{fontFamily:"DM Sans",fontWeight:row.dim?400:600,fontSize:"clamp(12px,2vw,14px)",color:row.dim?"rgba(255,255,255,0.4)":row.color,marginBottom:2}}>{row.label}</div>
+                <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>{row.rate} avg annual</div>
               </div>
+              {[row.y1,row.y5,row.y10].map((v,j)=>(
+                <div key={j} style={{fontFamily:"DM Sans",fontWeight:row.dim?400:700,fontSize:row.dim?"clamp(13px,2.5vw,16px)":"clamp(15px,3vw,20px)",color:row.dim?"rgba(255,255,255,0.3)":row.color,textAlign:"right"}}>{v}</div>
+              ))}
+            </div>
+          ))}
+
+          <p className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.2)",marginTop:16}}>
+            Based on historical averages · Past performance ≠ future results · Not financial advice
+          </p>
+        </div>
+
+        <div style={{textAlign:"center",marginTop:20}}>
+          <Link href="/login?mode=signup" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:600,fontSize:15,color:"white",background:"var(--green)",padding:"13px 28px",borderRadius:10,boxShadow:"0 4px 16px rgba(0,185,107,0.3)"}}>
+            Get my personalised plan →
+          </Link>
+        </div>
+      </section>
+
+      {/* ── Why ETFs = smart saving ─────────────────────────────────────────── */}
+      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)",maxWidth:900,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:36}}>
+          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:12,letterSpacing:1}}>WHY IT WORKS</div>
+          <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(24px,4vw,40px)",color:"var(--text)",letterSpacing:"-0.5px"}}>
+            This isn't gambling. It's structured saving.
+          </h2>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,200px),1fr))",gap:14}}>
+          {WHY_ETFS.map(w=>(
+            <div key={w.title} style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(18px,3vw,24px)",boxShadow:"var(--shadow)"}}>
+              <div style={{fontSize:28,marginBottom:14}}>{w.icon}</div>
+              <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:"clamp(13px,2vw,15px)",color:"var(--text)",marginBottom:8,lineHeight:1.4}}>{w.title}</div>
+              <div style={{fontFamily:"DM Sans",fontSize:"clamp(12px,1.8vw,13px)",color:"var(--muted)",lineHeight:1.7}}>{w.desc}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── Quick Preview Calculator ── */}
-      <section style={{ padding:"0 clamp(16px,4vw,20px) clamp(40px,6vw,72px)", maxWidth:640, margin:"0 auto" }}>
-        <div style={{ textAlign:"center", marginBottom:28 }}>
-          <div className="mono" style={{ fontSize:11, color:"var(--muted)", marginBottom:10 }}>QUICK PREVIEW</div>
-          <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(24px,4vw,40px)", color:"var(--text)", letterSpacing:"-0.5px" }}>
-            What could your money become?
+      {/* ── Live preview calculator ─────────────────────────────────────────── */}
+      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)",maxWidth:600,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:12,letterSpacing:1}}>YOUR NUMBERS</div>
+          <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(22px,4vw,38px)",color:"var(--text)",letterSpacing:"-0.5px"}}>
+            How much could you save?
           </h2>
         </div>
 
-        <div style={{ background:"white", border:"1px solid var(--border)", borderRadius:20, padding:"clamp(20px,4vw,32px)", boxShadow:"var(--shadow2)" }}>
-          {/* Amount picker */}
-          <div style={{ marginBottom:24 }}>
-            <p style={{ fontFamily:"DM Sans", fontSize:14, color:"var(--muted)", marginBottom:10, textAlign:"center" }}>How much can you invest per month?</p>
-            <div style={{ display:"flex", gap:8, background:"var(--bg3)", borderRadius:12, padding:4 }}>
-              {[50,100,150].map(v=>(
-                <button key={v} onClick={()=>setAmount(v)} style={{
-                  flex:1, padding:"clamp(10px,2vw,13px) 0", borderRadius:9, border:"none", cursor:"pointer", transition:"all 0.15s",
-                  background: amount===v ? "white" : "transparent",
-                  color:      amount===v ? "var(--text)" : "var(--muted)",
-                  fontFamily:"DM Sans", fontWeight: amount===v ? 700 : 400,
-                  fontSize:"clamp(15px,3vw,20px)",
-                  boxShadow:  amount===v ? "var(--shadow)" : "none",
-                }}>
-                  ${v}<span style={{ fontFamily:"DM Mono", fontSize:"clamp(9px,1.5vw,11px)", opacity:0.5 }}>/mo</span>
-                </button>
-              ))}
-            </div>
+        <div style={{background:"white",border:"1px solid var(--border)",borderRadius:20,padding:"clamp(22px,4vw,32px)",boxShadow:"var(--shadow2)"}}>
+          <p style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",marginBottom:12,textAlign:"center"}}>
+            How much can you put aside each month?
+          </p>
+
+          {/* Amount selector */}
+          <div style={{display:"flex",gap:8,background:"var(--bg3)",borderRadius:12,padding:4,marginBottom:24}}>
+            {[50,100,150].map(v=>(
+              <button key={v} onClick={()=>setAmount(v)} style={{
+                flex:1, padding:"clamp(11px,2vw,14px) 0", borderRadius:9, border:"none", cursor:"pointer",
+                transition:"all 0.15s",
+                background: amount===v ? "white" : "transparent",
+                color:      amount===v ? "var(--text)" : "var(--muted)",
+                fontFamily:"DM Sans", fontWeight: amount===v ? 700 : 400,
+                fontSize:"clamp(16px,3vw,21px)",
+                boxShadow:  amount===v ? "var(--shadow)" : "none",
+              }}>
+                ${v}<span style={{fontFamily:"DM Mono",fontSize:"clamp(9px,1.5vw,10px)",opacity:0.45}}>/mo</span>
+              </button>
+            ))}
           </div>
 
-          {/* Results — 1 month / 6 months / 12 months */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"clamp(6px,2vw,12px)", marginBottom:20 }}>
+          {/* 1 / 6 / 12 month results */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"clamp(6px,2vw,10px)",marginBottom:20}}>
             {[
-              { l:"1 month",  v:row.r1,   g:row.r1gain  },
-              { l:"6 months", v:row.r6,   g:row.r6gain  },
-              { l:"12 months",v:row.r12,  g:row.r12gain },
+              {l:"1 month",  v:p.r1,  g:p.g1,  accent:false},
+              {l:"6 months", v:p.r6,  g:p.g6,  accent:false},
+              {l:"12 months",v:p.r12, g:p.g12, accent:true },
             ].map(x=>(
-              <div key={x.l} style={{ background:"var(--bg3)", borderRadius:12, padding:"clamp(12px,2.5vw,16px) clamp(8px,2vw,12px)", textAlign:"center" }}>
-                <div style={{ fontFamily:"DM Sans", fontSize:"clamp(10px,1.8vw,13px)", color:"var(--muted)", marginBottom:6 }}>{x.l}</div>
-                <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(18px,3.5vw,26px)", color:"var(--text)", letterSpacing:"-0.5px" }}>{x.v}</div>
-                <div className="mono" style={{ fontSize:"clamp(9px,1.5vw,11px)", color:"var(--green)", marginTop:4 }}>{x.g} gain</div>
+              <div key={x.l} style={{
+                background: x.accent ? "var(--text)" : "var(--bg3)",
+                borderRadius:12,
+                padding:"clamp(12px,2.5vw,18px) clamp(8px,2vw,12px)",
+                textAlign:"center",
+                border: x.accent ? "none" : "1px solid var(--border)",
+              }}>
+                <div style={{fontFamily:"DM Sans",fontSize:"clamp(10px,1.8vw,12px)",color:x.accent?"rgba(255,255,255,0.5)":"var(--muted)",marginBottom:6}}>{x.l}</div>
+                <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(18px,4vw,28px)",color:x.accent?"white":"var(--text)",letterSpacing:"-0.5px",lineHeight:1.1}}>{x.v}</div>
+                <div className="mono" style={{fontSize:"clamp(9px,1.5vw,11px)",color:"var(--green)",marginTop:5}}>{x.g}</div>
               </div>
             ))}
           </div>
 
-          <div style={{ padding:"12px 14px", background:"var(--gold2)", borderRadius:10, border:"1px solid rgba(201,168,76,0.2)" }}>
-            <p style={{ fontFamily:"DM Sans", fontSize:"clamp(11px,2vw,13px)", color:"#8a6a1a", lineHeight:1.7, margin:0 }}>
-              📊 Based on balanced portfolio (7–12% annual return target). <Link href="/login?mode=signup" style={{ color:"var(--gold)", fontWeight:600 }}>Sign up free</Link> for a personalised plan using real cross-referenced market data.
+          {/* Plan context */}
+          <div style={{padding:"12px 16px",background:"var(--green2)",borderRadius:10,border:"1px solid rgba(0,185,107,0.2)",marginBottom:20}}>
+            <p style={{fontFamily:"DM Sans",fontSize:"clamp(11px,1.8vw,13px)",color:"var(--green)",margin:0,lineHeight:1.7}}>
+              📊 Balanced plan · ~9% annual return target · 42 ETFs tracked daily · <strong>Sign up for a personalised plan with live data.</strong>
             </p>
           </div>
-        </div>
-      </section>
 
-      {/* ── ETF Cards ── */}
-      <section style={{ padding:"0 clamp(16px,4vw,20px) clamp(40px,6vw,64px)", maxWidth:1000, margin:"0 auto" }}>
-        <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div className="mono" style={{ fontSize:11, color:"var(--muted)", marginBottom:10 }}>WHAT WE TRACK</div>
-          <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(22px,4vw,36px)", color:"var(--text)", letterSpacing:"-0.5px" }}>
-            42 ETFs. Scored daily. Best ones picked for you.
-          </h2>
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,175px),1fr))", gap:10 }}>
-          {ETFS.map(etf=>(
-            <div key={etf.ticker} style={{ background:"white", border:`1px solid ${etf.color}33`, borderRadius:14, padding:18, boxShadow:"var(--shadow)", transition:"transform 0.15s, box-shadow 0.15s" }}
-              onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow="var(--shadow2)"; }}
-              onMouseLeave={e=>{ e.currentTarget.style.transform=""; e.currentTarget.style.boxShadow="var(--shadow)"; }}
-            >
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                <span className="mono" style={{ fontSize:14, color:etf.color, fontWeight:500 }}>{etf.ticker}</span>
-                <span className="mono" style={{ fontSize:11, color:"var(--green)", background:"var(--green2)", padding:"2px 8px", borderRadius:6 }}>{etf.ret12}</span>
-              </div>
-              <div style={{ fontFamily:"DM Sans", fontSize:12, color:"var(--muted)", marginBottom:10 }}>{etf.name}</div>
-              <div style={{ display:"flex", justifyContent:"space-between" }}>
-                <div>
-                  <div className="mono" style={{ fontSize:9, color:"var(--muted2)", marginBottom:2 }}>12M RETURN</div>
-                  <div className="mono" style={{ fontSize:12, color:"var(--text)" }}>{etf.ret12}</div>
-                </div>
-                <div style={{ textAlign:"right" }}>
-                  <div className="mono" style={{ fontSize:9, color:"var(--muted2)", marginBottom:2 }}>REAL (ADJ.)</div>
-                  <div className="mono" style={{ fontSize:12, color:"var(--green)" }}>{etf.real}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <p style={{ textAlign:"center", fontFamily:"DM Mono", fontSize:11, color:"var(--muted2)", marginTop:12 }}>
-          Showing 5 of 42 tracked ETFs · Updated at NYSE open & close · Inflation adjusted via FRED
-        </p>
-      </section>
-
-      {/* ── How it works ── */}
-      <section id="how" style={{ padding:"0 clamp(16px,4vw,20px) clamp(40px,6vw,72px)", maxWidth:800, margin:"0 auto" }}>
-        <div style={{ textAlign:"center", marginBottom:40 }}>
-          <div className="mono" style={{ fontSize:11, color:"var(--muted)", marginBottom:10 }}>HOW IT WORKS</div>
-          <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(24px,4vw,40px)", color:"var(--text)", letterSpacing:"-0.5px" }}>
-            Three steps to your first investment
-          </h2>
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:16 }}>
-          {STEPS.map(s=>(
-            <div key={s.n} style={{ background:"white", border:"1px solid var(--border)", borderRadius:16, padding:"clamp(20px,3vw,28px)", boxShadow:"var(--shadow)" }}>
-              <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:44, color:"var(--border2)", lineHeight:1, marginBottom:14 }}>{s.n}</div>
-              <div style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:17, color:"var(--text)", marginBottom:8 }}>{s.title}</div>
-              <div style={{ fontFamily:"DM Sans", fontSize:14, color:"var(--muted)", lineHeight:1.7 }}>{s.desc}</div>
-              <div style={{ marginTop:16, height:3, width:40, background:s.color, borderRadius:2 }}/>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Social proof strip ── */}
-      <section style={{ padding:"0 clamp(16px,4vw,20px) clamp(40px,6vw,64px)", maxWidth:800, margin:"0 auto" }}>
-        <div style={{ background:"var(--text)", borderRadius:16, padding:"clamp(24px,4vw,36px)", display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:24, textAlign:"center" }}>
-          {[
-            { n:"42", label:"ETFs tracked daily" },
-            { n:"4", label:"Live data sources" },
-            { n:"$50", label:"Minimum to start" },
-            { n:"Free", label:"Forever, no credit card" },
-          ].map(s=>(
-            <div key={s.label}>
-              <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(28px,5vw,40px)", color:"var(--green)", lineHeight:1 }}>{s.n}</div>
-              <div style={{ fontFamily:"DM Sans", fontSize:13, color:"rgba(255,255,255,0.5)", marginTop:6 }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Learn CTA ── */}
-      <section style={{ padding:"0 clamp(16px,4vw,20px) clamp(40px,6vw,72px)", maxWidth:700, margin:"0 auto", textAlign:"center" }}>
-        <div style={{ background:"var(--green2)", border:"1px solid rgba(0,185,107,0.2)", borderRadius:16, padding:"clamp(24px,4vw,40px)" }}>
-          <div style={{ fontSize:32, marginBottom:12 }}>📚</div>
-          <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(20px,3.5vw,28px)", color:"var(--text)", marginBottom:10, letterSpacing:"-0.3px" }}>
-            New to investing? Start here.
-          </h2>
-          <p style={{ fontFamily:"DM Sans", fontSize:15, color:"var(--muted)", marginBottom:24, lineHeight:1.7 }}>
-            Our beginner's guide explains what ETFs are, why they outperform savings accounts, and which platforms to use — in plain English.
-          </p>
-          <Link href="/learn" style={{ ...btn.base, background:"var(--green)", color:"white", fontSize:15, padding:"13px 28px", boxShadow:"0 4px 16px rgba(0,185,107,0.3)", display:"inline-block" }}>
-            Read the guide →
+          <Link href="/login?mode=signup" style={{display:"block",textAlign:"center",fontFamily:"DM Sans",fontWeight:700,fontSize:16,color:"white",background:"var(--green)",padding:"15px 0",borderRadius:10,boxShadow:"0 4px 16px rgba(0,185,107,0.3)"}}>
+            Build my free saving plan →
           </Link>
         </div>
       </section>
 
-      {/* ── Final CTA ── */}
-      <section style={{ padding:"0 clamp(16px,4vw,20px) clamp(60px,8vw,100px)" }}>
-        <div style={{ background:"var(--text)", borderRadius:24, padding:"clamp(40px,6vw,60px) clamp(24px,5vw,40px)", maxWidth:600, margin:"0 auto", textAlign:"center" }}>
-          <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(26px,5vw,44px)", color:"white", marginBottom:14, letterSpacing:"-0.5px" }}>
-            Ready to start?
+      {/* ── 3 Plans ─────────────────────────────────────────────────────────── */}
+      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)",maxWidth:820,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:12,letterSpacing:1}}>THREE RISK LEVELS</div>
+          <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(24px,4vw,40px)",color:"var(--text)",letterSpacing:"-0.5px"}}>
+            Pick the plan that fits you
           </h2>
-          <p style={{ fontFamily:"DM Sans", fontSize:15, color:"rgba(255,255,255,0.55)", marginBottom:32, lineHeight:1.7 }}>
-            Free account. No credit card. Your first ETF plan in under 2 minutes.
+          <p style={{fontFamily:"DM Sans",fontSize:15,color:"var(--muted)",marginTop:10,lineHeight:1.7}}>
+            All three beat a regular savings account. Conservative is the closest to "risk-free."
           </p>
-          <Link href="/login?mode=signup" style={{ ...btn.base, background:"var(--green)", color:"white", fontSize:16, padding:"15px clamp(24px,5vw,40px)", boxShadow:"0 6px 24px rgba(0,185,107,0.4)", display:"inline-block" }}>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,230px),1fr))",gap:14}}>
+          {PLANS.map(plan=>(
+            <div key={plan.name} style={{background:"white",border:`2px solid ${plan.color}22`,borderRadius:16,padding:"clamp(20px,3vw,28px)",boxShadow:"var(--shadow)",textAlign:"center"}}>
+              <div style={{fontSize:32,marginBottom:12}}>{plan.icon}</div>
+              <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:20,color:"var(--text)",marginBottom:4}}>{plan.name}</div>
+              <div style={{fontFamily:"DM Mono",fontSize:13,color:plan.color,fontWeight:600,marginBottom:10}}>{plan.rate}</div>
+              <div style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",lineHeight:1.7,marginBottom:16}}>{plan.desc}</div>
+              <div style={{display:"inline-block",fontFamily:"DM Mono",fontSize:10,padding:"4px 10px",borderRadius:6,background:`${plan.color}10`,color:plan.color}}>
+                {plan.risk} risk
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{textAlign:"center",marginTop:20}}>
+          <Link href="/login?mode=signup" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:600,fontSize:15,color:"white",background:"var(--text)",padding:"13px 28px",borderRadius:10}}>
+            See which plan fits me →
+          </Link>
+        </div>
+      </section>
+
+      {/* ── ETF strip ───────────────────────────────────────────────────────── */}
+      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(40px,6vw,64px)",maxWidth:900,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:20}}>
+          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:8,letterSpacing:1}}>WHAT'S IN YOUR PLAN</div>
+          <p style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)"}}>42 ETFs scored daily. Our engine picks the best performers for your risk level.</p>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,160px),1fr))",gap:10}}>
+          {ETFS.map(etf=>(
+            <div key={etf.ticker} style={{background:"white",border:`1px solid ${etf.color}33`,borderRadius:12,padding:"clamp(14px,2.5vw,18px)",boxShadow:"var(--shadow)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <span className="mono" style={{fontSize:13,color:etf.color,fontWeight:500}}>{etf.ticker}</span>
+                <span className="mono" style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:`${etf.color}10`,color:etf.color}}>{etf.risk}</span>
+              </div>
+              <div style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted)",marginBottom:8}}>{etf.name}</div>
+              <div className="mono" style={{fontSize:12,color:"var(--green)"}}>{etf.ret}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Stats bar ───────────────────────────────────────────────────────── */}
+      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)"}}>
+        <div style={{background:"var(--text)",borderRadius:16,padding:"clamp(24px,4vw,36px)",maxWidth:820,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:24,textAlign:"center"}}>
+          {[
+            {n:"42",     l:"ETFs tracked daily"},
+            {n:"$50",    l:"Minimum to start"},
+            {n:"50yr+",  l:"of S&P 500 data"},
+            {n:"Free",   l:"No credit card needed"},
+          ].map(s=>(
+            <div key={s.l}>
+              <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(28px,5vw,38px)",color:"var(--green)",lineHeight:1}}>{s.n}</div>
+              <div style={{fontFamily:"DM Sans",fontSize:13,color:"rgba(255,255,255,0.45)",marginTop:6}}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Learn CTA ───────────────────────────────────────────────────────── */}
+      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)",maxWidth:640,margin:"0 auto",textAlign:"center"}}>
+        <div style={{background:"var(--bg3)",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(24px,4vw,36px)"}}>
+          <div style={{fontSize:28,marginBottom:12}}>📖</div>
+          <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(18px,3vw,24px)",color:"var(--text)",marginBottom:10}}>
+            Never heard of ETFs before?
+          </h3>
+          <p style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",marginBottom:20,lineHeight:1.7}}>
+            Our plain-English guide explains what ETFs are, why they outperform savings accounts, and which platforms to use to buy them.
+          </p>
+          <Link href="/learn" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:600,fontSize:14,color:"var(--text)",background:"white",border:"1px solid var(--border)",padding:"12px 24px",borderRadius:10,boxShadow:"var(--shadow)"}}>
+            Read the beginner's guide →
+          </Link>
+        </div>
+      </section>
+
+      {/* ── Final CTA ───────────────────────────────────────────────────────── */}
+      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(72px,10vw,120px)"}}>
+        <div style={{background:"var(--text)",borderRadius:24,padding:"clamp(44px,7vw,72px) clamp(24px,5vw,40px)",maxWidth:580,margin:"0 auto",textAlign:"center"}}>
+          <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(28px,6vw,48px)",color:"white",marginBottom:14,letterSpacing:"-1px",lineHeight:1.05}}>
+            Stop saving less.<br/>
+            <span style={{color:"var(--green)"}}>Start saving smarter.</span>
+          </h2>
+          <p style={{fontFamily:"DM Sans",fontSize:15,color:"rgba(255,255,255,0.5)",marginBottom:32,lineHeight:1.7}}>
+            Free account. No credit card. Your first plan in 2 minutes.
+          </p>
+          <Link href="/login?mode=signup" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:700,fontSize:17,color:"white",background:"var(--green)",padding:"16px clamp(28px,5vw,48px)",borderRadius:12,boxShadow:"0 6px 28px rgba(0,185,107,0.4)"}}>
             Create free account →
           </Link>
-          <p className="mono" style={{ fontSize:11, color:"rgba(255,255,255,0.25)", marginTop:16 }}>
+          <p className="mono" style={{fontSize:11,color:"rgba(255,255,255,0.2)",marginTop:16}}>
             Not financial advice · Past performance ≠ future results
           </p>
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer style={{ borderTop:"1px solid var(--border)", padding:"24px clamp(16px,4vw,40px)", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12 }}>
-        <Link href="/" className="pixel" style={{ fontSize:10, color:"var(--text)" }}>ETF<span style={{ color:"var(--green)" }}>.</span>PLAN</Link>
-        <div style={{ display:"flex", gap:20 }}>
-          <Link href="/learn" style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)" }}>What are ETFs?</Link>
-          <Link href="/login" style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)" }}>Log in</Link>
-          <Link href="/login?mode=signup" style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--green)", fontWeight:500 }}>Start free</Link>
+      {/* ── Footer ──────────────────────────────────────────────────────────── */}
+      <footer style={{borderTop:"1px solid var(--border)",padding:"24px clamp(16px,4vw,40px)",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+        <Link href="/" className="pixel" style={{fontSize:10,color:"var(--text)"}}>ETF<span style={{color:"var(--green)"}}>.</span>PLAN</Link>
+        <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
+          <Link href="/learn" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>What are ETFs?</Link>
+          <Link href="/login" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>Log in</Link>
+          <Link href="/login?mode=signup" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--green)",fontWeight:500}}>Start free →</Link>
         </div>
       </footer>
 
