@@ -456,9 +456,10 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div style={{textAlign:"right"}}>
-                          <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:2}}>{p.rate || p.desc.split(" ")[0]}</div>
-                          <div style={{fontFamily:"DM Sans",fontWeight:800,fontSize:24,color:p.accentColor}}>+{fmt(project(amount,profAllocs,etfPool,60,false,profTarget)-amount*60)}</div>
-                          <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)"}}>gain over 5 years</div>
+                          <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:2}}>{p.rate}</div>
+                          <div style={{fontFamily:"DM Sans",fontWeight:800,fontSize:22,color:p.accentColor}}>{fmt(project(amount,profAllocs,etfPool,12,false,profTarget))}</div>
+                          <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:4}}>after 12 months</div>
+                          <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--green)"}}>5yr → +{fmt(project(amount,profAllocs,etfPool,60,false,profTarget)-amount*60)}</div>
                         </div>
                       </button>
                     );
