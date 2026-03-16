@@ -50,6 +50,54 @@ const ETF_META = {
     pros:["Extremely stable — rarely loses more than 5% in a year","Monthly income payments","10,000+ bond diversification","Ballast for equity-heavy portfolios"],
     cons:["Low return ceiling (~4-5%)","Rate sensitive — rises in rates hurt bond prices","Not an inflation beater on its own"],
   },
+  ITOT: { name:"iShares Core S&P Total Market ETF", color:"#22c55e", risk:"Low", leveraged:false, category:"Total Market",
+    description:"ITOT tracks the S&P Total Market Index — over 3,500 US companies from large-cap to micro-cap. It's BlackRock's answer to VTI, nearly identical in composition but from a different fund family.",
+    why:"Nearly identical to VTI but from iShares/BlackRock. If your broker gives you better access to iShares funds, ITOT is a perfect alternative to VTI.",
+    expense:"0.03%", inception:"2004", aum:"$60B+",
+    topHoldings:[{n:"Apple",pct:"6.1%"},{n:"Microsoft",pct:"5.7%"},{n:"Nvidia",pct:"4.0%"},{n:"Amazon",pct:"3.1%"},{n:"Alphabet",pct:"2.5%"},{n:"Meta",pct:"2.2%"},{n:"Berkshire Hathaway",pct:"1.6%"}],
+    pros:["Same diversification as VTI at identical cost","BlackRock institutional backing","Available commission-free on more platforms","Highly liquid"],
+    cons:["Slightly different index methodology than VTI","Less brand recognition than Vanguard funds"],
+  },
+  SPY:  { name:"SPDR S&P 500 ETF Trust", color:"#60a5fa", risk:"Low", leveraged:false, category:"Large Cap",
+    description:"SPY was the very first ETF ever created, launched in 1993. It tracks the S&P 500 and remains the most heavily traded ETF in the world by volume. Nearly identical to VOO but with a slightly higher expense ratio.",
+    why:"SPY is the original and most liquid ETF. Used heavily by institutional traders. For long-term investors VOO is cheaper, but SPY's liquidity makes it the standard for short-term traders.",
+    expense:"0.0945%", inception:"1993", aum:"$570B+",
+    topHoldings:[{n:"Apple",pct:"7.0%"},{n:"Microsoft",pct:"6.4%"},{n:"Nvidia",pct:"4.6%"},{n:"Amazon",pct:"3.6%"},{n:"Alphabet",pct:"2.9%"},{n:"Meta",pct:"2.5%"},{n:"Berkshire Hathaway",pct:"1.9%"}],
+    pros:["The original ETF — 30+ year track record","Most liquid ETF in the world","Trades like a stock — tight spreads","Available everywhere"],
+    cons:["Higher expense ratio than VOO (0.0945% vs 0.03%)","For long-term holding, VOO is better value","No advantage over VOO for buy-and-hold investors"],
+  },
+  VGT:  { name:"Vanguard Information Technology ETF", color:"#a78bfa", risk:"Medium", leveraged:false, category:"Tech",
+    description:"VGT tracks the MSCI US Investable Market Information Technology Index — pure technology sector exposure. Includes software, hardware, semiconductors and IT services. Heavily concentrated in Apple, Microsoft and Nvidia.",
+    why:"If you believe technology will continue to outperform the broader market, VGT gives you concentrated exposure to the best tech companies at an extremely low cost.",
+    expense:"0.10%", inception:"2004", aum:"$75B+",
+    topHoldings:[{n:"Apple",pct:"16.5%"},{n:"Microsoft",pct:"15.0%"},{n:"Nvidia",pct:"12.2%"},{n:"Broadcom",pct:"5.1%"},{n:"Salesforce",pct:"2.8%"},{n:"AMD",pct:"2.4%"},{n:"Qualcomm",pct:"2.2%"}],
+    pros:["Pure tech exposure — no dilution from other sectors","Extremely low 0.10% expense ratio for a sector ETF","Has outperformed S&P 500 significantly over 10 years","Top Vanguard quality"],
+    cons:["Highly concentrated — top 3 stocks = 44% of fund","No exposure outside tech sector","Can drop 30-40% in tech selloffs (2022: -33%)","Less diversified than VTI/VOO"],
+  },
+  XLK:  { name:"Technology Select Sector SPDR Fund", color:"#7c3aed", risk:"Medium", leveraged:false, category:"Tech",
+    description:"XLK tracks the Technology Select Sector Index — the tech companies within the S&P 500. Very similar to VGT but includes slightly different weightings and excludes some smaller tech companies.",
+    why:"XLK vs VGT is a close call. XLK is from State Street (SPDR) and has slightly different index rules. Both give you tech sector exposure — pick whichever your broker offers commission-free.",
+    expense:"0.09%", inception:"1998", aum:"$68B+",
+    topHoldings:[{n:"Nvidia",pct:"22.5%"},{n:"Apple",pct:"18.0%"},{n:"Microsoft",pct:"14.0%"},{n:"Broadcom",pct:"5.2%"},{n:"Salesforce",pct:"2.9%"},{n:"AMD",pct:"2.5%"},{n:"Qualcomm",pct:"2.3%"}],
+    pros:["One of the oldest sector ETFs — since 1998","Highly liquid","Slightly higher Nvidia weighting than VGT","Very low expense ratio"],
+    cons:["Very similar to VGT — no strong reason to hold both","Heavy concentration in top 3 stocks","Tech sector volatility"],
+  },
+  VYM:  { name:"Vanguard High Dividend Yield ETF", color:"#d97706", risk:"Low", leveraged:false, category:"Dividend",
+    description:"VYM tracks the FTSE High Dividend Yield Index — US companies with above-average dividend yields, excluding REITs. Focuses on large, established companies that pay consistent dividends.",
+    why:"VYM is for investors who want income alongside growth. It pays quarterly dividends and focuses on financially strong companies. Less volatile than growth ETFs.",
+    expense:"0.06%", inception:"2006", aum:"$55B+",
+    topHoldings:[{n:"JPMorgan Chase",pct:"4.2%"},{n:"ExxonMobil",pct:"3.8%"},{n:"Johnson & Johnson",pct:"3.5%"},{n:"Procter & Gamble",pct:"3.2%"},{n:"Home Depot",pct:"3.0%"},{n:"Abbvie",pct:"2.8%"},{n:"Chevron",pct:"2.6%"}],
+    pros:["Strong dividend income — ~3% yield","Lower volatility than growth ETFs","Financially healthy companies","Great for conservative/income investors"],
+    cons:["Lower growth ceiling than VOO/VTI","Underperforms in tech bull markets","Less tech exposure"],
+  },
+  DGRO: { name:"iShares Core Dividend Growth ETF", color:"#f59e0b", risk:"Low", leveraged:false, category:"Dividend",
+    description:"DGRO tracks the Morningstar US Dividend Growth Index — companies with a 5+ year history of growing their dividends. Focuses on dividend growth, not just current yield.",
+    why:"DGRO is for investors who want companies that consistently increase their dividends. A growing dividend signals financial health and discipline. Better long-term than high-yield-only funds.",
+    expense:"0.08%", inception:"2014", aum:"$28B+",
+    topHoldings:[{n:"Apple",pct:"3.5%"},{n:"Microsoft",pct:"3.4%"},{n:"JPMorgan Chase",pct:"3.1%"},{n:"Johnson & Johnson",pct:"2.9%"},{n:"ExxonMobil",pct:"2.7%"},{n:"Procter & Gamble",pct:"2.6%"},{n:"Visa",pct:"2.4%"}],
+    pros:["Dividend growth focus — better quality filter than yield","Includes tech companies that grow dividends","Lower yield but higher quality","Consistent outperformance vs pure yield funds"],
+    cons:["Lower current yield than SCHD or VYM","Less pure income play","Still underperforms growth in bull markets"],
+  },
   TQQQ: { name:"ProShares UltraPro QQQ",          color:"#ff6b35", risk:"Very High", leveraged:true,  category:"Leveraged",
     description:"TQQQ delivers 3x the daily return of the Nasdaq-100. If QQQ goes up 1% today, TQQQ goes up ~3%. If QQQ drops 1%, TQQQ drops ~3%. Due to daily rebalancing, long-term returns can differ significantly from 3x QQQ.",
     why:"Only for aggressive investors who understand leveraged ETF mechanics. TQQQ has produced extraordinary returns in bull markets but suffered 90%+ drawdowns in bear markets.",
@@ -63,8 +111,11 @@ const ETF_META = {
 
 async function getETFData(ticker) {
   const supabase = await createClient();
-  const { data } = await supabase.from("etf_pool").select("*").eq("ticker", ticker).single();
-  return data;
+  const [{ data: liveData }, { data: dbMeta }] = await Promise.all([
+    supabase.from("etf_pool").select("*").eq("ticker", ticker).single(),
+    supabase.from("etf_metadata").select("*").eq("ticker", ticker.toUpperCase()).single(),
+  ]);
+  return { liveData, dbMeta };
 }
 
 const fmtPct = n => n != null ? `${n >= 0 ? "+" : ""}${(n * 100).toFixed(2)}%` : "—";
@@ -72,14 +123,37 @@ const fmtD   = n => n != null ? `$${Number(n).toFixed(2)}` : "—";
 
 export default async function ETFDetailPage({ params }) {
   const { ticker } = await params;
-  const meta = ETF_META[ticker.toUpperCase()];
-  const liveData = await getETFData(ticker.toUpperCase());
+  const upperTicker = ticker.toUpperCase();
+  const { liveData, dbMeta } = await getETFData(upperTicker);
+  
+  // Merge: DB metadata takes priority over hardcoded, hardcoded is fallback
+  const hardcoded = ETF_META[upperTicker];
+  
+  // Build meta from DB if available, otherwise use hardcoded
+  const meta = dbMeta ? {
+    name:        dbMeta.name         || hardcoded?.name        || upperTicker,
+    color:       dbMeta.color        || hardcoded?.color       || "#00b96b",
+    risk:        dbMeta.risk         || hardcoded?.risk        || "—",
+    category:    dbMeta.category     || hardcoded?.category    || "—",
+    leveraged:   dbMeta.leveraged    ?? hardcoded?.leveraged   ?? false,
+    description: dbMeta.description  || hardcoded?.description || "",
+    why:         dbMeta.why          || hardcoded?.why         || "",
+    expense:     dbMeta.expense      || hardcoded?.expense     || "—",
+    inception:   dbMeta.inception    || hardcoded?.inception   || "—",
+    aum:         dbMeta.aum          || hardcoded?.aum         || "—",
+    topHoldings: dbMeta.top_holdings || hardcoded?.topHoldings || [],
+    pros:        dbMeta.pros         || hardcoded?.pros        || [],
+    cons:        dbMeta.cons         || hardcoded?.cons        || [],
+    warning:     dbMeta.warning      || hardcoded?.warning     || null,
+  } : hardcoded;
 
   if (!meta) {
     return (
       <div style={{ minHeight:"100vh", background:"var(--bg)", display:"flex", alignItems:"center", justifyContent:"center" }}>
         <div style={{ textAlign:"center" }}>
-          <div style={{ fontFamily:"DM Mono", fontSize:14, color:"var(--muted)", marginBottom:16 }}>ETF not found: {ticker}</div>
+          <div style={{ fontFamily:"DM Mono", fontSize:14, color:"var(--muted)", marginBottom:16 }}>
+            {ticker.toUpperCase()} — page generating, check back shortly
+          </div>
           <Link href="/dashboard" style={{ fontFamily:"DM Sans", color:"var(--green)" }}>← Back to dashboard</Link>
         </div>
       </div>

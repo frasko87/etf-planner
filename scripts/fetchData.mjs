@@ -534,6 +534,121 @@ const STOCK_META = {
 const WATCHLIST = ["NVDA","AAPL","MSFT","AMZN","META","GOOGL","TSLA","AVGO","LLY","JPM","XOM","V","UNH"];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ETF METADATA AUTO-GENERATOR
+// When a new ETF is fetched that has no metadata in the DB,
+// calls Claude to generate description, holdings, pros/cons automatically
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
+
+async function generateEtfMetadata(ticker, etfData) {
+  console.log(`\n[META] Generating metadata for ${ticker}...`);
+
+  const prompt = `You are a financial data assistant. Generate structured metadata for the ETF ticker: ${ticker}
+
+ETF data available:
+- Price: ${etfData.price || "unknown"}
+- CAGR: ${etfData.cagr ? (etfData.cagr * 100).toFixed(1) + "%" : "unknown"}
+- Category: ${etfData.category || "unknown"}
+
+Return ONLY a valid JSON object with these exact fields:
+{
+  "name": "Full official name of the ETF",
+  "color": "A hex color that represents this ETF's brand or category (e.g. #00b96b for Vanguard, #8b5cf6 for Nasdaq/tech, #ff6b35 for leveraged)",
+  "risk": "One of: Very Low, Low, Low-Med, Medium, High, Very High",
+  "category": "Short category like: Total Market, Large Cap, Tech, Dividend, Bonds, Leveraged, Energy, Healthcare, International, Real Estate, Commodities",
+  "leveraged": false or true,
+  "description": "2-3 sentence plain English explanation of what this ETF holds and how it works. Be specific about the index it tracks.",
+  "why": "1-2 sentences on why investors choose this ETF and what role it plays in a portfolio.",
+  "expense": "Expense ratio as string e.g. '0.03%'",
+  "inception": "Year as string e.g. '2010'",
+  "aum": "Assets under management as string e.g. '$50B+'",
+  "top_holdings": [{"n": "Company Name", "pct": "X.X%"}, ...] up to 7 holdings,
+  "pros": ["Pro 1", "Pro 2", "Pro 3", "Pro 4"] - 3-4 genuine advantages,
+  "cons": ["Con 1", "Con 2", "Con 3"] - 2-3 genuine disadvantages,
+  "warning": null or a warning string only for leveraged/high-risk ETFs
+}
+
+Return ONLY the JSON, no markdown, no explanation.`;
+
+  try {
+    const res = await fetch(ANTHROPIC_API, {
+      method: "POST",
+      headers: {
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "API error");
+
+    const text = data.content?.[0]?.text || "";
+    const clean = text.replace(/```json|```/g, "").trim();
+    const meta = JSON.parse(clean);
+
+    // Save to Supabase
+    const { error } = await supabase.from("etf_metadata").upsert({
+      ticker:       ticker.toUpperCase(),
+      name:         meta.name,
+      color:        meta.color || "#00b96b",
+      risk:         meta.risk,
+      category:     meta.category,
+      leveraged:    meta.leveraged || false,
+      description:  meta.description,
+      why:          meta.why,
+      expense:      meta.expense,
+      inception:    meta.inception,
+      aum:          meta.aum,
+      top_holdings: meta.top_holdings,
+      pros:         meta.pros,
+      cons:         meta.cons,
+      warning:      meta.warning || null,
+      generated_at: new Date().toISOString(),
+      updated_at:   new Date().toISOString(),
+    });
+
+    if (error) throw error;
+    console.log(`[META] ✓ ${ticker} metadata saved`);
+    return meta;
+  } catch(e) {
+    console.error(`[META] Failed for ${ticker}:`, e.message);
+    return null;
+  }
+}
+
+async function ensureEtfMetadata(tickers, etfPoolData) {
+  // Check which tickers are missing metadata
+  const { data: existing } = await supabase
+    .from("etf_metadata")
+    .select("ticker")
+    .in("ticker", tickers.map(t => t.toUpperCase()));
+
+  const existingSet = new Set((existing || []).map(r => r.ticker));
+  const missing = tickers.filter(t => !existingSet.has(t.toUpperCase()));
+
+  if (!missing.length) {
+    console.log(`[META] All ${tickers.length} ETFs have metadata ✓`);
+    return;
+  }
+
+  console.log(`[META] Generating metadata for ${missing.length} new ETFs: ${missing.join(", ")}`);
+
+  for (const ticker of missing) {
+    const etfData = etfPoolData?.find(r => r.ticker === ticker) || {};
+    await generateEtfMetadata(ticker, etfData);
+    // Small delay to avoid rate limits
+    await new Promise(r => setTimeout(r, 1000));
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // STOCK OF THE MONTH FETCHER
 // Runs on the 1st trading day of each month
 // Picks the stock with the best 1-month return from the watchlist
@@ -667,6 +782,21 @@ async function main() {
   const isFirstOfMonth = new Date().getDate() === 1;
   if (isFirstOfMonth || process.argv.includes("--score-now")) {
     await updateStockOfMonth();
+  }
+
+  // Auto-generate metadata for any new ETFs (runs daily, skips already done)
+  try {
+    const allTrackedTickers = [
+      ...new Set([
+        ...Object.keys(ETF_META),
+        "XLE","XLF","XLV","XLI","XLC","XLB","XLU","XLP",
+        "VB","IJR","IWM","TLT","LQD","VEA","VWO","EEM",
+        "VNQ","GLD","IAU","DBC","BITO","IBIT","DVYE","HDV"
+      ])
+    ];
+    await ensureEtfMetadata(allTrackedTickers, poolData || []);
+  } catch(e) {
+    console.error("[META] Metadata check failed:", e.message);
   }
 
   // Run daily scoring on all trading days
@@ -1241,6 +1371,121 @@ const STOCK_META = {
 const WATCHLIST = ["NVDA","AAPL","MSFT","AMZN","META","GOOGL","TSLA","AVGO","LLY","JPM","XOM","V","UNH"];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ETF METADATA AUTO-GENERATOR
+// When a new ETF is fetched that has no metadata in the DB,
+// calls Claude to generate description, holdings, pros/cons automatically
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
+
+async function generateEtfMetadata(ticker, etfData) {
+  console.log(`\n[META] Generating metadata for ${ticker}...`);
+
+  const prompt = `You are a financial data assistant. Generate structured metadata for the ETF ticker: ${ticker}
+
+ETF data available:
+- Price: ${etfData.price || "unknown"}
+- CAGR: ${etfData.cagr ? (etfData.cagr * 100).toFixed(1) + "%" : "unknown"}
+- Category: ${etfData.category || "unknown"}
+
+Return ONLY a valid JSON object with these exact fields:
+{
+  "name": "Full official name of the ETF",
+  "color": "A hex color that represents this ETF's brand or category (e.g. #00b96b for Vanguard, #8b5cf6 for Nasdaq/tech, #ff6b35 for leveraged)",
+  "risk": "One of: Very Low, Low, Low-Med, Medium, High, Very High",
+  "category": "Short category like: Total Market, Large Cap, Tech, Dividend, Bonds, Leveraged, Energy, Healthcare, International, Real Estate, Commodities",
+  "leveraged": false or true,
+  "description": "2-3 sentence plain English explanation of what this ETF holds and how it works. Be specific about the index it tracks.",
+  "why": "1-2 sentences on why investors choose this ETF and what role it plays in a portfolio.",
+  "expense": "Expense ratio as string e.g. '0.03%'",
+  "inception": "Year as string e.g. '2010'",
+  "aum": "Assets under management as string e.g. '$50B+'",
+  "top_holdings": [{"n": "Company Name", "pct": "X.X%"}, ...] up to 7 holdings,
+  "pros": ["Pro 1", "Pro 2", "Pro 3", "Pro 4"] - 3-4 genuine advantages,
+  "cons": ["Con 1", "Con 2", "Con 3"] - 2-3 genuine disadvantages,
+  "warning": null or a warning string only for leveraged/high-risk ETFs
+}
+
+Return ONLY the JSON, no markdown, no explanation.`;
+
+  try {
+    const res = await fetch(ANTHROPIC_API, {
+      method: "POST",
+      headers: {
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "API error");
+
+    const text = data.content?.[0]?.text || "";
+    const clean = text.replace(/```json|```/g, "").trim();
+    const meta = JSON.parse(clean);
+
+    // Save to Supabase
+    const { error } = await supabase.from("etf_metadata").upsert({
+      ticker:       ticker.toUpperCase(),
+      name:         meta.name,
+      color:        meta.color || "#00b96b",
+      risk:         meta.risk,
+      category:     meta.category,
+      leveraged:    meta.leveraged || false,
+      description:  meta.description,
+      why:          meta.why,
+      expense:      meta.expense,
+      inception:    meta.inception,
+      aum:          meta.aum,
+      top_holdings: meta.top_holdings,
+      pros:         meta.pros,
+      cons:         meta.cons,
+      warning:      meta.warning || null,
+      generated_at: new Date().toISOString(),
+      updated_at:   new Date().toISOString(),
+    });
+
+    if (error) throw error;
+    console.log(`[META] ✓ ${ticker} metadata saved`);
+    return meta;
+  } catch(e) {
+    console.error(`[META] Failed for ${ticker}:`, e.message);
+    return null;
+  }
+}
+
+async function ensureEtfMetadata(tickers, etfPoolData) {
+  // Check which tickers are missing metadata
+  const { data: existing } = await supabase
+    .from("etf_metadata")
+    .select("ticker")
+    .in("ticker", tickers.map(t => t.toUpperCase()));
+
+  const existingSet = new Set((existing || []).map(r => r.ticker));
+  const missing = tickers.filter(t => !existingSet.has(t.toUpperCase()));
+
+  if (!missing.length) {
+    console.log(`[META] All ${tickers.length} ETFs have metadata ✓`);
+    return;
+  }
+
+  console.log(`[META] Generating metadata for ${missing.length} new ETFs: ${missing.join(", ")}`);
+
+  for (const ticker of missing) {
+    const etfData = etfPoolData?.find(r => r.ticker === ticker) || {};
+    await generateEtfMetadata(ticker, etfData);
+    // Small delay to avoid rate limits
+    await new Promise(r => setTimeout(r, 1000));
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // STOCK OF THE MONTH FETCHER
 // Runs on the 1st trading day of each month
 // Picks the stock with the best 1-month return from the watchlist
@@ -1374,6 +1619,21 @@ async function main() {
   const isFirstOfMonth = new Date().getDate() === 1;
   if (isFirstOfMonth || process.argv.includes("--score-now")) {
     await updateStockOfMonth();
+  }
+
+  // Auto-generate metadata for any new ETFs (runs daily, skips already done)
+  try {
+    const allTrackedTickers = [
+      ...new Set([
+        ...Object.keys(ETF_META),
+        "XLE","XLF","XLV","XLI","XLC","XLB","XLU","XLP",
+        "VB","IJR","IWM","TLT","LQD","VEA","VWO","EEM",
+        "VNQ","GLD","IAU","DBC","BITO","IBIT","DVYE","HDV"
+      ])
+    ];
+    await ensureEtfMetadata(allTrackedTickers, poolData || []);
+  } catch(e) {
+    console.error("[META] Metadata check failed:", e.message);
   }
 
   // Run daily scoring on all trading days
@@ -1959,6 +2219,121 @@ const STOCK_META = {
 const WATCHLIST = ["NVDA","AAPL","MSFT","AMZN","META","GOOGL","TSLA","AVGO","LLY","JPM","XOM","V","UNH"];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ETF METADATA AUTO-GENERATOR
+// When a new ETF is fetched that has no metadata in the DB,
+// calls Claude to generate description, holdings, pros/cons automatically
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
+
+async function generateEtfMetadata(ticker, etfData) {
+  console.log(`\n[META] Generating metadata for ${ticker}...`);
+
+  const prompt = `You are a financial data assistant. Generate structured metadata for the ETF ticker: ${ticker}
+
+ETF data available:
+- Price: ${etfData.price || "unknown"}
+- CAGR: ${etfData.cagr ? (etfData.cagr * 100).toFixed(1) + "%" : "unknown"}
+- Category: ${etfData.category || "unknown"}
+
+Return ONLY a valid JSON object with these exact fields:
+{
+  "name": "Full official name of the ETF",
+  "color": "A hex color that represents this ETF's brand or category (e.g. #00b96b for Vanguard, #8b5cf6 for Nasdaq/tech, #ff6b35 for leveraged)",
+  "risk": "One of: Very Low, Low, Low-Med, Medium, High, Very High",
+  "category": "Short category like: Total Market, Large Cap, Tech, Dividend, Bonds, Leveraged, Energy, Healthcare, International, Real Estate, Commodities",
+  "leveraged": false or true,
+  "description": "2-3 sentence plain English explanation of what this ETF holds and how it works. Be specific about the index it tracks.",
+  "why": "1-2 sentences on why investors choose this ETF and what role it plays in a portfolio.",
+  "expense": "Expense ratio as string e.g. '0.03%'",
+  "inception": "Year as string e.g. '2010'",
+  "aum": "Assets under management as string e.g. '$50B+'",
+  "top_holdings": [{"n": "Company Name", "pct": "X.X%"}, ...] up to 7 holdings,
+  "pros": ["Pro 1", "Pro 2", "Pro 3", "Pro 4"] - 3-4 genuine advantages,
+  "cons": ["Con 1", "Con 2", "Con 3"] - 2-3 genuine disadvantages,
+  "warning": null or a warning string only for leveraged/high-risk ETFs
+}
+
+Return ONLY the JSON, no markdown, no explanation.`;
+
+  try {
+    const res = await fetch(ANTHROPIC_API, {
+      method: "POST",
+      headers: {
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "API error");
+
+    const text = data.content?.[0]?.text || "";
+    const clean = text.replace(/```json|```/g, "").trim();
+    const meta = JSON.parse(clean);
+
+    // Save to Supabase
+    const { error } = await supabase.from("etf_metadata").upsert({
+      ticker:       ticker.toUpperCase(),
+      name:         meta.name,
+      color:        meta.color || "#00b96b",
+      risk:         meta.risk,
+      category:     meta.category,
+      leveraged:    meta.leveraged || false,
+      description:  meta.description,
+      why:          meta.why,
+      expense:      meta.expense,
+      inception:    meta.inception,
+      aum:          meta.aum,
+      top_holdings: meta.top_holdings,
+      pros:         meta.pros,
+      cons:         meta.cons,
+      warning:      meta.warning || null,
+      generated_at: new Date().toISOString(),
+      updated_at:   new Date().toISOString(),
+    });
+
+    if (error) throw error;
+    console.log(`[META] ✓ ${ticker} metadata saved`);
+    return meta;
+  } catch(e) {
+    console.error(`[META] Failed for ${ticker}:`, e.message);
+    return null;
+  }
+}
+
+async function ensureEtfMetadata(tickers, etfPoolData) {
+  // Check which tickers are missing metadata
+  const { data: existing } = await supabase
+    .from("etf_metadata")
+    .select("ticker")
+    .in("ticker", tickers.map(t => t.toUpperCase()));
+
+  const existingSet = new Set((existing || []).map(r => r.ticker));
+  const missing = tickers.filter(t => !existingSet.has(t.toUpperCase()));
+
+  if (!missing.length) {
+    console.log(`[META] All ${tickers.length} ETFs have metadata ✓`);
+    return;
+  }
+
+  console.log(`[META] Generating metadata for ${missing.length} new ETFs: ${missing.join(", ")}`);
+
+  for (const ticker of missing) {
+    const etfData = etfPoolData?.find(r => r.ticker === ticker) || {};
+    await generateEtfMetadata(ticker, etfData);
+    // Small delay to avoid rate limits
+    await new Promise(r => setTimeout(r, 1000));
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // STOCK OF THE MONTH FETCHER
 // Runs on the 1st trading day of each month
 // Picks the stock with the best 1-month return from the watchlist
@@ -2092,6 +2467,21 @@ async function main() {
   const isFirstOfMonth = new Date().getDate() === 1;
   if (isFirstOfMonth || process.argv.includes("--score-now")) {
     await updateStockOfMonth();
+  }
+
+  // Auto-generate metadata for any new ETFs (runs daily, skips already done)
+  try {
+    const allTrackedTickers = [
+      ...new Set([
+        ...Object.keys(ETF_META),
+        "XLE","XLF","XLV","XLI","XLC","XLB","XLU","XLP",
+        "VB","IJR","IWM","TLT","LQD","VEA","VWO","EEM",
+        "VNQ","GLD","IAU","DBC","BITO","IBIT","DVYE","HDV"
+      ])
+    ];
+    await ensureEtfMetadata(allTrackedTickers, poolData || []);
+  } catch(e) {
+    console.error("[META] Metadata check failed:", e.message);
   }
 
   // Run daily scoring on all trading days
@@ -2666,6 +3056,121 @@ const STOCK_META = {
 const WATCHLIST = ["NVDA","AAPL","MSFT","AMZN","META","GOOGL","TSLA","AVGO","LLY","JPM","XOM","V","UNH"];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ETF METADATA AUTO-GENERATOR
+// When a new ETF is fetched that has no metadata in the DB,
+// calls Claude to generate description, holdings, pros/cons automatically
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
+
+async function generateEtfMetadata(ticker, etfData) {
+  console.log(`\n[META] Generating metadata for ${ticker}...`);
+
+  const prompt = `You are a financial data assistant. Generate structured metadata for the ETF ticker: ${ticker}
+
+ETF data available:
+- Price: ${etfData.price || "unknown"}
+- CAGR: ${etfData.cagr ? (etfData.cagr * 100).toFixed(1) + "%" : "unknown"}
+- Category: ${etfData.category || "unknown"}
+
+Return ONLY a valid JSON object with these exact fields:
+{
+  "name": "Full official name of the ETF",
+  "color": "A hex color that represents this ETF's brand or category (e.g. #00b96b for Vanguard, #8b5cf6 for Nasdaq/tech, #ff6b35 for leveraged)",
+  "risk": "One of: Very Low, Low, Low-Med, Medium, High, Very High",
+  "category": "Short category like: Total Market, Large Cap, Tech, Dividend, Bonds, Leveraged, Energy, Healthcare, International, Real Estate, Commodities",
+  "leveraged": false or true,
+  "description": "2-3 sentence plain English explanation of what this ETF holds and how it works. Be specific about the index it tracks.",
+  "why": "1-2 sentences on why investors choose this ETF and what role it plays in a portfolio.",
+  "expense": "Expense ratio as string e.g. '0.03%'",
+  "inception": "Year as string e.g. '2010'",
+  "aum": "Assets under management as string e.g. '$50B+'",
+  "top_holdings": [{"n": "Company Name", "pct": "X.X%"}, ...] up to 7 holdings,
+  "pros": ["Pro 1", "Pro 2", "Pro 3", "Pro 4"] - 3-4 genuine advantages,
+  "cons": ["Con 1", "Con 2", "Con 3"] - 2-3 genuine disadvantages,
+  "warning": null or a warning string only for leveraged/high-risk ETFs
+}
+
+Return ONLY the JSON, no markdown, no explanation.`;
+
+  try {
+    const res = await fetch(ANTHROPIC_API, {
+      method: "POST",
+      headers: {
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "API error");
+
+    const text = data.content?.[0]?.text || "";
+    const clean = text.replace(/```json|```/g, "").trim();
+    const meta = JSON.parse(clean);
+
+    // Save to Supabase
+    const { error } = await supabase.from("etf_metadata").upsert({
+      ticker:       ticker.toUpperCase(),
+      name:         meta.name,
+      color:        meta.color || "#00b96b",
+      risk:         meta.risk,
+      category:     meta.category,
+      leveraged:    meta.leveraged || false,
+      description:  meta.description,
+      why:          meta.why,
+      expense:      meta.expense,
+      inception:    meta.inception,
+      aum:          meta.aum,
+      top_holdings: meta.top_holdings,
+      pros:         meta.pros,
+      cons:         meta.cons,
+      warning:      meta.warning || null,
+      generated_at: new Date().toISOString(),
+      updated_at:   new Date().toISOString(),
+    });
+
+    if (error) throw error;
+    console.log(`[META] ✓ ${ticker} metadata saved`);
+    return meta;
+  } catch(e) {
+    console.error(`[META] Failed for ${ticker}:`, e.message);
+    return null;
+  }
+}
+
+async function ensureEtfMetadata(tickers, etfPoolData) {
+  // Check which tickers are missing metadata
+  const { data: existing } = await supabase
+    .from("etf_metadata")
+    .select("ticker")
+    .in("ticker", tickers.map(t => t.toUpperCase()));
+
+  const existingSet = new Set((existing || []).map(r => r.ticker));
+  const missing = tickers.filter(t => !existingSet.has(t.toUpperCase()));
+
+  if (!missing.length) {
+    console.log(`[META] All ${tickers.length} ETFs have metadata ✓`);
+    return;
+  }
+
+  console.log(`[META] Generating metadata for ${missing.length} new ETFs: ${missing.join(", ")}`);
+
+  for (const ticker of missing) {
+    const etfData = etfPoolData?.find(r => r.ticker === ticker) || {};
+    await generateEtfMetadata(ticker, etfData);
+    // Small delay to avoid rate limits
+    await new Promise(r => setTimeout(r, 1000));
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // STOCK OF THE MONTH FETCHER
 // Runs on the 1st trading day of each month
 // Picks the stock with the best 1-month return from the watchlist
@@ -2799,6 +3304,21 @@ async function main() {
   const isFirstOfMonth = new Date().getDate() === 1;
   if (isFirstOfMonth || process.argv.includes("--score-now")) {
     await updateStockOfMonth();
+  }
+
+  // Auto-generate metadata for any new ETFs (runs daily, skips already done)
+  try {
+    const allTrackedTickers = [
+      ...new Set([
+        ...Object.keys(ETF_META),
+        "XLE","XLF","XLV","XLI","XLC","XLB","XLU","XLP",
+        "VB","IJR","IWM","TLT","LQD","VEA","VWO","EEM",
+        "VNQ","GLD","IAU","DBC","BITO","IBIT","DVYE","HDV"
+      ])
+    ];
+    await ensureEtfMetadata(allTrackedTickers, poolData || []);
+  } catch(e) {
+    console.error("[META] Metadata check failed:", e.message);
   }
 
   // Run daily scoring on all trading days
