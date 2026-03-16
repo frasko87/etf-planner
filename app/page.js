@@ -92,7 +92,7 @@ export default function HomePage() {
           We build your personalised plan. You contribute from <strong>$50/month</strong>.
         </p>
 
-        <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap",marginBottom:16}}>
+        <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap",marginBottom:16,padding:"0 clamp(0px,2vw,20px)"}}>
           <Link href="/login?mode=signup" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:700,fontSize:16,color:"white",background:"var(--green)",padding:"15px clamp(24px,4vw,40px)",borderRadius:12,boxShadow:"0 4px 24px rgba(0,185,107,0.35)"}}>
             Start saving smarter — free →
           </Link>
@@ -114,9 +114,9 @@ export default function HomePage() {
           </h2>
         </div>
 
-        <div style={{background:"var(--text)",borderRadius:20,padding:"clamp(28px,4vw,40px)",overflow:"hidden"}}>
+        <div style={{background:"var(--text)",borderRadius:20,padding:"clamp(20px,4vw,40px)",overflowX:"auto"}}>
           {/* Header row */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr repeat(3,minmax(60px,80px))",gap:8,marginBottom:16,paddingBottom:14,borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr repeat(3,minmax(55px,80px))",gap:8,marginBottom:16,paddingBottom:14,borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
             <div/>
             {["1 year","5 years","10 years"].map(h=>(
               <div key={h} className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.3)",textAlign:"right"}}>{h}</div>
@@ -125,7 +125,7 @@ export default function HomePage() {
 
           {/* Data rows */}
           {SAVINGS_COMPARE.map((row,i)=>(
-            <div key={row.label} style={{display:"grid",gridTemplateColumns:"1fr repeat(3,minmax(60px,80px))",gap:8,padding:"clamp(12px,2vw,16px) 0",borderBottom:i<SAVINGS_COMPARE.length-1?"1px solid rgba(255,255,255,0.06)":"none",alignItems:"center",background:!row.dim?"rgba(0,185,107,0.04)":"transparent",marginLeft:row.dim?0:-8,marginRight:row.dim?0:-8,paddingLeft:row.dim?0:8,paddingRight:row.dim?0:8,borderRadius:row.dim?0:8}}>
+            <div key={row.label} style={{display:"grid",gridTemplateColumns:"1fr repeat(3,minmax(55px,80px))",gap:8,padding:"clamp(12px,2vw,16px) 0",borderBottom:i<SAVINGS_COMPARE.length-1?"1px solid rgba(255,255,255,0.06)":"none",alignItems:"center",background:!row.dim?"rgba(0,185,107,0.04)":"transparent",marginLeft:row.dim?0:-8,marginRight:row.dim?0:-8,paddingLeft:row.dim?0:8,paddingRight:row.dim?0:8,borderRadius:row.dim?0:8}}>
               <div>
                 <div style={{fontFamily:"DM Sans",fontWeight:row.dim?400:600,fontSize:"clamp(12px,2vw,14px)",color:row.dim?"rgba(255,255,255,0.4)":row.color,marginBottom:2}}>{row.label}</div>
                 <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>{row.rate} avg annual</div>
@@ -156,7 +156,7 @@ export default function HomePage() {
             This isn't gambling. It's structured saving.
           </h2>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,200px),1fr))",gap:14}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,220px),1fr))",gap:14}}>
           {WHY_ETFS.map(w=>(
             <div key={w.title} style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(18px,3vw,24px)",boxShadow:"var(--shadow)"}}>
               <div style={{fontSize:28,marginBottom:14}}>{w.icon}</div>
@@ -199,7 +199,7 @@ export default function HomePage() {
           </div>
 
           {/* 1 / 6 / 12 month results */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"clamp(6px,2vw,10px)",marginBottom:20}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"clamp(4px,2vw,10px)",marginBottom:20}}>
             {[
               {l:"1 month",  v:p.r1,  g:p.g1,  accent:false},
               {l:"6 months", v:p.r6,  g:p.g6,  accent:false},
@@ -243,7 +243,7 @@ export default function HomePage() {
             All three beat a regular savings account. Conservative is the closest to "risk-free."
           </p>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,230px),1fr))",gap:14}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,220px),1fr))",gap:14}}>
           {PLANS.map(plan=>(
             <div key={plan.name} style={{background:"white",border:`2px solid ${plan.color}22`,borderRadius:16,padding:"clamp(20px,3vw,28px)",boxShadow:"var(--shadow)",textAlign:"center"}}>
               <div style={{fontSize:32,marginBottom:12}}>{plan.icon}</div>
@@ -264,28 +264,48 @@ export default function HomePage() {
       </section>
 
       {/* ── ETF strip ───────────────────────────────────────────────────────── */}
-      <section id="etfs" style={{padding:"0 clamp(16px,4vw,20px) clamp(40px,6vw,64px)",maxWidth:900,margin:"0 auto"}}>
-        <div style={{textAlign:"center",marginBottom:20}}>
-          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:8,letterSpacing:1}}>WHAT'S IN YOUR PLAN</div>
-          <p style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)"}}>Our engine scores ETFs daily and picks the best performers for your risk level.</p>
+      <section id="etfs" style={{padding:"0 clamp(16px,4vw,20px) clamp(40px,6vw,64px)",maxWidth:820,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:10,letterSpacing:1.5}}>WHAT'S IN YOUR PLAN</div>
+          <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(20px,3.5vw,30px)",color:"var(--text)",letterSpacing:"-0.5px",marginBottom:8}}>
+            ETFs scored daily. Best ones picked for you.
+          </h2>
+          <p style={{fontFamily:"DM Sans",fontSize:"clamp(13px,2vw,15px)",color:"var(--muted)",lineHeight:1.7}}>
+            Our engine runs every market close — allocations update based on real momentum data.
+          </p>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,160px),1fr))",gap:10}}>
+        {/* Fixed 4-column grid, always centered */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,170px),1fr))",gap:"clamp(8px,2vw,14px)"}}>
           {ETFS.map(etf=>(
-            <div key={etf.ticker} style={{background:"white",border:`1px solid ${etf.color}33`,borderRadius:12,padding:"clamp(14px,2.5vw,18px)",boxShadow:"var(--shadow)"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                <span className="mono" style={{fontSize:13,color:etf.color,fontWeight:500}}>{etf.ticker}</span>
-                <span className="mono" style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:`${etf.color}10`,color:etf.color}}>{etf.risk}</span>
+            <div key={etf.ticker} style={{
+              background:"white",
+              border:`1.5px solid ${etf.color}33`,
+              borderRadius:14,
+              padding:"clamp(14px,2.5vw,20px)",
+              boxShadow:"var(--shadow)",
+              transition:"transform 0.15s, box-shadow 0.15s",
+            }}
+            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="var(--shadow2)";}}
+            onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="var(--shadow)";}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <span className="mono" style={{fontSize:"clamp(13px,2vw,15px)",color:etf.color,fontWeight:600}}>{etf.ticker}</span>
+                <span className="mono" style={{fontSize:9,padding:"2px 7px",borderRadius:4,background:`${etf.color}10`,color:etf.color,border:`1px solid ${etf.color}22`}}>{etf.risk}</span>
               </div>
-              <div style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted)",marginBottom:8}}>{etf.name}</div>
-              <div className="mono" style={{fontSize:12,color:"var(--green)"}}>{etf.ret}</div>
+              <div style={{fontFamily:"DM Sans",fontSize:"clamp(11px,1.8vw,13px)",color:"var(--muted)",marginBottom:10}}>{etf.name}</div>
+              <div style={{height:1,background:"var(--border)",marginBottom:10}}/>
+              <div className="mono" style={{fontSize:"clamp(12px,2vw,14px)",color:"var(--green)",fontWeight:600}}>{etf.ret}</div>
+              <div className="mono" style={{fontSize:9,color:"var(--muted2)",marginTop:2}}>avg annual return</div>
             </div>
           ))}
         </div>
+        <p style={{textAlign:"center",fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginTop:14}}>
+          Showing 4 of the best-performing tracked ETFs · Updated at NYSE open & close
+        </p>
       </section>
 
       {/* ── Stats bar ───────────────────────────────────────────────────────── */}
       <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)"}}>
-        <div style={{background:"var(--text)",borderRadius:16,padding:"clamp(24px,4vw,36px)",maxWidth:820,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:24,textAlign:"center"}}>
+        <div style={{background:"var(--text)",borderRadius:16,padding:"clamp(24px,4vw,36px)",maxWidth:820,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,140px),1fr))",gap:24,textAlign:"center"}}>
           {[
             {n:"Daily",  l:"ETF scoring engine"},
             {n:"$50",    l:"Minimum to start"},
@@ -307,7 +327,7 @@ export default function HomePage() {
             background:"var(--text)",borderRadius:20,
             padding:"clamp(28px,4vw,40px) clamp(24px,4vw,36px)",
             display:"flex",alignItems:"center",justifyContent:"space-between",
-            gap:20,flexWrap:"wrap",cursor:"pointer",
+            gap:20,flexWrap:"wrap",cursor:"pointer",minHeight:100,
             border:"1px solid rgba(255,255,255,0.06)",
             transition:"transform 0.15s, box-shadow 0.15s",
             boxShadow:"0 4px 20px rgba(0,0,0,0.12)",
