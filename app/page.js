@@ -31,10 +31,10 @@ const WHY_ETFS = [
 ];
 
 const ETFS = [
-  { ticker:"QQQ",  name:"Nasdaq-100",    ret:"~18.0%/yr", color:"#8b5cf6", risk:"Med" },
-  { ticker:"VTI",  name:"Total Market",  ret:"~13.5%/yr", color:"#00b96b", risk:"Low" },
-  { ticker:"VOO",  name:"S&P 500",       ret:"~13.2%/yr", color:"#3b82f6", risk:"Low" },
-  { ticker:"SCHD", name:"Dividends",     ret:"~12.0%/yr", color:"#c9a84c", risk:"Low" },
+  { ticker:"QQQ",  name:"Nasdaq-100",   ret:"+18.0%", color:"#8b5cf6", risk:"Med", positive:true  },
+  { ticker:"VTI",  name:"Total Market", ret:"+13.5%", color:"#00b96b", risk:"Low", positive:true  },
+  { ticker:"VOO",  name:"S&P 500",      ret:"+13.2%", color:"#3b82f6", risk:"Low", positive:true  },
+  { ticker:"SCHD", name:"Dividends",    ret:"+12.0%", color:"#c9a84c", risk:"Low", positive:true  },
 ];
 
 const tape = [...ETFS,...ETFS,...ETFS];
@@ -64,10 +64,10 @@ export default function HomePage() {
       <div style={{overflow:"hidden",background:"var(--text)",padding:"9px 0"}}>
         <div style={{display:"flex",gap:40,animation:"ticker 28s linear infinite",width:"max-content"}}>
           {tape.map((e,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:12,whiteSpace:"nowrap"}}>
-              <span className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>{e.ticker}</span>
-              <span className="mono" style={{fontSize:11,color:"#00ff88"}}>{e.ret}</span>
-              <span style={{color:"rgba(255,255,255,0.12)"}}>·</span>
+            <div key={i} style={{display:"flex",alignItems:"center",gap:10,whiteSpace:"nowrap"}}>
+              <span className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.45)",letterSpacing:0.5}}>{e.ticker}</span>
+              <span className="mono" style={{fontSize:11,color:e.positive!==false?"#00ff88":"#ff6b6b",fontWeight:500}}>{e.ret}</span>
+              <span className="mono" style={{fontSize:9,color:"rgba(255,255,255,0.15)"}}>|</span>
             </div>
           ))}
         </div>
@@ -293,8 +293,8 @@ export default function HomePage() {
               </div>
               <div style={{fontFamily:"DM Sans",fontSize:"clamp(11px,1.8vw,13px)",color:"var(--muted)",marginBottom:10}}>{etf.name}</div>
               <div style={{height:1,background:"var(--border)",marginBottom:10}}/>
-              <div className="mono" style={{fontSize:"clamp(12px,2vw,14px)",color:"var(--green)",fontWeight:600}}>{etf.ret}</div>
-              <div className="mono" style={{fontSize:9,color:"var(--muted2)",marginTop:2}}>avg annual return</div>
+              <div className="mono" style={{fontSize:"clamp(12px,2vw,14px)",color:etf.positive!==false?"var(--green)":"#ff4757",fontWeight:600}}>{etf.ret}/yr</div>
+              <div className="mono" style={{fontSize:9,color:"var(--muted2)",marginTop:2}}>10yr avg return</div>
             </div>
           ))}
         </div>
