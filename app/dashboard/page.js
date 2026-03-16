@@ -429,167 +429,146 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Plan builder + ETF selection */}
-          <div style={{display:"grid",gridTemplateColumns:isTab?"1fr":"420px 1fr",gap:isMob?16:20,marginBottom:24,alignItems:"start"}}>
+          {/* ── Returning user: Your Plan summary ──────────────────────────── */}
+          {userPlan ? (
+            <div style={{display:"grid",gridTemplateColumns:isTab?"1fr":"1fr 1fr",gap:isMob?14:20,marginBottom:24,alignItems:"start"}}>
 
-            {/* Plan builder */}
-            <div style={card}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}>
-                <div style={{height:3,width:24,background:"var(--green)",borderRadius:2}}/>
-                <div className="mono" style={{fontSize:10,letterSpacing:2,color:"var(--muted2)"}}>BUILD YOUR PLAN</div>
-              </div>
-
-              {/* Amount */}
-              <div style={{marginBottom:24}}>
-                <div style={{fontFamily:"DM Sans",fontSize:17,color:"var(--text)",fontWeight:600,marginBottom:14}}>How much per month?</div>
-                <div style={{display:"flex",gap:8,background:"var(--bg3)",borderRadius:12,padding:4}}>
-                  {[50,100,150].map(v=>(
-                    <button key={v} onClick={()=>setAmount(v)} style={{flex:1,padding:isMob?"11px 0":"13px 0",borderRadius:9,border:"none",cursor:"pointer",transition:"all 0.2s",background:amount===v?"white":"transparent",color:amount===v?"var(--text)":"var(--muted)",fontFamily:"DM Sans",fontWeight:amount===v?700:400,fontSize:isMob?18:22,boxShadow:amount===v?"var(--shadow2)":"none"}}>
-                      ${v}
+              {/* Left: This month's action card */}
+              <div style={{background:"var(--text)",borderRadius:16,padding:"clamp(20px,3vw,28px)",boxShadow:"var(--shadow2)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:10}}>
+                  <div>
+                    <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.4)",letterSpacing:1.5,marginBottom:8}}>YOUR PLAN</div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(22px,4vw,30px)",color:"white",letterSpacing:"-0.5px"}}>
+                      {pc.icon} {pc.label}
+                    </div>
+                    <div className="mono" style={{fontSize:12,color:pc.accentColor,marginTop:4}}>{pc.rate || "~"+Math.round((pc.targetReturn||0.09)*100)+"%"}/yr target</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4}}>MONTHLY</div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:36,color:"white",lineHeight:1}}>${amount}</div>
+                    <button onClick={()=>setShowOnboarding(true)} style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.35)",background:"none",border:"none",cursor:"pointer",marginTop:4,textDecoration:"underline"}}>
+                      change plan
                     </button>
+                  </div>
+                </div>
+
+                {/* This month's ETFs to buy */}
+                <div style={{marginBottom:16}}>
+                  <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.35)",letterSpacing:1,marginBottom:10}}>
+                    BUY THIS MONTH — {new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"}).toUpperCase()}
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+                    {curTickers.map((t,i)=>{
+                      const pct   = typeof allocs[t]==="number" ? allocs[t] : parseInt(allocs[t])||0;
+                      const meta  = ETF_META[t]||{color:"#888",name:t};
+                      const dollars = Math.round(amount*pct/100);
+                      return (
+                        <div key={t} style={{background:"rgba(255,255,255,0.07)",borderRadius:10,padding:"12px 14px",border:`1px solid ${meta.color}33`}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                            <span className="mono" style={{fontSize:13,color:meta.color,fontWeight:600}}>{t}</span>
+                            <span style={{fontFamily:"DM Sans",fontWeight:700,fontSize:15,color:"white"}}>${dollars}</span>
+                          </div>
+                          <div style={{fontFamily:"DM Sans",fontSize:11,color:"rgba(255,255,255,0.4)"}}>{pct}% of your ${amount}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Quick projection */}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,paddingTop:16,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+                  {[
+                    {l:"12 months",v:fmt(projs[12].exp),gain:fmt(projs[12].exp-amount*12)},
+                    {l:"5 year gain",v:"+"+fmt(projs[60].exp-amount*60),gain:null},
+                    {l:"Risk level",v:pc.label,gain:null},
+                  ].map(s=>(
+                    <div key={s.l} style={{textAlign:"center"}}>
+                      <div className="mono" style={{fontSize:9,color:"rgba(255,255,255,0.3)",marginBottom:4}}>{s.l.toUpperCase()}</div>
+                      <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:isMob?14:16,color:s.gain?"white":pc.accentColor}}>{s.v}</div>
+                      {s.gain && <div className="mono" style={{fontSize:9,color:"var(--green)",marginTop:2}}>+{s.gain} gain</div>}
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* Live preview strip — updates as user picks */}
-              <div style={{background:"var(--text)",borderRadius:12,padding:"16px 18px",marginBottom:24,border:`1px solid ${pc.accentColor}44`}}>
-                <div style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:10,letterSpacing:1}}>LIVE PROJECTION PREVIEW</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-                  {[{l:"1 mo",mo:1},{l:"6 mo",mo:6},{l:"12 mo",mo:12}].map(x=>{
-                    const exp  = project(amount,allocs,etfPool,x.mo,false,pc.targetReturn);
-                    const gain = exp - amount*x.mo;
-                    return (
-                      <div key={x.l} style={{textAlign:"center"}}>
-                        <div style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4}}>{x.l}</div>
-                        <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:18,color:"white"}}>{fmt(exp)}</div>
-                        <div style={{fontFamily:"DM Mono",fontSize:10,color:"#00ff88"}}>+{fmt(gain)}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Risk profiles — each shows projected return */}
-              <div>
-                <div style={{fontFamily:"DM Sans",fontSize:17,color:"var(--text)",fontWeight:600,marginBottom:14}}>Choose your risk level</div>
-                <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  {Object.entries(PROFILE_CONFIG).map(([key,p])=>{
-                    const sel      = selections[key];
-                    const fb       = {conservative:{VTI:50,SCHD:30,VOO:20},balanced:{VOO:35,QQQ:25,VTI:25,SCHD:15},aggressive:{TQQQ:35,SOXL:25,ARKK:25,QQQ:15}}[key];
-                    const rawA     = sel?.allocations || {};
-                    const aSum     = Object.values(rawA).reduce((a,b)=>a+(parseFloat(b)||0),0);
-                    const tickers  = sel?.tickers || Object.keys(fb);
-                    const profAllocs = (aSum > 50 && tickers.every(t=>rawA[t]!=null)) ? Object.fromEntries(tickers.map(t=>[t,parseFloat(rawA[t])||0])) : fb;
-                    const profTarget = {conservative:0.055,balanced:0.09,aggressive:0.16}[key];
-                    const exp12    = project(amount, profAllocs, etfPool, 12, false, profTarget);
-                    const gain12   = exp12 - amount*12;
-                    const isActive = risk===key;
-                    return (
-                      <button key={key} onClick={()=>setRisk(key)} style={{padding:"16px 18px",borderRadius:14,cursor:"pointer",border:`2px solid ${isActive?p.accentColor:"var(--border)"}`,background:isActive?`${p.accentColor}08`:"white",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all 0.2s",boxShadow:isActive?`0 4px 20px ${p.accentColor}22`:"none"}}>
-                        <div style={{display:"flex",alignItems:"center",gap:12}}>
-                          <div style={{width:36,height:36,borderRadius:10,background:`${p.accentColor}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{p.icon}</div>
-                          <div style={{textAlign:"left"}}>
-                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                              <span style={{fontFamily:"DM Sans",fontWeight:700,fontSize:17,color:isActive?"var(--text)":"var(--muted)"}}>{p.label}</span>
-                              {key==="aggressive" && <span style={{fontFamily:"DM Mono",fontSize:8,padding:"2px 6px",borderRadius:4,background:"rgba(255,71,87,0.08)",color:"#ff4757",border:"1px solid rgba(255,71,87,0.2)"}}>HIGH RISK</span>}
-                            </div>
-                            <div style={{fontFamily:"DM Sans",fontSize:13,color:isActive?"var(--muted)":"var(--muted2)",marginBottom:2}}>{p.desc}</div>
-                            <div style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted2)"}}>{p.subtitle}</div>
-                          </div>
-                        </div>
-                        <div style={{textAlign:"right"}}>
-                          <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:2}}>{p.rate}</div>
-                          <div style={{fontFamily:"DM Sans",fontWeight:800,fontSize:22,color:p.accentColor}}>{fmt(project(amount,profAllocs,etfPool,12,false,profTarget))}</div>
-                          <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:4}}>after 12 months</div>
-                          <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--green)"}}>5yr → +{fmt(project(amount,profAllocs,etfPool,60,false,profTarget)-amount*60)}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* CTA */}
-              <div style={{marginTop:24,position:"relative"}}>
-                <button
-                  onClick={()=>setView("plan")}
-                  style={{
-                    width:"100%", padding:"20px 0", borderRadius:12, border:"none", cursor:"pointer",
-                    background: pc.accentColor==="var(--gold)" ? "linear-gradient(135deg,#c9a84c,#e8c96a)" : pc.accentColor,
-                    color:"white", fontFamily:"DM Sans", fontWeight:700, fontSize:17,
-                    boxShadow:`0 6px 24px ${pc.accentColor}44`,
-                    transition:"transform 0.15s, box-shadow 0.15s",
-                  }}
-                  onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 10px 32px ${pc.accentColor}55`;}}
-                  onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=`0 6px 24px ${pc.accentColor}44`;}}
-                >
-                  <div style={{fontSize:17,fontWeight:700}}>View Full {pc.label} Plan →</div>
-                  <div style={{fontFamily:"DM Mono",fontSize:11,opacity:0.85,marginTop:3}}>
-                    {fmt(amount)}/mo · target ~{Math.round((pc.targetReturn||0.09)*100)}% annually
+              {/* Right: Current ETF selection panel */}
+              <div style={card}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{height:3,width:20,background:pc.accentColor,borderRadius:2}}/>
+                    <div className="mono" style={{fontSize:10,letterSpacing:2,color:"var(--muted2)"}}>
+                      THIS WEEK'S PICKS
+                    </div>
                   </div>
-                </button>
+                  {currentSel?.changed && (
+                    <span style={{fontFamily:"DM Mono",fontSize:9,padding:"3px 10px",borderRadius:10,background:"rgba(0,185,107,0.08)",color:"var(--green)",border:"1px solid rgba(0,185,107,0.2)"}}>UPDATED TODAY</span>
+                  )}
+                </div>
+                {currentSel?.change_summary && currentSel.changed && (
+                  <div style={{padding:"8px 12px",background:"rgba(0,185,107,0.04)",border:"1px solid rgba(0,185,107,0.15)",borderRadius:8,marginBottom:14}}>
+                    <span style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)"}}>↻ {currentSel.change_summary}</span>
+                  </div>
+                )}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8}}>
+                  {curTickers.map(t=>(
+                    <EtfCompareCard key={t} ticker={t} isNew={addedETFs.includes(t)} isRemoved={false} poolRow={etfPool.find(r=>r.ticker===t)}/>
+                  ))}
+                </div>
+                {usingFallback && (
+                  <div style={{padding:"10px 12px",background:"var(--gold2)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:8,marginTop:12}}>
+                    <span style={{fontFamily:"DM Mono",fontSize:9,color:"#8a6a1a"}}>🕐 Live picks update at today's market close</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* This week vs last week */}
-            <div style={card}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-                <div style={lbl}>
-                  {pc.label.toUpperCase()} SELECTION — {currentSel?.week_start ? new Date(currentSel.week_start).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "ESTIMATED"}
-                </div>
-                {currentSel?.changed && (
-                  <span style={{fontFamily:"DM Mono",fontSize:9,padding:"3px 10px",borderRadius:10,background:"rgba(0,185,107,0.08)",color:"var(--green)",border:"1px solid rgba(0,185,107,0.2)"}}>UPDATED TODAY</span>
-                )}
-              </div>
+          ) : (
 
-              {/* Change summary banner */}
-              {currentSel?.change_summary && currentSel.changed && (
-                <div style={{padding:"10px 14px",background:"rgba(0,185,107,0.04)",border:"1px solid rgba(0,185,107,0.15)",borderRadius:10,marginBottom:16}}>
-                  <span style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)"}}>↻ {currentSel.change_summary}</span>
+            // ── New user: plan builder (should not normally appear after onboarding) ──
+            <div style={{display:"grid",gridTemplateColumns:isTab?"1fr":"420px 1fr",gap:isMob?16:20,marginBottom:24,alignItems:"start"}}>
+              <div style={card}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}>
+                  <div style={{height:3,width:24,background:"var(--green)",borderRadius:2}}/>
+                  <div className="mono" style={{fontSize:10,letterSpacing:2,color:"var(--muted2)"}}>BUILD YOUR PLAN</div>
                 </div>
-              )}
-
-              {/* This week */}
-              <div style={{marginBottom:16}}>
-                <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:10,letterSpacing:1}}>THIS WEEK</div>
-                <div style={{display:"grid",gridTemplateColumns:isMob?"repeat(2,1fr)":"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
-                  {curTickers.map(t=>(
-                    <EtfCompareCard
-                      key={t} ticker={t}
-                      isNew={addedETFs.includes(t)}
-                      isRemoved={false}
-                      poolRow={etfPool.find(r=>r.ticker===t)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Last week — only show if something changed */}
-              {prevTickers.length > 0 && (
-                <div>
-                  <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:10,letterSpacing:1}}>YESTERDAY {currentSel?.changed ? "(CHANGED)" : "(SAME)"}</div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
-                    {prevTickers.map(t=>(
-                      <EtfCompareCard
-                        key={t} ticker={t}
-                        isNew={false}
-                        isRemoved={removedETFs.includes(t)}
-                        poolRow={etfPool.find(r=>r.ticker===t)}
-                      />
+                <div style={{marginBottom:24}}>
+                  <div style={{fontFamily:"DM Sans",fontSize:17,color:"var(--text)",fontWeight:600,marginBottom:14}}>How much per month?</div>
+                  <div style={{display:"flex",gap:8,background:"var(--bg3)",borderRadius:12,padding:4}}>
+                    {[50,100,150].map(v=>(
+                      <button key={v} onClick={()=>setAmount(v)} style={{flex:1,padding:isMob?"11px 0":"13px 0",borderRadius:9,border:"none",cursor:"pointer",transition:"all 0.2s",background:amount===v?"white":"transparent",color:amount===v?"var(--text)":"var(--muted)",fontFamily:"DM Sans",fontWeight:amount===v?700:400,fontSize:isMob?18:22,boxShadow:amount===v?"var(--shadow2)":"none"}}>
+                        ${v}<span style={{fontFamily:"DM Mono",fontSize:"clamp(9px,1.5vw,10px)",opacity:0.45}}>/mo</span>
+                      </button>
                     ))}
                   </div>
                 </div>
-              )}
-
-              {usingFallback && (
-                <div style={{padding:"12px 16px",background:"var(--gold2)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:10,marginTop:12}}>
-                  <span style={{fontFamily:"DM Mono",fontSize:10,color:"#8a6a1a"}}>
-                    🕐 Using estimated allocations — live selections populate after first Monday market close
-                  </span>
+                <div style={{background:"var(--text)",borderRadius:12,padding:"16px 18px",marginBottom:24,border:`1px solid ${pc.accentColor}44`}}>
+                  <div style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:10,letterSpacing:1}}>LIVE PROJECTION PREVIEW</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+                    {[{l:"1 mo",mo:1},{l:"6 mo",mo:6},{l:"12 mo",mo:12}].map(x=>{
+                      const exp  = project(amount,allocs,etfPool,x.mo,false,pc.targetReturn);
+                      const gain = exp - amount*x.mo;
+                      return (
+                        <div key={x.l} style={{textAlign:"center"}}>
+                          <div style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4}}>{x.l}</div>
+                          <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:18,color:"white"}}>{fmt(exp)}</div>
+                          <div style={{fontFamily:"DM Mono",fontSize:10,color:"#00ff88"}}>+{fmt(gain)}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              )}
+                <button onClick={()=>setShowOnboarding(true)} style={{width:"100%",padding:"18px 0",borderRadius:12,border:"none",cursor:"pointer",background:"var(--green)",color:"white",fontFamily:"DM Sans",fontWeight:700,fontSize:17,boxShadow:"0 6px 24px rgba(0,185,107,0.4)"}}>
+                  Set up my plan →
+                </button>
+              </div>
+              <div style={card}>
+                <div className="mono" style={{fontSize:10,letterSpacing:2,color:"var(--muted2)",marginBottom:16}}>THIS WEEK'S PICKS</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8}}>
+                  {curTickers.map(t=>(<EtfCompareCard key={t} ticker={t} isNew={false} isRemoved={false} poolRow={etfPool.find(r=>r.ticker===t)}/>))}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Macro strip */}
           {macroData && (
@@ -612,63 +591,6 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
-
-        {/* ── Market News ───────────────────────────────────────────────────── */}
-          <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(16px,3vw,22px)",boxShadow:"var(--shadow2)",marginBottom:0}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/>
-                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--muted2)"}}>MARKET NEWS</div>
-              </div>
-              <a href="https://finance.yahoo.com/topic/etfs/" target="_blank" rel="noreferrer"
-                style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",letterSpacing:0.5,whiteSpace:"nowrap"}}>
-                via Yahoo Finance ↗
-              </a>
-            </div>
-            {newsLoading ? (
-              <div style={{display:"flex",gap:10,flexDirection:"column"}}>
-                {[1,2,3].map(i=>(
-                  <div key={i} style={{height:52,background:"var(--bg3)",borderRadius:8,animation:"pulse 1.5s infinite"}}/>
-                ))}
-              </div>
-            ) : news.length === 0 ? (
-              <div style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted2)",textAlign:"center",padding:"20px 0"}}>No news available right now</div>
-            ) : (
-              <div style={{display:"flex",flexDirection:"column"}}>
-                {news.map((item,i)=>(
-                  <a key={i} href={item.link} target="_blank" rel="noreferrer"
-                    style={{display:"block",textDecoration:"none",padding:"clamp(10px,2vw,13px) 0",borderBottom:i<news.length-1?"1px solid var(--bg3)":"none"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:isMob?8:16}}>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{
-                          fontFamily:"DM Sans",fontSize:"clamp(13px,2vw,14px)",fontWeight:500,
-                          color:"var(--text)",lineHeight:1.55,marginBottom:isMob?0:3,
-                          // On mobile: clamp to 2 lines
-                          display:"-webkit-box",WebkitLineClamp:isMob?2:3,
-                          WebkitBoxOrient:"vertical",overflow:"hidden",
-                        }}>
-                          {item.title}
-                        </div>
-                        {!isMob && item.desc && (
-                          <div style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted2)",lineHeight:1.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                            {item.desc}
-                          </div>
-                        )}
-                      </div>
-                      <div style={{flexShrink:0,textAlign:"right",minWidth:isMob?32:48}}>
-                        {!isMob && (
-                          <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",whiteSpace:"nowrap",marginBottom:2}}>
-                            {item.pubDate ? new Date(item.pubDate).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : ""}
-                          </div>
-                        )}
-                        <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)"}}>↗</div>
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
 
         {/* ── Monthly History ─────────────────────────────────────────────── */}
           {monthlyHistory.length > 0 && (
@@ -734,6 +656,64 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
+
+
+        {/* ── Market News ───────────────────────────────────────────────────── */}
+          <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(16px,3vw,22px)",boxShadow:"var(--shadow2)",marginBottom:0}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/>
+                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--muted2)"}}>MARKET NEWS</div>
+              </div>
+              <a href="https://finance.yahoo.com/topic/etfs/" target="_blank" rel="noreferrer"
+                style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",letterSpacing:0.5,whiteSpace:"nowrap"}}>
+                via Yahoo Finance ↗
+              </a>
+            </div>
+            {newsLoading ? (
+              <div style={{display:"flex",gap:10,flexDirection:"column"}}>
+                {[1,2,3].map(i=>(
+                  <div key={i} style={{height:52,background:"var(--bg3)",borderRadius:8,animation:"pulse 1.5s infinite"}}/>
+                ))}
+              </div>
+            ) : news.length === 0 ? (
+              <div style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted2)",textAlign:"center",padding:"20px 0"}}>No news available right now</div>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column"}}>
+                {news.map((item,i)=>(
+                  <a key={i} href={item.link} target="_blank" rel="noreferrer"
+                    style={{display:"block",textDecoration:"none",padding:"clamp(10px,2vw,13px) 0",borderBottom:i<news.length-1?"1px solid var(--bg3)":"none"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:isMob?8:16}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{
+                          fontFamily:"DM Sans",fontSize:"clamp(13px,2vw,14px)",fontWeight:500,
+                          color:"var(--text)",lineHeight:1.55,marginBottom:isMob?0:3,
+                          // On mobile: clamp to 2 lines
+                          display:"-webkit-box",WebkitLineClamp:isMob?2:3,
+                          WebkitBoxOrient:"vertical",overflow:"hidden",
+                        }}>
+                          {item.title}
+                        </div>
+                        {!isMob && item.desc && (
+                          <div style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted2)",lineHeight:1.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                            {item.desc}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{flexShrink:0,textAlign:"right",minWidth:isMob?32:48}}>
+                        {!isMob && (
+                          <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",whiteSpace:"nowrap",marginBottom:2}}>
+                            {item.pubDate ? new Date(item.pubDate).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : ""}
+                          </div>
+                        )}
+                        <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)"}}>↗</div>
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
 
         </>}
 
