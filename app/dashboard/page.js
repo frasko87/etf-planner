@@ -12,6 +12,7 @@ function useWindowWidth() {
   return width;
 }
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "../../lib/supabase/client";
 import { getMarketStatus, STATUS_STYLE } from "../../lib/market";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
@@ -413,12 +414,46 @@ export default function DashboardPage() {
     <div style={{minHeight:"100vh",background:"var(--bg)",color:"var(--text)"}}>
 
       {/* Nav */}
-      <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:`0 ${isMob?"16px":"32px"}`,height:60,background:"rgba(248,248,245,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid var(--border)",position:"sticky",top:0,zIndex:100}}>
-        <span className="pixel" style={{fontSize:10,color:"var(--text)"}}>ETF<span style={{color:"var(--green)"}}>.</span>PLAN</span>
-        <div style={{display:"flex",alignItems:"center",gap:isMob?8:12}}>
-          {!isMob && <span style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",opacity:0.7}}>{user?.email}</span>}
-          {view==="plan" && <button onClick={()=>setView("dashboard")} style={{fontFamily:"DM Sans",fontSize:isMob?12:14,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:isMob?"6px 10px":"7px 16px",cursor:"pointer"}}>← {isMob?"Back":"Dashboard"}</button>}
-          <button onClick={handleLogout} style={{fontFamily:"DM Sans",fontSize:isMob?12:14,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:isMob?"6px 10px":"7px 16px",cursor:"pointer"}}>Log out</button>
+      <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:`0 ${isMob?"14px":"32px"}`,height:60,background:"rgba(248,248,245,0.97)",backdropFilter:"blur(12px)",borderBottom:"1px solid var(--border)",position:"sticky",top:0,zIndex:100}}>
+        <div style={{display:"flex",alignItems:"center",gap:isMob?10:24}}>
+          <Link href="/" className="pixel" style={{fontSize:10,color:"var(--text)",textDecoration:"none",flexShrink:0}}>ETF<span style={{color:"var(--green)"}}>.</span>PLAN</Link>
+          {!isMob && (
+            <div style={{display:"flex",gap:3}}>
+              {[
+                {label:"Dashboard",v:"dashboard"},
+                {label:"My Plan",  v:"plan"     },
+                {label:"Library",  v:"library"  },
+              ].map(tab=>(
+                <button key={tab.v} onClick={()=>setView(tab.v)} style={{
+                  fontFamily:"DM Sans",fontSize:13,fontWeight:view===tab.v?600:400,
+                  color:view===tab.v?"var(--text)":"var(--muted)",
+                  background:view===tab.v?"white":"transparent",
+                  border:view===tab.v?"1px solid var(--border)":"1px solid transparent",
+                  borderRadius:8,padding:"6px 12px",cursor:"pointer",
+                  boxShadow:view===tab.v?"var(--shadow)":"none",transition:"all 0.15s",
+                }}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          {isMob && (
+            <div style={{display:"flex",gap:2}}>
+              {[{v:"dashboard",icon:"📊"},{v:"plan",icon:"📋"},{v:"library",icon:"📚"}].map(tab=>(
+                <button key={tab.v} onClick={()=>setView(tab.v)} style={{
+                  fontSize:15,background:view===tab.v?"white":"transparent",
+                  border:view===tab.v?"1px solid var(--border)":"1px solid transparent",
+                  borderRadius:7,padding:"5px 7px",cursor:"pointer",
+                }}>
+                  {tab.icon}
+                </button>
+              ))}
+            </div>
+          )}
+          <Link href="/" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",padding:"6px 12px",border:"1px solid var(--border)",borderRadius:8,textDecoration:"none",display:isMob?"none":"block"}}>← Home</Link>
+          <button onClick={handleLogout} style={{fontFamily:"DM Sans",fontSize:isMob?12:13,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:isMob?"6px 10px":"6px 12px",cursor:"pointer"}}>Log out</button>
         </div>
       </nav>
 
@@ -431,7 +466,13 @@ export default function DashboardPage() {
             <div>
               <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:2,marginBottom:8}}>YOUR DASHBOARD</div>
               <h1 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(24px,4vw,34px)",color:"white",margin:0,letterSpacing:"-1px",lineHeight:1.1}}>
-                {user?.email?.split("@")[0] ? `Hi, ${user.email.split("@")[0].charAt(0).toUpperCase() + user.email.split("@")[0].slice(1)} 👋` : "Your ETF Plan"}
+                {(() => {
+                  const raw = user?.email?.split("@")[0] || "";
+                  // Clean up common email patterns: john.doe → John, john_doe → John
+                  const name = raw.split(/[._+-]/)[0];
+                  const clean = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+                  return clean ? `Hi, ${clean} 👋` : "Your Dashboard";
+                })()}
               </h1>
               <p style={{fontFamily:"DM Sans",fontSize:15,color:"rgba(255,255,255,0.4)",margin:"6px 0 0",lineHeight:1.5}}>
                 Save smarter. Grow your money monthly.
@@ -1121,6 +1162,104 @@ export default function DashboardPage() {
 
 
         </>}
+
+        {view === "library" && (
+          <div style={{maxWidth:860,margin:"0 auto"}}>
+            {/* Library header */}
+            <div style={{background:"var(--text)",borderRadius:16,padding:"clamp(20px,3vw,28px) clamp(20px,4vw,32px)",marginBottom:20}}>
+              <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:2,marginBottom:8}}>RESOURCE LIBRARY</div>
+              <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(22px,4vw,32px)",color:"white",margin:"0 0 6px",letterSpacing:"-0.5px"}}>
+                📚 Learn & grow your knowledge
+              </h2>
+              <p style={{fontFamily:"DM Sans",fontSize:15,color:"rgba(255,255,255,0.45)",margin:0}}>
+                Everything you need to invest smarter — from ETF basics to advanced strategies.
+              </p>
+            </div>
+
+            {/* Quick guides */}
+            <div style={{marginBottom:20}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                <div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/>
+                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--text)",fontWeight:500}}>GUIDES</div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"repeat(2,1fr)",gap:12}}>
+                {[
+                  { icon:"🧭", title:"What are ETFs?", desc:"The complete beginner's guide. What they are, why they work, and how to start.", link:"/learn", tag:"Beginner", color:"#00b96b" },
+                  { icon:"⚖️", title:"Picking your risk level", desc:"Conservative vs Balanced vs Aggressive — which is right for you?", link:"/learn#plans", tag:"Beginner", color:"#3b82f6" },
+                  { icon:"🏦", title:"Which platform to use", desc:"Robinhood, eToro, Vanguard, Interactive Brokers — compared.", link:"/learn#platforms", tag:"Beginner", color:"#c9a84c" },
+                  { icon:"📈", title:"Dollar-cost averaging", desc:"Why investing the same amount every month beats trying to time the market.", link:"/learn#dca", tag:"Strategy", color:"#8b5cf6" },
+                ].map(g=>(
+                  <Link key={g.title} href={g.link} style={{
+                    display:"block",textDecoration:"none",
+                    background:"white",border:"1px solid var(--border)",borderRadius:14,
+                    padding:"clamp(16px,2.5vw,20px)",boxShadow:"var(--shadow)",
+                    transition:"transform 0.15s, box-shadow 0.15s",
+                  }}
+                  onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="var(--shadow2)";}}
+                  onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="var(--shadow)";}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                      <span style={{fontSize:24}}>{g.icon}</span>
+                      <span style={{fontFamily:"DM Mono",fontSize:9,padding:"2px 8px",borderRadius:6,background:`${g.color}10`,color:g.color,border:`1px solid ${g.color}22`}}>{g.tag}</span>
+                    </div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:15,color:"var(--text)",marginBottom:6}}>{g.title}</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",lineHeight:1.7}}>{g.desc}</div>
+                    <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)",marginTop:10}}>Read guide →</div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* ETF Glossary */}
+            <div style={{marginBottom:20}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                <div style={{height:3,width:20,background:"var(--gold)",borderRadius:2}}/>
+                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--text)",fontWeight:500}}>YOUR ETFs — QUICK REFERENCE</div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:isMob?"repeat(2,1fr)":"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
+                {Object.entries(ETF_META).filter(([,m])=>!m.leveraged).slice(0,8).map(([ticker,meta])=>(
+                  <Link key={ticker} href={`/etf/${ticker}`} style={{
+                    display:"block",textDecoration:"none",
+                    background:"white",border:`1.5px solid ${meta.color}22`,borderRadius:12,
+                    padding:"clamp(12px,2vw,16px)",boxShadow:"var(--shadow)",
+                    transition:"transform 0.15s",
+                  }}
+                  onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
+                  onMouseLeave={e=>e.currentTarget.style.transform=""}>
+                    <div style={{fontFamily:"DM Mono",fontSize:13,color:meta.color,fontWeight:600,marginBottom:4}}>{ticker}</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:11,color:"var(--muted)",marginBottom:8}}>{meta.name}</div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)"}}>{meta.risk} risk</span>
+                      <span style={{fontFamily:"DM Mono",fontSize:9,color:"var(--green)"}}>Details →</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Key concepts */}
+            <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(18px,3vw,24px)",boxShadow:"var(--shadow2)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+                <div style={{height:3,width:20,background:"#8b5cf6",borderRadius:2}}/>
+                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--text)",fontWeight:500}}>KEY CONCEPTS</div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                {[
+                  { term:"CAGR", def:"Compound Annual Growth Rate — the average yearly return assuming reinvestment. A CAGR of 10% means $100 becomes $110 after year 1, $121 after year 2, not $120." },
+                  { term:"Expense Ratio", def:"The annual fee the ETF charges, taken from your returns. VOO charges 0.03% — for every $1,000 invested, you pay just $0.30/year." },
+                  { term:"Momentum", def:"How much a stock or ETF has moved recently. Positive 1M momentum means it's been rising this month. Our engine uses this to pick this week's ETFs." },
+                  { term:"Dollar-Cost Averaging", def:"Investing the same amount every month regardless of price. Proven to outperform trying to time the market for most investors." },
+                  { term:"Diversification", def:"Spreading money across many assets so no single failure destroys your portfolio. VTI owns 3,700 companies — if one fails, 3,699 others cover it." },
+                  { term:"Leveraged ETF", def:"Amplifies daily returns by 2x or 3x using derivatives. TQQQ goes up 3% when QQQ goes up 1% — but also down 3% when QQQ drops 1%. High risk." },
+                ].map((c,i,arr)=>(
+                  <div key={c.term} style={{padding:"14px 0",borderBottom:i<arr.length-1?"1px solid var(--bg3)":"none"}}>
+                    <div style={{fontFamily:"DM Mono",fontSize:12,color:"var(--text)",fontWeight:500,marginBottom:4}}>{c.term}</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",lineHeight:1.75}}>{c.def}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {view === "plan" && <>
 
