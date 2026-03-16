@@ -176,7 +176,7 @@ function EtfCompareCard({ ticker, isNew, isRemoved, poolRow }) {
         </div>
         <div style={{textAlign:"right"}}>
           <div style={{fontFamily:"DM Mono",fontSize:9,color:"#aaaabc",marginBottom:2}}>1M MOM</div>
-          <div style={{fontFamily:"DM Mono",fontSize:12,color:poolRow?.mom_1m>=0?"#00b96b":"#ff4757"}}>{fmtPct(poolRow?.mom_1m)}</div>
+          <div style={{fontFamily:"DM Mono",fontSize:13,fontWeight:500,color:poolRow?.mom_1m>=0?"#00b96b":"#ff4757"}}>{fmtPct(poolRow?.mom_1m)}</div>
         </div>
       </div>
     </div>
@@ -312,7 +312,7 @@ export default function DashboardPage() {
   const sc = STATUS_STYLE[ms.status] || STATUS_STYLE.CLOSED;
 
   const card  = {background:"white",border:"1px solid var(--border)",borderRadius:16,padding:22,boxShadow:"var(--shadow2)"};
-  const lbl   = {fontFamily:"DM Mono",fontSize:11,letterSpacing:1.5,color:"var(--muted2)",marginBottom:16};
+  const lbl   = {fontFamily:"DM Mono",fontSize:11,letterSpacing:2,color:"var(--muted2)",marginBottom:18,textTransform:"uppercase"};
 
   return (
     <div style={{minHeight:"100vh",background:"var(--bg)",color:"var(--text)"}}>
@@ -321,17 +321,41 @@ export default function DashboardPage() {
       <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:`0 ${isMob?"16px":"32px"}`,height:60,background:"rgba(248,248,245,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid var(--border)",position:"sticky",top:0,zIndex:100}}>
         <span className="pixel" style={{fontSize:10,color:"var(--text)"}}>ETF<span style={{color:"var(--green)"}}>.</span>PLAN</span>
         <div style={{display:"flex",alignItems:"center",gap:isMob?8:12}}>
-          {!isMob && <span style={{fontFamily:"DM Mono",fontSize:13,color:"var(--muted)",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user?.email}</span>}
+          {!isMob && <span style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",opacity:0.7}}>{user?.email}</span>}
           {view==="plan" && <button onClick={()=>setView("dashboard")} style={{fontFamily:"DM Sans",fontSize:isMob?12:14,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:isMob?"6px 10px":"7px 16px",cursor:"pointer"}}>← {isMob?"Back":"Dashboard"}</button>}
           <button onClick={handleLogout} style={{fontFamily:"DM Sans",fontSize:isMob?12:14,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:isMob?"6px 10px":"7px 16px",cursor:"pointer"}}>Log out</button>
         </div>
       </nav>
 
-      <div style={{maxWidth:1100,margin:"0 auto",padding:isMob?"16px 12px 60px":"32px 20px 80px"}}>
+      <div style={{maxWidth:1160,margin:"0 auto",padding:isMob?"16px 14px 60px":"36px 24px 96px"}}>
 
         {view === "dashboard" && <>
 
-          {/* Market status */}
+          {/* Dashboard greeting header */}
+          <div style={{background:"var(--text)",borderRadius:16,padding:"20px 28px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+            <div>
+              <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.35)",letterSpacing:2,marginBottom:6}}>YOUR DASHBOARD</div>
+              <h1 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:isMob?"clamp(20px,5vw,24px)":"clamp(22px,3vw,30px)",color:"white",margin:0,letterSpacing:"-0.5px"}}>
+                {user?.email?.split("@")[0] ? `Hi, ${user.email.split("@")[0].charAt(0).toUpperCase() + user.email.split("@")[0].slice(1)} 👋` : "Your ETF Plan"}
+              </h1>
+              <p style={{fontFamily:"DM Sans",fontSize:14,color:"rgba(255,255,255,0.45)",margin:"4px 0 0",lineHeight:1.5}}>
+                Build your plan, track your ETFs, grow your savings.
+              </p>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              {[
+                {l:"ETFs tracked",v:"Daily"},
+                {l:"Next update",v:ms.isOpen?"4:05 PM ET":"Market open"},
+              ].map(s=>(
+                <div key={s.l} style={{background:"rgba(255,255,255,0.05)",borderRadius:10,padding:"10px 16px",textAlign:"center",border:"1px solid rgba(255,255,255,0.08)"}}>
+                  <div className="mono" style={{fontSize:9,color:"rgba(255,255,255,0.3)",marginBottom:3}}>{s.l.toUpperCase()}</div>
+                  <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:14,color:"white"}}>{s.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Market status */}}
           <div style={{background:sc.bg,border:`1px solid ${sc.border}`,borderRadius:16,padding:"20px 28px",marginBottom:24}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16}}>
               <div>
@@ -339,8 +363,8 @@ export default function DashboardPage() {
                   <span style={{color:sc.color,fontSize:13,animation:sc.pulse?"pulse 1.5s infinite":"none"}}>{sc.icon}</span>
                   <span style={{fontFamily:"DM Mono",fontSize:12,color:sc.color,letterSpacing:1.5}}>{ms.status.replace("_"," ")}</span>
                 </div>
-                <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:22,color:"var(--text)",marginBottom:6}}>{ms.reason}</div>
-                <div style={{fontFamily:"DM Sans",fontSize:15,color:"var(--muted)",lineHeight:1.7}}>{ms.detail}</div>
+                <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(20px,3vw,26px)",color:"var(--text)",marginBottom:6}}>{ms.reason}</div>
+                <div style={{fontFamily:"DM Sans",fontSize:16,color:"var(--muted)",lineHeight:1.7}}>{ms.detail}</div>
                 {ms.nextOpen && <div style={{fontFamily:"DM Mono",fontSize:11,color:sc.color,marginTop:10}}>Next session → {ms.nextOpen}</div>}
               </div>
               <div style={{textAlign:isMob?"left":"right",display:"flex",flexDirection:isMob?"row":"column",flexWrap:"wrap",gap:isMob?16:12}}>
@@ -368,11 +392,14 @@ export default function DashboardPage() {
 
             {/* Plan builder */}
             <div style={card}>
-              <div className="mono" style={{fontSize:10,letterSpacing:2,color:"var(--muted2)",marginBottom:16}}>BUILD YOUR PLAN</div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}>
+                <div style={{height:3,width:24,background:"var(--green)",borderRadius:2}}/>
+                <div className="mono" style={{fontSize:10,letterSpacing:2,color:"var(--muted2)"}}>BUILD YOUR PLAN</div>
+              </div>
 
               {/* Amount */}
               <div style={{marginBottom:24}}>
-                <div style={{fontFamily:"DM Sans",fontSize:15,color:"var(--muted)",fontWeight:500,marginBottom:12}}>How much per month?</div>
+                <div style={{fontFamily:"DM Sans",fontSize:17,color:"var(--text)",fontWeight:600,marginBottom:14}}>How much per month?</div>
                 <div style={{display:"flex",gap:8,background:"var(--bg3)",borderRadius:12,padding:4}}>
                   {[50,100,150].map(v=>(
                     <button key={v} onClick={()=>setAmount(v)} style={{flex:1,padding:isMob?"11px 0":"13px 0",borderRadius:9,border:"none",cursor:"pointer",transition:"all 0.2s",background:amount===v?"white":"transparent",color:amount===v?"var(--text)":"var(--muted)",fontFamily:"DM Sans",fontWeight:amount===v?700:400,fontSize:isMob?18:22,boxShadow:amount===v?"var(--shadow2)":"none"}}>
@@ -402,7 +429,7 @@ export default function DashboardPage() {
 
               {/* Risk profiles — each shows projected return */}
               <div>
-                <div style={{fontFamily:"DM Sans",fontSize:15,color:"var(--muted)",fontWeight:500,marginBottom:12}}>Choose your risk level</div>
+                <div style={{fontFamily:"DM Sans",fontSize:17,color:"var(--text)",fontWeight:600,marginBottom:14}}>Choose your risk level</div>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
                   {Object.entries(PROFILE_CONFIG).map(([key,p])=>{
                     const sel      = selections[key];
@@ -416,22 +443,22 @@ export default function DashboardPage() {
                     const gain12   = exp12 - amount*12;
                     const isActive = risk===key;
                     return (
-                      <button key={key} onClick={()=>setRisk(key)} style={{padding:"14px 16px",borderRadius:12,cursor:"pointer",border:`2px solid ${isActive?p.accentColor:"var(--border)"}`,background:isActive?`${p.accentColor}08`:"white",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all 0.2s",boxShadow:isActive?`0 0 0 3px ${p.accentColor}15`:"none"}}>
+                      <button key={key} onClick={()=>setRisk(key)} style={{padding:"16px 18px",borderRadius:14,cursor:"pointer",border:`2px solid ${isActive?p.accentColor:"var(--border)"}`,background:isActive?`${p.accentColor}08`:"white",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all 0.2s",boxShadow:isActive?`0 4px 20px ${p.accentColor}22`:"none"}}>
                         <div style={{display:"flex",alignItems:"center",gap:12}}>
                           <div style={{width:36,height:36,borderRadius:10,background:`${p.accentColor}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{p.icon}</div>
                           <div style={{textAlign:"left"}}>
                             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                              <span style={{fontFamily:"DM Sans",fontWeight:600,fontSize:16,color:isActive?"var(--text)":"var(--muted)"}}>{p.label}</span>
+                              <span style={{fontFamily:"DM Sans",fontWeight:700,fontSize:17,color:isActive?"var(--text)":"var(--muted)"}}>{p.label}</span>
                               {key==="aggressive" && <span style={{fontFamily:"DM Mono",fontSize:8,padding:"2px 6px",borderRadius:4,background:"rgba(255,71,87,0.08)",color:"#ff4757",border:"1px solid rgba(255,71,87,0.2)"}}>HIGH RISK</span>}
                             </div>
-                            <div style={{fontFamily:"DM Sans",fontSize:12,color:isActive?"var(--muted)":"var(--muted2)",marginBottom:1}}>{p.desc}</div>
-                            <div style={{fontFamily:"DM Sans",fontSize:11,color:"var(--muted2)"}}>{p.subtitle}</div>
+                            <div style={{fontFamily:"DM Sans",fontSize:13,color:isActive?"var(--muted)":"var(--muted2)",marginBottom:2}}>{p.desc}</div>
+                            <div style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted2)"}}>{p.subtitle}</div>
                           </div>
                         </div>
                         <div style={{textAlign:"right"}}>
                           <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:2}}>{p.rate || p.desc.split(" ")[0]}</div>
-                          <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:20,color:p.accentColor}}>+{fmt(project(amount,profAllocs,etfPool,60,false,profTarget)-amount*60)}</div>
-                          <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)"}}>gain over 5 years</div>
+                          <div style={{fontFamily:"DM Sans",fontWeight:800,fontSize:24,color:p.accentColor}}>+{fmt(project(amount,profAllocs,etfPool,60,false,profTarget)-amount*60)}</div>
+                          <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)"}}>gain over 5 years</div>
                         </div>
                       </button>
                     );
@@ -453,7 +480,7 @@ export default function DashboardPage() {
                   onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 10px 32px ${pc.accentColor}55`;}}
                   onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=`0 6px 24px ${pc.accentColor}44`;}}
                 >
-                  <div>View Full {pc.label} Plan →</div>
+                  <div style={{fontSize:17,fontWeight:700}}>View Full {pc.label} Plan →</div>
                   <div style={{fontFamily:"DM Mono",fontSize:11,opacity:0.85,marginTop:3}}>
                     {fmt(amount)}/mo · target ~{Math.round((pc.targetReturn||0.09)*100)}% annually
                   </div>
@@ -525,7 +552,7 @@ export default function DashboardPage() {
           {macroData && (
             <div style={{...card,padding:"14px 20px",marginBottom:20}}>
               <div style={{display:"flex",gap:32,flexWrap:"wrap",alignItems:"center"}}>
-                <div style={lbl}>MACRO — FRED</div>
+                <div style={{...lbl,marginBottom:0}}>MACRO — FRED</div>
                 <div style={{display:"flex",gap:isMob?16:32,flexWrap:"wrap"}}>
                   {[
                     {l:"CPI Inflation",  v:fmtPct(macroData.inflation), c:"#ff4757"},
@@ -534,8 +561,8 @@ export default function DashboardPage() {
                     {l:"CPI Date",       v:macroData.cpi_date||"—",     c:"var(--muted)"},
                   ].map(x=>(
                     <div key={x.l}>
-                      <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:3}}>{x.l}</div>
-                      <div style={{fontFamily:"DM Mono",fontSize:15,color:x.c}}>{x.v}</div>
+                      <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:4}}>{x.l}</div>
+                      <div style={{fontFamily:"DM Mono",fontSize:17,fontWeight:600,color:x.c}}>{x.v}</div>
                     </div>
                   ))}
                 </div>
@@ -546,7 +573,7 @@ export default function DashboardPage() {
         {/* ── Market News ───────────────────────────────────────────────────── */}
           <div style={{...card, padding:"18px 20px", marginBottom:0}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-              <div style={{...lbl, marginBottom:0}}>MARKET NEWS</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/><div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--muted2)"}}>MARKET NEWS</div></div>
               <a href="https://finance.yahoo.com/topic/etfs/" target="_blank" rel="noreferrer"
                 style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",letterSpacing:0.5}}>
                 via Yahoo Finance ↗
@@ -567,11 +594,11 @@ export default function DashboardPage() {
                     style={{display:"block",textDecoration:"none",padding:"11px 0",borderBottom:i<news.length-1?"1px solid var(--bg3)":"none",transition:"background 0.1s"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
                       <div style={{flex:1}}>
-                        <div style={{fontFamily:"DM Sans",fontSize:13,fontWeight:500,color:"var(--text)",lineHeight:1.45,marginBottom:3}}>
+                        <div style={{fontFamily:"DM Sans",fontSize:14,fontWeight:500,color:"var(--text)",lineHeight:1.5,marginBottom:4}}>
                           {item.title}
                         </div>
                         {item.desc && (
-                          <div style={{fontFamily:"DM Sans",fontSize:11,color:"var(--muted2)",lineHeight:1.5,WebkitLineClamp:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          <div style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted2)",lineHeight:1.5,WebkitLineClamp:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                             {item.desc}
                           </div>
                         )}
@@ -602,7 +629,7 @@ export default function DashboardPage() {
                 </div>
                 <span style={{fontSize:28}}>{pc.icon}</span>
               </div>
-              <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:isMob?26:34,color:"var(--text)",margin:0,letterSpacing:"-0.5px"}}>Investment Plan</h2>
+              <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:isMob?"clamp(24px,5vw,30px)":"clamp(28px,4vw,38px)",color:"var(--text)",margin:0,letterSpacing:"-1px"}}>Investment Plan</h2>
               <div style={{fontFamily:"DM Mono",fontSize:12,color:"var(--muted)",marginTop:6}}>
                 {fmt(amount)}/month · {currentSel?.week_start ? `As of ${new Date(currentSel.week_start).toLocaleDateString('en-US',{month:'short',day:'numeric'})}` : "Estimated"} · {etfPool.length>0?"Live data":"Estimated data"}
               </div>
@@ -722,7 +749,7 @@ export default function DashboardPage() {
                         {l:"YTD",    v:fmtPct(row?.ytd),                         c:(row?.ytd??0)>=0?"var(--green)":"#ff4757"},
                       ].map(x=>(
                         <div key={x.l} style={{background:"var(--bg3)",borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
-                          <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:3}}>{x.l}</div>
+                          <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:4}}>{x.l}</div>
                           <div style={{fontFamily:"DM Mono",fontSize:13,color:x.c,fontWeight:500}}>{x.v}</div>
                         </div>
                       ))}
