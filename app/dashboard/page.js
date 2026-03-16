@@ -11,7 +11,7 @@ function useWindowWidth() {
   }, []);
   return width;
 }
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "../../lib/supabase/client";
 import { getMarketStatus, STATUS_STYLE } from "../../lib/market";
@@ -230,7 +230,6 @@ export default function DashboardPage() {
   const supabase = createClient();
 
   const [user,         setUser]         = useState(null);
-  const searchParams = useSearchParams();
   const [etfPool,      setEtfPool]      = useState([]);
   const [selections,   setSelections]   = useState({});   // { conservative: {...}, balanced: {...}, aggressive: {...} }
   const [macroData,    setMacroData]    = useState(null);
