@@ -1,5 +1,5 @@
 // app/api/send-monthly-reminder/route.js
-import { sendMonthlyReminder } from "../../../lib/email";
+import { sendMonthlyReminder } from "@/lib/email";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "edge";

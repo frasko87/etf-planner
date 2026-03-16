@@ -1,5 +1,5 @@
 // app/api/send-welcome/route.js
-import { sendWelcomeEmail } from "../../../lib/email";
+import { sendWelcomeEmail } from "@/lib/email";
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req) {
