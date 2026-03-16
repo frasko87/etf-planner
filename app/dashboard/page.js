@@ -256,6 +256,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const load = async () => {
+      try {
       const { data:{ user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
       setUser(user);
@@ -278,10 +279,12 @@ export default function DashboardPage() {
       setFetchLog(logs || []);
 
       // Load user's saved plan + monthly history
-      const [{ data:savedPlan }, { data:history }] = await Promise.all([
+      const [planResult, historyResult] = await Promise.allSettled([
         supabase.from("user_plans").select("*").eq("user_id", user.id).single(),
         supabase.from("user_monthly_actions").select("*").eq("user_id", user.id).order("month_key", { ascending:false }).limit(6),
       ]);
+      const savedPlan = planResult.status === "fulfilled" ? planResult.value?.data : null;
+      const history   = historyResult.status === "fulfilled" ? historyResult.value?.data : [];
 
       if (savedPlan) {
         setUserPlan(savedPlan);
@@ -295,20 +298,20 @@ export default function DashboardPage() {
 
       // Load stock of the month from DB
       const monthKey = new Date().toISOString().slice(0,7);
-      const { data:stockData } = await supabase
-        .from("stock_of_month")
-        .select("*")
-        .eq("month_key", monthKey)
-        .single();
-      if (stockData) setStockOfMonth(stockData);
-
-      // Check for tab param in URL (e.g. /dashboard?tab=library)
-      const tabParam = searchParams?.get("tab");
-      if (tabParam && ["dashboard","plan","library"].includes(tabParam)) {
-        setView(tabParam);
-      }
+      try {
+        const { data:stockData } = await supabase
+          .from("stock_of_month")
+          .select("*")
+          .eq("month_key", monthKey)
+          .single();
+        if (stockData) setStockOfMonth(stockData);
+      } catch(e) { /* table may not exist yet */ }
 
       setLoading(false);
+      } catch(e) {
+        console.error("Dashboard load error:", e);
+        setLoading(false);
+      }
     };
     load();
     // Fetch market news
@@ -342,6 +345,17 @@ export default function DashboardPage() {
   const width  = useWindowWidth();
   const isMob  = width < 640;
   const isTab  = width < 1024;
+
+  // Read ?tab= param safely client-side
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab && ["dashboard","plan","library"].includes(tab)) {
+        setView(tab);
+      }
+    }
+  }, []);
 
   if (loading) return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"var(--bg)"}}>
