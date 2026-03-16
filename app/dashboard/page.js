@@ -1234,7 +1234,7 @@ export default function DashboardPage() {
 
                 <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"repeat(2,1fr)",gap:10}}>
                   {[
-                    { n:"01", icon:"🏦", title:"Choose your platform", desc:"Open a free account on Robinhood, eToro, Vanguard or Interactive Brokers. All are regulated, commission-free for ETFs and take under 10 minutes to sign up.", link:"/learn#platforms", cta:"Compare platforms →", color:"#3b82f6" },
+                    { n:"01", icon:"🏦", title:"Choose your platform", desc:"Open a free account on Robinhood, eToro, Vanguard or Interactive Brokers. All are regulated, commission-free for ETFs and take under 10 minutes to sign up.", link:"/guide/platforms", cta:"Compare platforms →", color:"#3b82f6" },
                     { n:"02", icon:"💳", title:"Fund your account", desc:"Connect your bank account and transfer your first month's amount ($50, $100 or $150). Most platforms process transfers in 1–3 business days.", link:null, cta:null, color:"#c9a84c" },
                     { n:"03", icon:"🔍", title:"Search your ETF ticker", desc:"In the search bar, type the ticker symbol from your plan — e.g. VOO, QQQ or VTI. Click the result to open the ETF page.", link:null, cta:null, color:"#8b5cf6" },
                     { n:"04", icon:"✅", title:"Buy the dollar amount", desc:"Select 'Buy', choose 'Dollar amount' (not shares), type your allocated amount (e.g. $40), confirm and submit. You're now an investor.", link:null, cta:null, color:"#00b96b" },
@@ -1273,10 +1273,10 @@ export default function DashboardPage() {
               </div>
               <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"repeat(2,1fr)",gap:12}}>
                 {[
-                  { icon:"🧭", title:"What are ETFs?", desc:"The complete beginner's guide. What they are, why they work, and how to start with $50/month.", link:"/learn", tag:"Beginner", color:"#00b96b" },
-                  { icon:"⚖️", title:"Picking your risk level", desc:"Conservative vs Balanced vs Aggressive — what the numbers actually mean for your money.", link:"/learn", tag:"Beginner", color:"#3b82f6" },
-                  { icon:"🏦", title:"Which platform to use", desc:"Robinhood, eToro, Vanguard, Interactive Brokers — fees, features and who each is best for.", link:"/learn#platforms", tag:"Beginner", color:"#c9a84c" },
-                  { icon:"📈", title:"Dollar-cost averaging", desc:"Why investing the same amount every month beats trying to time the market — with real data.", link:"/learn", tag:"Strategy", color:"#8b5cf6" },
+                  { icon:"🧭", title:"What are ETFs?", desc:"The complete beginner's guide. What they are, why they work, and how to start with $50/month.", link:"/guide/what-are-etfs", tag:"Beginner", color:"#00b96b" },
+                  { icon:"⚖️", title:"Picking your risk level", desc:"Conservative vs Balanced vs Aggressive — what the numbers actually mean for your money.", link:"/guide/risk-levels", tag:"Beginner", color:"#3b82f6" },
+                  { icon:"🏦", title:"Which platform to use", desc:"Robinhood, eToro, Vanguard, Interactive Brokers — fees, features and who each is best for.", link:"/guide/platforms", tag:"Beginner", color:"#c9a84c" },
+                  { icon:"📈", title:"Dollar-cost averaging", desc:"Why investing the same amount every month beats trying to time the market — with real data.", link:"/guide/dollar-cost-averaging", tag:"Strategy", color:"#8b5cf6" },
                 ].map(g=>(
                   <Link key={g.title} href={g.link} style={{
                     display:"block",textDecoration:"none",
