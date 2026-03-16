@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Onboarding from "./Onboarding";
 
 function useWindowWidth() {
   const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
@@ -204,6 +205,9 @@ export default function DashboardPage() {
   const [showScores,   setShowScores]   = useState(false);
   const [news,         setNews]         = useState([]);
   const [newsLoading,  setNewsLoading]  = useState(true);
+  const [userPlan,     setUserPlan]     = useState(null);   // saved plan from DB
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [monthlyHistory, setMonthlyHistory] = useState([]);
 
   useEffect(() => {
     const load = async () => {
@@ -227,6 +231,23 @@ export default function DashboardPage() {
 
       setMacroData(macro);
       setFetchLog(logs || []);
+
+      // Load user's saved plan + monthly history
+      const [{ data:savedPlan }, { data:history }] = await Promise.all([
+        supabase.from("user_plans").select("*").eq("user_id", user.id).single(),
+        supabase.from("user_monthly_actions").select("*").eq("user_id", user.id).order("month_key", { ascending:false }).limit(6),
+      ]);
+
+      if (savedPlan) {
+        setUserPlan(savedPlan);
+        setAmount(savedPlan.amount);
+        setRisk(savedPlan.profile);
+        setMonthlyHistory(history || []);
+      } else {
+        // First time user — show onboarding
+        setShowOnboarding(true);
+      }
+
       setLoading(false);
     };
     load();
@@ -241,6 +262,23 @@ export default function DashboardPage() {
   }, []);
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/"); };
+
+  const handleOnboardingComplete = ({ profile, amount: amt }) => {
+    setRisk(profile);
+    setAmount(amt);
+    setUserPlan({ profile, amount: amt });
+    setShowOnboarding(false);
+  };
+
+  const handlePlanChange = async (newProfile, newAmount) => {
+    setRisk(newProfile);
+    setAmount(newAmount);
+    await supabase.from("user_plans").upsert({
+      user_id: user.id, profile: newProfile, amount: newAmount,
+      updated_at: new Date().toISOString(),
+    });
+    setUserPlan({ profile: newProfile, amount: newAmount });
+  };
   const width  = useWindowWidth();
   const isMob  = width < 640;
   const isTab  = width < 1024;
@@ -249,6 +287,10 @@ export default function DashboardPage() {
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"var(--bg)"}}>
       <span style={{fontFamily:"DM Mono",fontSize:12,color:"var(--muted)"}}>Loading your dashboard…</span>
     </div>
+  );
+
+  if (showOnboarding) return (
+    <Onboarding user={user} onComplete={handleOnboardingComplete} />
   );
 
   // Fallback allocations — tuned for target return tiers
@@ -572,43 +614,54 @@ export default function DashboardPage() {
           )}
 
         {/* ── Market News ───────────────────────────────────────────────────── */}
-          <div style={{...card, padding:"18px 20px", marginBottom:0}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/><div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--muted2)"}}>MARKET NEWS</div></div>
+          <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(16px,3vw,22px)",boxShadow:"var(--shadow2)",marginBottom:0}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/>
+                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--muted2)"}}>MARKET NEWS</div>
+              </div>
               <a href="https://finance.yahoo.com/topic/etfs/" target="_blank" rel="noreferrer"
-                style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",letterSpacing:0.5}}>
+                style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",letterSpacing:0.5,whiteSpace:"nowrap"}}>
                 via Yahoo Finance ↗
               </a>
             </div>
             {newsLoading ? (
               <div style={{display:"flex",gap:10,flexDirection:"column"}}>
                 {[1,2,3].map(i=>(
-                  <div key={i} style={{height:48,background:"var(--bg3)",borderRadius:8,animation:"pulse 1.5s infinite"}}/>
+                  <div key={i} style={{height:52,background:"var(--bg3)",borderRadius:8,animation:"pulse 1.5s infinite"}}/>
                 ))}
               </div>
             ) : news.length === 0 ? (
-              <div style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted2)",textAlign:"center",padding:"16px 0"}}>No news available right now</div>
+              <div style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted2)",textAlign:"center",padding:"20px 0"}}>No news available right now</div>
             ) : (
-              <div style={{display:"flex",flexDirection:"column",gap:0}}>
+              <div style={{display:"flex",flexDirection:"column"}}>
                 {news.map((item,i)=>(
                   <a key={i} href={item.link} target="_blank" rel="noreferrer"
-                    style={{display:"block",textDecoration:"none",padding:"11px 0",borderBottom:i<news.length-1?"1px solid var(--bg3)":"none",transition:"background 0.1s"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
-                      <div style={{flex:1}}>
-                        <div style={{fontFamily:"DM Sans",fontSize:14,fontWeight:500,color:"var(--text)",lineHeight:1.5,marginBottom:4}}>
+                    style={{display:"block",textDecoration:"none",padding:"clamp(10px,2vw,13px) 0",borderBottom:i<news.length-1?"1px solid var(--bg3)":"none"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:isMob?8:16}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{
+                          fontFamily:"DM Sans",fontSize:"clamp(13px,2vw,14px)",fontWeight:500,
+                          color:"var(--text)",lineHeight:1.55,marginBottom:isMob?0:3,
+                          // On mobile: clamp to 2 lines
+                          display:"-webkit-box",WebkitLineClamp:isMob?2:3,
+                          WebkitBoxOrient:"vertical",overflow:"hidden",
+                        }}>
                           {item.title}
                         </div>
-                        {item.desc && (
-                          <div style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted2)",lineHeight:1.5,WebkitLineClamp:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        {!isMob && item.desc && (
+                          <div style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted2)",lineHeight:1.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                             {item.desc}
                           </div>
                         )}
                       </div>
-                      <div style={{flexShrink:0,textAlign:"right"}}>
-                        <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",whiteSpace:"nowrap"}}>
-                          {item.pubDate ? new Date(item.pubDate).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : ""}
-                        </div>
-                        <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--green)",marginTop:2}}>↗</div>
+                      <div style={{flexShrink:0,textAlign:"right",minWidth:isMob?32:48}}>
+                        {!isMob && (
+                          <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",whiteSpace:"nowrap",marginBottom:2}}>
+                            {item.pubDate ? new Date(item.pubDate).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : ""}
+                          </div>
+                        )}
+                        <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)"}}>↗</div>
                       </div>
                     </div>
                   </a>
@@ -616,6 +669,71 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+
+        {/* ── Monthly History ─────────────────────────────────────────────── */}
+          {monthlyHistory.length > 0 && (
+            <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(16px,3vw,22px)",boxShadow:"var(--shadow2)",marginTop:20}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:18}}>
+                <div style={{height:3,width:20,background:"var(--gold)",borderRadius:2}}/>
+                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--muted2)"}}>YOUR MONTHLY HISTORY</div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                {monthlyHistory.map((action, i) => {
+                  const monthLabel = new Date(action.month_key + "-01").toLocaleDateString("en-US", {month:"long", year:"numeric"});
+                  const isCurrentMonth = action.month_key === new Date().toISOString().slice(0,7);
+                  const tickers = action.tickers || [];
+                  return (
+                    <div key={action.month_key} style={{
+                      border:`1px solid ${isCurrentMonth?"rgba(0,185,107,0.25)":"var(--border)"}`,
+                      background: isCurrentMonth ? "rgba(0,185,107,0.02)" : "var(--bg3)",
+                      borderRadius:12, padding:"14px 16px",
+                    }}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div className="mono" style={{fontSize:12,color:"var(--text)",fontWeight:500}}>{monthLabel}</div>
+                          {isCurrentMonth && <span style={{fontFamily:"DM Mono",fontSize:9,padding:"2px 8px",borderRadius:6,background:"rgba(0,185,107,0.1)",color:"var(--green)"}}>THIS MONTH</span>}
+                        </div>
+                        <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:15,color:"var(--text)"}}>
+                          ${action.amount} invested
+                        </div>
+                      </div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {tickers.map(t => {
+                          const alloc = action.allocations?.[t] || 0;
+                          const invested = action.amounts_invested?.[t] || Math.round(action.amount * alloc / 100);
+                          const entryPrice = action.entry_prices?.[t];
+                          const currentPrice = etfPool.find(r=>r.ticker===t)?.price;
+                          const gain = entryPrice && currentPrice ? ((currentPrice - entryPrice) / entryPrice * invested) : null;
+                          const meta = ETF_META[t] || {color:"#888"};
+                          return (
+                            <div key={t} style={{
+                              background:"white",border:`1px solid ${meta.color}22`,
+                              borderRadius:8,padding:"8px 12px",
+                              display:"flex",flexDirection:"column",gap:2,
+                              minWidth:isMob?"calc(50% - 3px)":0,flex:isMob?"1 1 calc(50% - 3px)":"0 0 auto",
+                            }}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                                <span className="mono" style={{fontSize:12,color:meta.color,fontWeight:600}}>{t}</span>
+                                <span className="mono" style={{fontSize:11,color:"var(--text)"}}>${invested}</span>
+                              </div>
+                              {gain !== null && (
+                                <div className="mono" style={{fontSize:10,color:gain>=0?"var(--green)":"#ff4757"}}>
+                                  {gain>=0?"+":""}{gain.toFixed(2)}
+                                </div>
+                              )}
+                              {!entryPrice && !isCurrentMonth && (
+                                <div className="mono" style={{fontSize:9,color:"var(--muted2)"}}>price data pending</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
         </>}
 
