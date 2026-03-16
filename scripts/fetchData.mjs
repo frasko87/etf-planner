@@ -486,6 +486,163 @@ async function updateMarketStatus() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// STOCK METADATA — industry, description, color for known tickers
+// ─────────────────────────────────────────────────────────────────────────────
+const STOCK_META = {
+  NVDA: { name:"Nvidia Corporation",    industry:"Semiconductors",    color:"#76b900", founded:"1993", employees:"29,600",
+    description:"The dominant AI chip maker. Nvidia's GPUs power virtually every major AI model — from ChatGPT to Gemini. Revenue grew 265% YoY in 2024.",
+    why_notable:"Nvidia became the most valuable company on Earth in 2024. Its H100 and B200 GPUs are the picks-and-shovels of the AI gold rush." },
+  AAPL: { name:"Apple Inc.",            industry:"Consumer Tech",     color:"#555555", founded:"1976", employees:"161,000",
+    description:"The world's most valuable consumer tech company. iPhone, Mac, iPad, Apple Watch and a rapidly growing services business including App Store, Apple TV+ and Apple Pay.",
+    why_notable:"Apple crossed $100B in services revenue in 2024. Its App Store alone generates more profit than most Fortune 500 companies." },
+  MSFT: { name:"Microsoft Corporation", industry:"Cloud / AI",        color:"#00a4ef", founded:"1975", employees:"221,000",
+    description:"Microsoft's $13B bet on OpenAI paid off massively. Azure AI services grow 60%+ annually. Copilot is now embedded in every Microsoft 365 product.",
+    why_notable:"Microsoft became the first company to deeply integrate AI across its entire product suite — from Excel to Teams to Visual Studio." },
+  AMZN: { name:"Amazon.com Inc.",       industry:"E-commerce / Cloud",color:"#ff9900", founded:"1994", employees:"1,500,000",
+    description:"Amazon dominates both e-commerce (38% US market share) and cloud computing (AWS holds 31% of global cloud market). AWS is the profit engine funding everything else.",
+    why_notable:"AWS generated over $90B in revenue in 2024. Amazon's advertising business alone is now larger than the entire Netflix." },
+  META: { name:"Meta Platforms",        industry:"Social Media / AI", color:"#0082fb", founded:"2004", employees:"67,000",
+    description:"Facebook's parent company transformed itself into an AI powerhouse. Meta AI is used by over 700M people monthly across WhatsApp, Instagram and Facebook.",
+    why_notable:"Meta's 'year of efficiency' turned a struggling company into a profit machine. Their open-source Llama AI model is used by millions of developers worldwide." },
+  GOOGL:{ name:"Alphabet Inc.",         industry:"Search / AI / Cloud",color:"#4285f4", founded:"1998", employees:"182,000",
+    description:"Google's parent company controls 91% of global search. YouTube is the world's second-largest search engine. Google Cloud is the fastest-growing major cloud platform at 28% growth.",
+    why_notable:"Gemini Ultra became the first AI model to outperform GPT-4 on major benchmarks. Google processes over 8.5 billion searches daily." },
+  TSLA: { name:"Tesla Inc.",            industry:"EVs / AI",          color:"#cc0000", founded:"2003", employees:"127,000",
+    description:"Tesla leads the EV market globally and is expanding into energy storage, robotics (Optimus robot) and autonomous driving (FSD). Its Dojo supercomputer rivals Nvidia for AI training.",
+    why_notable:"Tesla delivered 1.8M vehicles in 2023. Full Self-Driving subscriptions reached 500,000+ users. The Cybertruck launched to record demand." },
+  AVGO: { name:"Broadcom Inc.",         industry:"Semiconductors",    color:"#cc0000", founded:"1991", employees:"20,000",
+    description:"Broadcom makes the networking chips that power the internet — switches, routers, storage controllers. Its $69B acquisition of VMware made it a cloud software giant too.",
+    why_notable:"Broadcom supplies custom AI chips to Google and Meta, making it the second-biggest AI chip company behind Nvidia. VMware integration adds $4B+ in annual software revenue." },
+  LLY:  { name:"Eli Lilly",             industry:"Pharmaceuticals",   color:"#e4003a", founded:"1876", employees:"43,000",
+    description:"Eli Lilly makes Mounjaro and Zepbound — the GLP-1 weight loss drugs that have taken the world by storm. Demand so far exceeds supply that pharmacies are rationing doses.",
+    why_notable:"Lilly became the most valuable healthcare company in history in 2024. GLP-1 drugs may reduce cardiovascular disease by 20%, expanding the addressable market massively." },
+  JPM:  { name:"JPMorgan Chase",        industry:"Banking",           color:"#005eb8", founded:"1799", employees:"308,000",
+    description:"The largest US bank by assets. JPMorgan manages $3.9 trillion in assets, processes $10 trillion in payments daily, and serves 82 million US households.",
+    why_notable:"Under Jamie Dimon, JPMorgan emerged as the strongest US bank after the 2023 regional banking crisis, acquiring First Republic Bank and gaining $500B in deposits." },
+  XOM:  { name:"ExxonMobil",            industry:"Energy",            color:"#cc0000", founded:"1870", employees:"62,000",
+    description:"The largest US oil company. ExxonMobil produces 3.7M barrels of oil equivalent per day, operates the world's largest refining network, and is expanding into lithium mining.",
+    why_notable:"ExxonMobil's $60B acquisition of Pioneer Natural Resources made it the dominant force in the Permian Basin — the most productive oil field in US history." },
+  V:    { name:"Visa Inc.",             industry:"Payments",          color:"#1a1f71", founded:"1958", employees:"26,500",
+    description:"Visa processes over $15 trillion in payment volume annually across 4 billion cards in 200+ countries. It takes a tiny cut of every tap, swipe and click — and owns none of the credit risk.",
+    why_notable:"Visa processes 240M transactions daily. As cash disappears globally, Visa's TAM expands to $185 trillion in total consumer spending that could shift to digital payments." },
+  UNH:  { name:"UnitedHealth Group",    industry:"Healthcare",        color:"#286ce2", founded:"1977", employees:"440,000",
+    description:"The largest US health insurer with 52 million members. UnitedHealth's Optum division is the largest employer of physicians in America, reshaping how healthcare is delivered.",
+    why_notable:"UnitedHealth generates $370B+ in annual revenue — more than Apple. Optum's data-driven care model is cutting hospital readmission rates by 25%." },
+};
+
+// Top stocks to track for "Stock of the Month" — focused on S&P 500 large caps
+const WATCHLIST = ["NVDA","AAPL","MSFT","AMZN","META","GOOGL","TSLA","AVGO","LLY","JPM","XOM","V","UNH"];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STOCK OF THE MONTH FETCHER
+// Runs on the 1st trading day of each month
+// Picks the stock with the best 1-month return from the watchlist
+// ─────────────────────────────────────────────────────────────────────────────
+async function updateStockOfMonth() {
+  const monthKey = new Date().toISOString().slice(0, 7);
+
+  // Check if already done this month
+  const { data: existing } = await supabase
+    .from("stock_of_month")
+    .select("ticker")
+    .eq("month_key", monthKey)
+    .single();
+
+  if (existing) {
+    console.log(`[STOCK] Already set for ${monthKey}: ${existing.ticker}`);
+    return;
+  }
+
+  console.log(`\n[STOCK OF THE MONTH] Evaluating ${WATCHLIST.length} stocks...`);
+
+  const results = [];
+
+  for (const ticker of WATCHLIST) {
+    try {
+      // Fetch monthly data from Alpha Vantage
+      const res  = await fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol=${ticker}&apikey=${KEYS.av}`);
+      const json = await res.json();
+      if (json["Note"] || json["Information"]) { console.log(`  AV rate limited — stopping`); break; }
+
+      const series = json["Monthly Adjusted Time Series"];
+      if (!series) continue;
+
+      const prices = Object.entries(series)
+        .map(([date, v]) => ({ date, close: parseFloat(v["5. adjusted close"]) }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      if (prices.length < 2) continue;
+
+      const last  = prices[prices.length - 1];
+      const prev  = prices[prices.length - 2];
+      const change1m = (last.close - prev.close) / prev.close;
+
+      // YTD
+      const janPrice = prices.find(p => new Date(p.date).getFullYear() === new Date(last.date).getFullYear());
+      const ytd = janPrice ? (last.close - janPrice.close) / janPrice.close : null;
+
+      results.push({ ticker, price: last.close, change1m, ytd });
+      console.log(`  ${ticker}: 1M ${(change1m*100).toFixed(1)}% | YTD ${ytd?(ytd*100).toFixed(1)+"%":"—"}`);
+
+      await new Promise(r => setTimeout(r, 600)); // AV rate limit
+    } catch(e) {
+      console.error(`  ${ticker} failed: ${e.message}`);
+    }
+  }
+
+  if (!results.length) {
+    console.log("[STOCK] No results — skipping");
+    return;
+  }
+
+  // Pick the top performer by 1-month return
+  const winner = results.sort((a, b) => b.change1m - a.change1m)[0];
+  const meta   = STOCK_META[winner.ticker];
+
+  if (!meta) {
+    console.log(`[STOCK] No metadata for ${winner.ticker} — skipping`);
+    return;
+  }
+
+  // Fetch P/E ratio and market cap from Finnhub
+  let pe_ratio = "—", market_cap = "—";
+  try {
+    const fhRes  = await fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${winner.ticker}&metric=all&token=${KEYS.fh}`);
+    const fhData = (await fhRes.json()).metric || {};
+    pe_ratio   = fhData.peBasicExclExtraTTM ? `${fhData.peBasicExclExtraTTM.toFixed(0)}x` : "—";
+    market_cap = fhData.marketCapitalization
+      ? fhData.marketCapitalization > 1000
+        ? `$${(fhData.marketCapitalization/1000).toFixed(1)}T`
+        : `$${fhData.marketCapitalization.toFixed(0)}B`
+      : "—";
+  } catch(e) {
+    console.error(`  Finnhub metrics failed: ${e.message}`);
+  }
+
+  const row = {
+    month_key:   monthKey,
+    ticker:      winner.ticker,
+    name:        meta.name,
+    price:       winner.price,
+    change_1m:   winner.change1m,
+    change_ytd:  winner.ytd,
+    market_cap,
+    pe_ratio,
+    industry:    meta.industry,
+    founded:     meta.founded,
+    employees:   meta.employees,
+    description: meta.description,
+    why_notable: meta.why_notable,
+    color:       meta.color,
+    fetched_at:  new Date().toISOString(),
+  };
+
+  const { error } = await supabase.from("stock_of_month").upsert(row);
+  if (error) console.error(`[STOCK] DB error: ${error.message}`);
+  else console.log(`\n[STOCK] Winner: ${winner.ticker} +${(winner.change1m*100).toFixed(1)}% → saved for ${monthKey}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ENTRY POINT
 // ─────────────────────────────────────────────────────────────────────────────
 async function main() {
@@ -506,7 +663,13 @@ async function main() {
   // Fetch all ETF data
   const { poolData, fred } = await fetchAllETFs();
 
-  // Run weekly scoring on Mondays (or manual trigger)
+  // Update stock of the month (runs on 1st of month or manual trigger)
+  const isFirstOfMonth = new Date().getDate() === 1;
+  if (isFirstOfMonth || process.argv.includes("--score-now")) {
+    await updateStockOfMonth();
+  }
+
+  // Run daily scoring on all trading days
   if (shouldRunScoring() || runScoring) {
     await runWeeklySelection(poolData);
   } else {
@@ -1030,6 +1193,163 @@ async function updateMarketStatus() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// STOCK METADATA — industry, description, color for known tickers
+// ─────────────────────────────────────────────────────────────────────────────
+const STOCK_META = {
+  NVDA: { name:"Nvidia Corporation",    industry:"Semiconductors",    color:"#76b900", founded:"1993", employees:"29,600",
+    description:"The dominant AI chip maker. Nvidia's GPUs power virtually every major AI model — from ChatGPT to Gemini. Revenue grew 265% YoY in 2024.",
+    why_notable:"Nvidia became the most valuable company on Earth in 2024. Its H100 and B200 GPUs are the picks-and-shovels of the AI gold rush." },
+  AAPL: { name:"Apple Inc.",            industry:"Consumer Tech",     color:"#555555", founded:"1976", employees:"161,000",
+    description:"The world's most valuable consumer tech company. iPhone, Mac, iPad, Apple Watch and a rapidly growing services business including App Store, Apple TV+ and Apple Pay.",
+    why_notable:"Apple crossed $100B in services revenue in 2024. Its App Store alone generates more profit than most Fortune 500 companies." },
+  MSFT: { name:"Microsoft Corporation", industry:"Cloud / AI",        color:"#00a4ef", founded:"1975", employees:"221,000",
+    description:"Microsoft's $13B bet on OpenAI paid off massively. Azure AI services grow 60%+ annually. Copilot is now embedded in every Microsoft 365 product.",
+    why_notable:"Microsoft became the first company to deeply integrate AI across its entire product suite — from Excel to Teams to Visual Studio." },
+  AMZN: { name:"Amazon.com Inc.",       industry:"E-commerce / Cloud",color:"#ff9900", founded:"1994", employees:"1,500,000",
+    description:"Amazon dominates both e-commerce (38% US market share) and cloud computing (AWS holds 31% of global cloud market). AWS is the profit engine funding everything else.",
+    why_notable:"AWS generated over $90B in revenue in 2024. Amazon's advertising business alone is now larger than the entire Netflix." },
+  META: { name:"Meta Platforms",        industry:"Social Media / AI", color:"#0082fb", founded:"2004", employees:"67,000",
+    description:"Facebook's parent company transformed itself into an AI powerhouse. Meta AI is used by over 700M people monthly across WhatsApp, Instagram and Facebook.",
+    why_notable:"Meta's 'year of efficiency' turned a struggling company into a profit machine. Their open-source Llama AI model is used by millions of developers worldwide." },
+  GOOGL:{ name:"Alphabet Inc.",         industry:"Search / AI / Cloud",color:"#4285f4", founded:"1998", employees:"182,000",
+    description:"Google's parent company controls 91% of global search. YouTube is the world's second-largest search engine. Google Cloud is the fastest-growing major cloud platform at 28% growth.",
+    why_notable:"Gemini Ultra became the first AI model to outperform GPT-4 on major benchmarks. Google processes over 8.5 billion searches daily." },
+  TSLA: { name:"Tesla Inc.",            industry:"EVs / AI",          color:"#cc0000", founded:"2003", employees:"127,000",
+    description:"Tesla leads the EV market globally and is expanding into energy storage, robotics (Optimus robot) and autonomous driving (FSD). Its Dojo supercomputer rivals Nvidia for AI training.",
+    why_notable:"Tesla delivered 1.8M vehicles in 2023. Full Self-Driving subscriptions reached 500,000+ users. The Cybertruck launched to record demand." },
+  AVGO: { name:"Broadcom Inc.",         industry:"Semiconductors",    color:"#cc0000", founded:"1991", employees:"20,000",
+    description:"Broadcom makes the networking chips that power the internet — switches, routers, storage controllers. Its $69B acquisition of VMware made it a cloud software giant too.",
+    why_notable:"Broadcom supplies custom AI chips to Google and Meta, making it the second-biggest AI chip company behind Nvidia. VMware integration adds $4B+ in annual software revenue." },
+  LLY:  { name:"Eli Lilly",             industry:"Pharmaceuticals",   color:"#e4003a", founded:"1876", employees:"43,000",
+    description:"Eli Lilly makes Mounjaro and Zepbound — the GLP-1 weight loss drugs that have taken the world by storm. Demand so far exceeds supply that pharmacies are rationing doses.",
+    why_notable:"Lilly became the most valuable healthcare company in history in 2024. GLP-1 drugs may reduce cardiovascular disease by 20%, expanding the addressable market massively." },
+  JPM:  { name:"JPMorgan Chase",        industry:"Banking",           color:"#005eb8", founded:"1799", employees:"308,000",
+    description:"The largest US bank by assets. JPMorgan manages $3.9 trillion in assets, processes $10 trillion in payments daily, and serves 82 million US households.",
+    why_notable:"Under Jamie Dimon, JPMorgan emerged as the strongest US bank after the 2023 regional banking crisis, acquiring First Republic Bank and gaining $500B in deposits." },
+  XOM:  { name:"ExxonMobil",            industry:"Energy",            color:"#cc0000", founded:"1870", employees:"62,000",
+    description:"The largest US oil company. ExxonMobil produces 3.7M barrels of oil equivalent per day, operates the world's largest refining network, and is expanding into lithium mining.",
+    why_notable:"ExxonMobil's $60B acquisition of Pioneer Natural Resources made it the dominant force in the Permian Basin — the most productive oil field in US history." },
+  V:    { name:"Visa Inc.",             industry:"Payments",          color:"#1a1f71", founded:"1958", employees:"26,500",
+    description:"Visa processes over $15 trillion in payment volume annually across 4 billion cards in 200+ countries. It takes a tiny cut of every tap, swipe and click — and owns none of the credit risk.",
+    why_notable:"Visa processes 240M transactions daily. As cash disappears globally, Visa's TAM expands to $185 trillion in total consumer spending that could shift to digital payments." },
+  UNH:  { name:"UnitedHealth Group",    industry:"Healthcare",        color:"#286ce2", founded:"1977", employees:"440,000",
+    description:"The largest US health insurer with 52 million members. UnitedHealth's Optum division is the largest employer of physicians in America, reshaping how healthcare is delivered.",
+    why_notable:"UnitedHealth generates $370B+ in annual revenue — more than Apple. Optum's data-driven care model is cutting hospital readmission rates by 25%." },
+};
+
+// Top stocks to track for "Stock of the Month" — focused on S&P 500 large caps
+const WATCHLIST = ["NVDA","AAPL","MSFT","AMZN","META","GOOGL","TSLA","AVGO","LLY","JPM","XOM","V","UNH"];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STOCK OF THE MONTH FETCHER
+// Runs on the 1st trading day of each month
+// Picks the stock with the best 1-month return from the watchlist
+// ─────────────────────────────────────────────────────────────────────────────
+async function updateStockOfMonth() {
+  const monthKey = new Date().toISOString().slice(0, 7);
+
+  // Check if already done this month
+  const { data: existing } = await supabase
+    .from("stock_of_month")
+    .select("ticker")
+    .eq("month_key", monthKey)
+    .single();
+
+  if (existing) {
+    console.log(`[STOCK] Already set for ${monthKey}: ${existing.ticker}`);
+    return;
+  }
+
+  console.log(`\n[STOCK OF THE MONTH] Evaluating ${WATCHLIST.length} stocks...`);
+
+  const results = [];
+
+  for (const ticker of WATCHLIST) {
+    try {
+      // Fetch monthly data from Alpha Vantage
+      const res  = await fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol=${ticker}&apikey=${KEYS.av}`);
+      const json = await res.json();
+      if (json["Note"] || json["Information"]) { console.log(`  AV rate limited — stopping`); break; }
+
+      const series = json["Monthly Adjusted Time Series"];
+      if (!series) continue;
+
+      const prices = Object.entries(series)
+        .map(([date, v]) => ({ date, close: parseFloat(v["5. adjusted close"]) }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      if (prices.length < 2) continue;
+
+      const last  = prices[prices.length - 1];
+      const prev  = prices[prices.length - 2];
+      const change1m = (last.close - prev.close) / prev.close;
+
+      // YTD
+      const janPrice = prices.find(p => new Date(p.date).getFullYear() === new Date(last.date).getFullYear());
+      const ytd = janPrice ? (last.close - janPrice.close) / janPrice.close : null;
+
+      results.push({ ticker, price: last.close, change1m, ytd });
+      console.log(`  ${ticker}: 1M ${(change1m*100).toFixed(1)}% | YTD ${ytd?(ytd*100).toFixed(1)+"%":"—"}`);
+
+      await new Promise(r => setTimeout(r, 600)); // AV rate limit
+    } catch(e) {
+      console.error(`  ${ticker} failed: ${e.message}`);
+    }
+  }
+
+  if (!results.length) {
+    console.log("[STOCK] No results — skipping");
+    return;
+  }
+
+  // Pick the top performer by 1-month return
+  const winner = results.sort((a, b) => b.change1m - a.change1m)[0];
+  const meta   = STOCK_META[winner.ticker];
+
+  if (!meta) {
+    console.log(`[STOCK] No metadata for ${winner.ticker} — skipping`);
+    return;
+  }
+
+  // Fetch P/E ratio and market cap from Finnhub
+  let pe_ratio = "—", market_cap = "—";
+  try {
+    const fhRes  = await fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${winner.ticker}&metric=all&token=${KEYS.fh}`);
+    const fhData = (await fhRes.json()).metric || {};
+    pe_ratio   = fhData.peBasicExclExtraTTM ? `${fhData.peBasicExclExtraTTM.toFixed(0)}x` : "—";
+    market_cap = fhData.marketCapitalization
+      ? fhData.marketCapitalization > 1000
+        ? `$${(fhData.marketCapitalization/1000).toFixed(1)}T`
+        : `$${fhData.marketCapitalization.toFixed(0)}B`
+      : "—";
+  } catch(e) {
+    console.error(`  Finnhub metrics failed: ${e.message}`);
+  }
+
+  const row = {
+    month_key:   monthKey,
+    ticker:      winner.ticker,
+    name:        meta.name,
+    price:       winner.price,
+    change_1m:   winner.change1m,
+    change_ytd:  winner.ytd,
+    market_cap,
+    pe_ratio,
+    industry:    meta.industry,
+    founded:     meta.founded,
+    employees:   meta.employees,
+    description: meta.description,
+    why_notable: meta.why_notable,
+    color:       meta.color,
+    fetched_at:  new Date().toISOString(),
+  };
+
+  const { error } = await supabase.from("stock_of_month").upsert(row);
+  if (error) console.error(`[STOCK] DB error: ${error.message}`);
+  else console.log(`\n[STOCK] Winner: ${winner.ticker} +${(winner.change1m*100).toFixed(1)}% → saved for ${monthKey}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ENTRY POINT
 // ─────────────────────────────────────────────────────────────────────────────
 async function main() {
@@ -1050,7 +1370,13 @@ async function main() {
   // Fetch all ETF data
   const { poolData, fred } = await fetchAllETFs();
 
-  // Run weekly scoring on Mondays (or manual trigger)
+  // Update stock of the month (runs on 1st of month or manual trigger)
+  const isFirstOfMonth = new Date().getDate() === 1;
+  if (isFirstOfMonth || process.argv.includes("--score-now")) {
+    await updateStockOfMonth();
+  }
+
+  // Run daily scoring on all trading days
   if (shouldRunScoring() || runScoring) {
     await runWeeklySelection(poolData);
   } else {
@@ -1585,6 +1911,163 @@ async function updateMarketStatus() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// STOCK METADATA — industry, description, color for known tickers
+// ─────────────────────────────────────────────────────────────────────────────
+const STOCK_META = {
+  NVDA: { name:"Nvidia Corporation",    industry:"Semiconductors",    color:"#76b900", founded:"1993", employees:"29,600",
+    description:"The dominant AI chip maker. Nvidia's GPUs power virtually every major AI model — from ChatGPT to Gemini. Revenue grew 265% YoY in 2024.",
+    why_notable:"Nvidia became the most valuable company on Earth in 2024. Its H100 and B200 GPUs are the picks-and-shovels of the AI gold rush." },
+  AAPL: { name:"Apple Inc.",            industry:"Consumer Tech",     color:"#555555", founded:"1976", employees:"161,000",
+    description:"The world's most valuable consumer tech company. iPhone, Mac, iPad, Apple Watch and a rapidly growing services business including App Store, Apple TV+ and Apple Pay.",
+    why_notable:"Apple crossed $100B in services revenue in 2024. Its App Store alone generates more profit than most Fortune 500 companies." },
+  MSFT: { name:"Microsoft Corporation", industry:"Cloud / AI",        color:"#00a4ef", founded:"1975", employees:"221,000",
+    description:"Microsoft's $13B bet on OpenAI paid off massively. Azure AI services grow 60%+ annually. Copilot is now embedded in every Microsoft 365 product.",
+    why_notable:"Microsoft became the first company to deeply integrate AI across its entire product suite — from Excel to Teams to Visual Studio." },
+  AMZN: { name:"Amazon.com Inc.",       industry:"E-commerce / Cloud",color:"#ff9900", founded:"1994", employees:"1,500,000",
+    description:"Amazon dominates both e-commerce (38% US market share) and cloud computing (AWS holds 31% of global cloud market). AWS is the profit engine funding everything else.",
+    why_notable:"AWS generated over $90B in revenue in 2024. Amazon's advertising business alone is now larger than the entire Netflix." },
+  META: { name:"Meta Platforms",        industry:"Social Media / AI", color:"#0082fb", founded:"2004", employees:"67,000",
+    description:"Facebook's parent company transformed itself into an AI powerhouse. Meta AI is used by over 700M people monthly across WhatsApp, Instagram and Facebook.",
+    why_notable:"Meta's 'year of efficiency' turned a struggling company into a profit machine. Their open-source Llama AI model is used by millions of developers worldwide." },
+  GOOGL:{ name:"Alphabet Inc.",         industry:"Search / AI / Cloud",color:"#4285f4", founded:"1998", employees:"182,000",
+    description:"Google's parent company controls 91% of global search. YouTube is the world's second-largest search engine. Google Cloud is the fastest-growing major cloud platform at 28% growth.",
+    why_notable:"Gemini Ultra became the first AI model to outperform GPT-4 on major benchmarks. Google processes over 8.5 billion searches daily." },
+  TSLA: { name:"Tesla Inc.",            industry:"EVs / AI",          color:"#cc0000", founded:"2003", employees:"127,000",
+    description:"Tesla leads the EV market globally and is expanding into energy storage, robotics (Optimus robot) and autonomous driving (FSD). Its Dojo supercomputer rivals Nvidia for AI training.",
+    why_notable:"Tesla delivered 1.8M vehicles in 2023. Full Self-Driving subscriptions reached 500,000+ users. The Cybertruck launched to record demand." },
+  AVGO: { name:"Broadcom Inc.",         industry:"Semiconductors",    color:"#cc0000", founded:"1991", employees:"20,000",
+    description:"Broadcom makes the networking chips that power the internet — switches, routers, storage controllers. Its $69B acquisition of VMware made it a cloud software giant too.",
+    why_notable:"Broadcom supplies custom AI chips to Google and Meta, making it the second-biggest AI chip company behind Nvidia. VMware integration adds $4B+ in annual software revenue." },
+  LLY:  { name:"Eli Lilly",             industry:"Pharmaceuticals",   color:"#e4003a", founded:"1876", employees:"43,000",
+    description:"Eli Lilly makes Mounjaro and Zepbound — the GLP-1 weight loss drugs that have taken the world by storm. Demand so far exceeds supply that pharmacies are rationing doses.",
+    why_notable:"Lilly became the most valuable healthcare company in history in 2024. GLP-1 drugs may reduce cardiovascular disease by 20%, expanding the addressable market massively." },
+  JPM:  { name:"JPMorgan Chase",        industry:"Banking",           color:"#005eb8", founded:"1799", employees:"308,000",
+    description:"The largest US bank by assets. JPMorgan manages $3.9 trillion in assets, processes $10 trillion in payments daily, and serves 82 million US households.",
+    why_notable:"Under Jamie Dimon, JPMorgan emerged as the strongest US bank after the 2023 regional banking crisis, acquiring First Republic Bank and gaining $500B in deposits." },
+  XOM:  { name:"ExxonMobil",            industry:"Energy",            color:"#cc0000", founded:"1870", employees:"62,000",
+    description:"The largest US oil company. ExxonMobil produces 3.7M barrels of oil equivalent per day, operates the world's largest refining network, and is expanding into lithium mining.",
+    why_notable:"ExxonMobil's $60B acquisition of Pioneer Natural Resources made it the dominant force in the Permian Basin — the most productive oil field in US history." },
+  V:    { name:"Visa Inc.",             industry:"Payments",          color:"#1a1f71", founded:"1958", employees:"26,500",
+    description:"Visa processes over $15 trillion in payment volume annually across 4 billion cards in 200+ countries. It takes a tiny cut of every tap, swipe and click — and owns none of the credit risk.",
+    why_notable:"Visa processes 240M transactions daily. As cash disappears globally, Visa's TAM expands to $185 trillion in total consumer spending that could shift to digital payments." },
+  UNH:  { name:"UnitedHealth Group",    industry:"Healthcare",        color:"#286ce2", founded:"1977", employees:"440,000",
+    description:"The largest US health insurer with 52 million members. UnitedHealth's Optum division is the largest employer of physicians in America, reshaping how healthcare is delivered.",
+    why_notable:"UnitedHealth generates $370B+ in annual revenue — more than Apple. Optum's data-driven care model is cutting hospital readmission rates by 25%." },
+};
+
+// Top stocks to track for "Stock of the Month" — focused on S&P 500 large caps
+const WATCHLIST = ["NVDA","AAPL","MSFT","AMZN","META","GOOGL","TSLA","AVGO","LLY","JPM","XOM","V","UNH"];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STOCK OF THE MONTH FETCHER
+// Runs on the 1st trading day of each month
+// Picks the stock with the best 1-month return from the watchlist
+// ─────────────────────────────────────────────────────────────────────────────
+async function updateStockOfMonth() {
+  const monthKey = new Date().toISOString().slice(0, 7);
+
+  // Check if already done this month
+  const { data: existing } = await supabase
+    .from("stock_of_month")
+    .select("ticker")
+    .eq("month_key", monthKey)
+    .single();
+
+  if (existing) {
+    console.log(`[STOCK] Already set for ${monthKey}: ${existing.ticker}`);
+    return;
+  }
+
+  console.log(`\n[STOCK OF THE MONTH] Evaluating ${WATCHLIST.length} stocks...`);
+
+  const results = [];
+
+  for (const ticker of WATCHLIST) {
+    try {
+      // Fetch monthly data from Alpha Vantage
+      const res  = await fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol=${ticker}&apikey=${KEYS.av}`);
+      const json = await res.json();
+      if (json["Note"] || json["Information"]) { console.log(`  AV rate limited — stopping`); break; }
+
+      const series = json["Monthly Adjusted Time Series"];
+      if (!series) continue;
+
+      const prices = Object.entries(series)
+        .map(([date, v]) => ({ date, close: parseFloat(v["5. adjusted close"]) }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      if (prices.length < 2) continue;
+
+      const last  = prices[prices.length - 1];
+      const prev  = prices[prices.length - 2];
+      const change1m = (last.close - prev.close) / prev.close;
+
+      // YTD
+      const janPrice = prices.find(p => new Date(p.date).getFullYear() === new Date(last.date).getFullYear());
+      const ytd = janPrice ? (last.close - janPrice.close) / janPrice.close : null;
+
+      results.push({ ticker, price: last.close, change1m, ytd });
+      console.log(`  ${ticker}: 1M ${(change1m*100).toFixed(1)}% | YTD ${ytd?(ytd*100).toFixed(1)+"%":"—"}`);
+
+      await new Promise(r => setTimeout(r, 600)); // AV rate limit
+    } catch(e) {
+      console.error(`  ${ticker} failed: ${e.message}`);
+    }
+  }
+
+  if (!results.length) {
+    console.log("[STOCK] No results — skipping");
+    return;
+  }
+
+  // Pick the top performer by 1-month return
+  const winner = results.sort((a, b) => b.change1m - a.change1m)[0];
+  const meta   = STOCK_META[winner.ticker];
+
+  if (!meta) {
+    console.log(`[STOCK] No metadata for ${winner.ticker} — skipping`);
+    return;
+  }
+
+  // Fetch P/E ratio and market cap from Finnhub
+  let pe_ratio = "—", market_cap = "—";
+  try {
+    const fhRes  = await fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${winner.ticker}&metric=all&token=${KEYS.fh}`);
+    const fhData = (await fhRes.json()).metric || {};
+    pe_ratio   = fhData.peBasicExclExtraTTM ? `${fhData.peBasicExclExtraTTM.toFixed(0)}x` : "—";
+    market_cap = fhData.marketCapitalization
+      ? fhData.marketCapitalization > 1000
+        ? `$${(fhData.marketCapitalization/1000).toFixed(1)}T`
+        : `$${fhData.marketCapitalization.toFixed(0)}B`
+      : "—";
+  } catch(e) {
+    console.error(`  Finnhub metrics failed: ${e.message}`);
+  }
+
+  const row = {
+    month_key:   monthKey,
+    ticker:      winner.ticker,
+    name:        meta.name,
+    price:       winner.price,
+    change_1m:   winner.change1m,
+    change_ytd:  winner.ytd,
+    market_cap,
+    pe_ratio,
+    industry:    meta.industry,
+    founded:     meta.founded,
+    employees:   meta.employees,
+    description: meta.description,
+    why_notable: meta.why_notable,
+    color:       meta.color,
+    fetched_at:  new Date().toISOString(),
+  };
+
+  const { error } = await supabase.from("stock_of_month").upsert(row);
+  if (error) console.error(`[STOCK] DB error: ${error.message}`);
+  else console.log(`\n[STOCK] Winner: ${winner.ticker} +${(winner.change1m*100).toFixed(1)}% → saved for ${monthKey}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ENTRY POINT
 // ─────────────────────────────────────────────────────────────────────────────
 async function main() {
@@ -1605,7 +2088,13 @@ async function main() {
   // Fetch all ETF data
   const { poolData, fred } = await fetchAllETFs();
 
-  // Run weekly scoring on Mondays (or manual trigger)
+  // Update stock of the month (runs on 1st of month or manual trigger)
+  const isFirstOfMonth = new Date().getDate() === 1;
+  if (isFirstOfMonth || process.argv.includes("--score-now")) {
+    await updateStockOfMonth();
+  }
+
+  // Run daily scoring on all trading days
   if (shouldRunScoring() || runScoring) {
     await runWeeklySelection(poolData);
   } else {
@@ -2129,6 +2618,163 @@ async function updateMarketStatus() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// STOCK METADATA — industry, description, color for known tickers
+// ─────────────────────────────────────────────────────────────────────────────
+const STOCK_META = {
+  NVDA: { name:"Nvidia Corporation",    industry:"Semiconductors",    color:"#76b900", founded:"1993", employees:"29,600",
+    description:"The dominant AI chip maker. Nvidia's GPUs power virtually every major AI model — from ChatGPT to Gemini. Revenue grew 265% YoY in 2024.",
+    why_notable:"Nvidia became the most valuable company on Earth in 2024. Its H100 and B200 GPUs are the picks-and-shovels of the AI gold rush." },
+  AAPL: { name:"Apple Inc.",            industry:"Consumer Tech",     color:"#555555", founded:"1976", employees:"161,000",
+    description:"The world's most valuable consumer tech company. iPhone, Mac, iPad, Apple Watch and a rapidly growing services business including App Store, Apple TV+ and Apple Pay.",
+    why_notable:"Apple crossed $100B in services revenue in 2024. Its App Store alone generates more profit than most Fortune 500 companies." },
+  MSFT: { name:"Microsoft Corporation", industry:"Cloud / AI",        color:"#00a4ef", founded:"1975", employees:"221,000",
+    description:"Microsoft's $13B bet on OpenAI paid off massively. Azure AI services grow 60%+ annually. Copilot is now embedded in every Microsoft 365 product.",
+    why_notable:"Microsoft became the first company to deeply integrate AI across its entire product suite — from Excel to Teams to Visual Studio." },
+  AMZN: { name:"Amazon.com Inc.",       industry:"E-commerce / Cloud",color:"#ff9900", founded:"1994", employees:"1,500,000",
+    description:"Amazon dominates both e-commerce (38% US market share) and cloud computing (AWS holds 31% of global cloud market). AWS is the profit engine funding everything else.",
+    why_notable:"AWS generated over $90B in revenue in 2024. Amazon's advertising business alone is now larger than the entire Netflix." },
+  META: { name:"Meta Platforms",        industry:"Social Media / AI", color:"#0082fb", founded:"2004", employees:"67,000",
+    description:"Facebook's parent company transformed itself into an AI powerhouse. Meta AI is used by over 700M people monthly across WhatsApp, Instagram and Facebook.",
+    why_notable:"Meta's 'year of efficiency' turned a struggling company into a profit machine. Their open-source Llama AI model is used by millions of developers worldwide." },
+  GOOGL:{ name:"Alphabet Inc.",         industry:"Search / AI / Cloud",color:"#4285f4", founded:"1998", employees:"182,000",
+    description:"Google's parent company controls 91% of global search. YouTube is the world's second-largest search engine. Google Cloud is the fastest-growing major cloud platform at 28% growth.",
+    why_notable:"Gemini Ultra became the first AI model to outperform GPT-4 on major benchmarks. Google processes over 8.5 billion searches daily." },
+  TSLA: { name:"Tesla Inc.",            industry:"EVs / AI",          color:"#cc0000", founded:"2003", employees:"127,000",
+    description:"Tesla leads the EV market globally and is expanding into energy storage, robotics (Optimus robot) and autonomous driving (FSD). Its Dojo supercomputer rivals Nvidia for AI training.",
+    why_notable:"Tesla delivered 1.8M vehicles in 2023. Full Self-Driving subscriptions reached 500,000+ users. The Cybertruck launched to record demand." },
+  AVGO: { name:"Broadcom Inc.",         industry:"Semiconductors",    color:"#cc0000", founded:"1991", employees:"20,000",
+    description:"Broadcom makes the networking chips that power the internet — switches, routers, storage controllers. Its $69B acquisition of VMware made it a cloud software giant too.",
+    why_notable:"Broadcom supplies custom AI chips to Google and Meta, making it the second-biggest AI chip company behind Nvidia. VMware integration adds $4B+ in annual software revenue." },
+  LLY:  { name:"Eli Lilly",             industry:"Pharmaceuticals",   color:"#e4003a", founded:"1876", employees:"43,000",
+    description:"Eli Lilly makes Mounjaro and Zepbound — the GLP-1 weight loss drugs that have taken the world by storm. Demand so far exceeds supply that pharmacies are rationing doses.",
+    why_notable:"Lilly became the most valuable healthcare company in history in 2024. GLP-1 drugs may reduce cardiovascular disease by 20%, expanding the addressable market massively." },
+  JPM:  { name:"JPMorgan Chase",        industry:"Banking",           color:"#005eb8", founded:"1799", employees:"308,000",
+    description:"The largest US bank by assets. JPMorgan manages $3.9 trillion in assets, processes $10 trillion in payments daily, and serves 82 million US households.",
+    why_notable:"Under Jamie Dimon, JPMorgan emerged as the strongest US bank after the 2023 regional banking crisis, acquiring First Republic Bank and gaining $500B in deposits." },
+  XOM:  { name:"ExxonMobil",            industry:"Energy",            color:"#cc0000", founded:"1870", employees:"62,000",
+    description:"The largest US oil company. ExxonMobil produces 3.7M barrels of oil equivalent per day, operates the world's largest refining network, and is expanding into lithium mining.",
+    why_notable:"ExxonMobil's $60B acquisition of Pioneer Natural Resources made it the dominant force in the Permian Basin — the most productive oil field in US history." },
+  V:    { name:"Visa Inc.",             industry:"Payments",          color:"#1a1f71", founded:"1958", employees:"26,500",
+    description:"Visa processes over $15 trillion in payment volume annually across 4 billion cards in 200+ countries. It takes a tiny cut of every tap, swipe and click — and owns none of the credit risk.",
+    why_notable:"Visa processes 240M transactions daily. As cash disappears globally, Visa's TAM expands to $185 trillion in total consumer spending that could shift to digital payments." },
+  UNH:  { name:"UnitedHealth Group",    industry:"Healthcare",        color:"#286ce2", founded:"1977", employees:"440,000",
+    description:"The largest US health insurer with 52 million members. UnitedHealth's Optum division is the largest employer of physicians in America, reshaping how healthcare is delivered.",
+    why_notable:"UnitedHealth generates $370B+ in annual revenue — more than Apple. Optum's data-driven care model is cutting hospital readmission rates by 25%." },
+};
+
+// Top stocks to track for "Stock of the Month" — focused on S&P 500 large caps
+const WATCHLIST = ["NVDA","AAPL","MSFT","AMZN","META","GOOGL","TSLA","AVGO","LLY","JPM","XOM","V","UNH"];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STOCK OF THE MONTH FETCHER
+// Runs on the 1st trading day of each month
+// Picks the stock with the best 1-month return from the watchlist
+// ─────────────────────────────────────────────────────────────────────────────
+async function updateStockOfMonth() {
+  const monthKey = new Date().toISOString().slice(0, 7);
+
+  // Check if already done this month
+  const { data: existing } = await supabase
+    .from("stock_of_month")
+    .select("ticker")
+    .eq("month_key", monthKey)
+    .single();
+
+  if (existing) {
+    console.log(`[STOCK] Already set for ${monthKey}: ${existing.ticker}`);
+    return;
+  }
+
+  console.log(`\n[STOCK OF THE MONTH] Evaluating ${WATCHLIST.length} stocks...`);
+
+  const results = [];
+
+  for (const ticker of WATCHLIST) {
+    try {
+      // Fetch monthly data from Alpha Vantage
+      const res  = await fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol=${ticker}&apikey=${KEYS.av}`);
+      const json = await res.json();
+      if (json["Note"] || json["Information"]) { console.log(`  AV rate limited — stopping`); break; }
+
+      const series = json["Monthly Adjusted Time Series"];
+      if (!series) continue;
+
+      const prices = Object.entries(series)
+        .map(([date, v]) => ({ date, close: parseFloat(v["5. adjusted close"]) }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      if (prices.length < 2) continue;
+
+      const last  = prices[prices.length - 1];
+      const prev  = prices[prices.length - 2];
+      const change1m = (last.close - prev.close) / prev.close;
+
+      // YTD
+      const janPrice = prices.find(p => new Date(p.date).getFullYear() === new Date(last.date).getFullYear());
+      const ytd = janPrice ? (last.close - janPrice.close) / janPrice.close : null;
+
+      results.push({ ticker, price: last.close, change1m, ytd });
+      console.log(`  ${ticker}: 1M ${(change1m*100).toFixed(1)}% | YTD ${ytd?(ytd*100).toFixed(1)+"%":"—"}`);
+
+      await new Promise(r => setTimeout(r, 600)); // AV rate limit
+    } catch(e) {
+      console.error(`  ${ticker} failed: ${e.message}`);
+    }
+  }
+
+  if (!results.length) {
+    console.log("[STOCK] No results — skipping");
+    return;
+  }
+
+  // Pick the top performer by 1-month return
+  const winner = results.sort((a, b) => b.change1m - a.change1m)[0];
+  const meta   = STOCK_META[winner.ticker];
+
+  if (!meta) {
+    console.log(`[STOCK] No metadata for ${winner.ticker} — skipping`);
+    return;
+  }
+
+  // Fetch P/E ratio and market cap from Finnhub
+  let pe_ratio = "—", market_cap = "—";
+  try {
+    const fhRes  = await fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${winner.ticker}&metric=all&token=${KEYS.fh}`);
+    const fhData = (await fhRes.json()).metric || {};
+    pe_ratio   = fhData.peBasicExclExtraTTM ? `${fhData.peBasicExclExtraTTM.toFixed(0)}x` : "—";
+    market_cap = fhData.marketCapitalization
+      ? fhData.marketCapitalization > 1000
+        ? `$${(fhData.marketCapitalization/1000).toFixed(1)}T`
+        : `$${fhData.marketCapitalization.toFixed(0)}B`
+      : "—";
+  } catch(e) {
+    console.error(`  Finnhub metrics failed: ${e.message}`);
+  }
+
+  const row = {
+    month_key:   monthKey,
+    ticker:      winner.ticker,
+    name:        meta.name,
+    price:       winner.price,
+    change_1m:   winner.change1m,
+    change_ytd:  winner.ytd,
+    market_cap,
+    pe_ratio,
+    industry:    meta.industry,
+    founded:     meta.founded,
+    employees:   meta.employees,
+    description: meta.description,
+    why_notable: meta.why_notable,
+    color:       meta.color,
+    fetched_at:  new Date().toISOString(),
+  };
+
+  const { error } = await supabase.from("stock_of_month").upsert(row);
+  if (error) console.error(`[STOCK] DB error: ${error.message}`);
+  else console.log(`\n[STOCK] Winner: ${winner.ticker} +${(winner.change1m*100).toFixed(1)}% → saved for ${monthKey}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ENTRY POINT
 // ─────────────────────────────────────────────────────────────────────────────
 async function main() {
@@ -2149,7 +2795,13 @@ async function main() {
   // Fetch all ETF data
   const { poolData, fred } = await fetchAllETFs();
 
-  // Run weekly scoring on Mondays (or manual trigger)
+  // Update stock of the month (runs on 1st of month or manual trigger)
+  const isFirstOfMonth = new Date().getDate() === 1;
+  if (isFirstOfMonth || process.argv.includes("--score-now")) {
+    await updateStockOfMonth();
+  }
+
+  // Run daily scoring on all trading days
   if (shouldRunScoring() || runScoring) {
     await runWeeklySelection(poolData);
   } else {

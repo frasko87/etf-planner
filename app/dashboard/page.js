@@ -77,6 +77,19 @@ const ETF_META = {
     description:"The entire US investment-grade bond market. Stable income, low volatility, acts as a portfolio anchor in downturns." },
 };
 
+// ── Stock of the Month — rotates monthly, purely informational ───────────────
+const STOCKS_OF_MONTH = {
+  "2026-03": { ticker:"NVDA", name:"Nvidia Corporation", price:"$875.40", change:"+18.2%", industry:"Semiconductors", market_cap:"$2.1T", pe_ratio:"47x", ytd:"+24.3%", founded:"1993", employees:"29,600", description:"The dominant force in AI chips. Nvidia's H100 and B200 GPUs power virtually every major AI model — from ChatGPT to Gemini. Revenue grew 265% year-over-year in 2024.", why_notable:"Nvidia became the most valuable company on Earth in 2024, overtaking Apple and Microsoft. Its GPUs are the 'picks and shovels' of the AI gold rush.", color:"#76b900" },
+  "2026-02": { ticker:"META", name:"Meta Platforms", price:"$512.30", change:"+12.8%", industry:"Social Media / AI", market_cap:"$1.3T", pe_ratio:"28x", ytd:"+15.1%", founded:"2004", employees:"67,000", description:"Facebook's parent company transformed itself into an AI powerhouse. Meta AI is now used by over 700 million people monthly across WhatsApp, Instagram and Facebook.", why_notable:"Meta's 'year of efficiency' in 2023 turned a struggling company into a profit machine. Their open-source AI model Llama is used by millions of developers worldwide.", color:"#0082fb" },
+  "2026-01": { ticker:"TSLA", name:"Tesla Inc.", price:"$248.10", change:"+9.4%", industry:"Electric Vehicles / AI", market_cap:"$790B", pe_ratio:"72x", ytd:"+9.4%", founded:"2003", employees:"127,000", description:"Tesla leads the EV market globally and is expanding into energy storage, robotics (Optimus) and autonomous driving (FSD). Its Dojo supercomputer rivals Nvidia for AI training.", why_notable:"Tesla delivered over 1.8 million vehicles in 2023. The Cybertruck launched to record pre-orders. Full Self-Driving subscriptions reached 500,000+ users.", color:"#cc0000" },
+  "2025-12": { ticker:"MSFT", name:"Microsoft Corporation", price:"$416.50", change:"+8.1%", industry:"Cloud / AI Software", market_cap:"$3.1T", pe_ratio:"36x", ytd:"+18.2%", founded:"1975", employees:"221,000", description:"Microsoft's $13B bet on OpenAI paid off massively. Azure AI services are growing at 60%+ annually. Copilot is now embedded in every Microsoft 365 product used by 400M+ people.", why_notable:"Microsoft became the first company to deeply integrate AI into its entire product suite — from Excel to Teams to Visual Studio. Azure is now the #2 cloud platform globally.", color:"#00a4ef" },
+};
+
+function getStockOfMonth() {
+  const key = new Date().toISOString().slice(0,7);
+  return STOCKS_OF_MONTH[key] || STOCKS_OF_MONTH["2026-03"];
+}
+
 const PROFILE_CONFIG = {
   conservative: {
     label:"Conservative", icon:"🛡️", desc:"~5% annual return · Very low risk",
@@ -235,6 +248,9 @@ export default function DashboardPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [monthlyHistory, setMonthlyHistory] = useState([]);
   const [showPlanSwap,   setShowPlanSwap]   = useState(false);
+  const [cardFlipped,    setCardFlipped]    = useState(false);
+  const [showStockDetail, setShowStockDetail] = useState(false);
+  const [stockOfMonth,   setStockOfMonth]   = useState(null);
   const [showComparison, setShowComparison] = useState(false);
 
   useEffect(() => {
@@ -275,6 +291,15 @@ export default function DashboardPage() {
         // First time user — show onboarding
         setShowOnboarding(true);
       }
+
+      // Load stock of the month from DB
+      const monthKey = new Date().toISOString().slice(0,7);
+      const { data:stockData } = await supabase
+        .from("stock_of_month")
+        .select("*")
+        .eq("month_key", monthKey)
+        .single();
+      if (stockData) setStockOfMonth(stockData);
 
       setLoading(false);
     };
@@ -725,6 +750,156 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
+
+        {/* ── Stock of the Month ─────────────────────────────────────────── */}
+          {(() => {
+            const stock = stockOfMonth || getStockOfMonth(); // DB first, fallback to hardcoded
+            const monthName = new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"});
+            return (
+              <div style={{marginBottom:20}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{height:3,width:24,background:"var(--gold)",borderRadius:2}}/>
+                    <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--text)",fontWeight:500}}>STOCK OF THE MONTH</div>
+                  </div>
+                  <div className="mono" style={{fontSize:10,color:"var(--muted2)"}}>{monthName} · Not a recommendation</div>
+                </div>
+
+                <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"300px 1fr",gap:14,alignItems:"start"}}>
+
+                  {/* Flip card */}
+                  <div
+                    onClick={()=>setCardFlipped(f=>!f)}
+                    style={{cursor:"pointer",perspective:"1000px",height:200}}
+                  >
+                    <div style={{
+                      position:"relative",width:"100%",height:"100%",
+                      transformStyle:"preserve-3d",
+                      transition:"transform 0.6s cubic-bezier(0.4,0,0.2,1)",
+                      transform: cardFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                    }}>
+                      {/* Front */}
+                      <div style={{
+                        position:"absolute",inset:0,backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",
+                        background:`linear-gradient(135deg, ${stock.color}22, ${stock.color}08)`,
+                        border:`2px solid ${stock.color}44`,
+                        borderRadius:16,padding:"clamp(18px,3vw,24px)",
+                        display:"flex",flexDirection:"column",justifyContent:"space-between",
+                      }}>
+                        <div>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                            <div>
+                              <div style={{fontFamily:"DM Mono",fontSize:24,fontWeight:700,color:stock.color,letterSpacing:"-0.5px"}}>{stock.ticker}</div>
+                              <div style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",marginTop:2}}>{stock.name}</div>
+                            </div>
+                            <div style={{textAlign:"right"}}>
+                              <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:20,color:"var(--text)"}}>{stock.price!=null?"$"+Number(stock.price).toFixed(2):stock.price}</div>
+                              <div style={{fontFamily:"DM Mono",fontSize:12,color:(stock.change_1m??0)>=0?"var(--green)":"#ff4757",fontWeight:500}}>{stock.change_1m!=null?(stock.change_1m>=0?"+":"")+(stock.change_1m*100).toFixed(1)+"%":stock.change} MTD</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:10}}>
+                            {[{l:"Market Cap",v:stock.market_cap},{l:"P/E Ratio",v:stock.pe_ratio},{l:"YTD",v:stock.change_ytd!=null?((stock.change_ytd>=0?"+":"")+(stock.change_ytd*100).toFixed(1)+"%"):stock.ytd}].map(s=>(
+                              <div key={s.l} style={{background:"rgba(0,0,0,0.04)",borderRadius:8,padding:"5px 10px"}}>
+                                <div className="mono" style={{fontSize:8,color:"var(--muted2)",marginBottom:1}}>{s.l}</div>
+                                <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:12,color:"var(--text)"}}>{s.v}</div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mono" style={{fontSize:9,color:"var(--muted2)",textAlign:"center"}}>tap to flip ↺</div>
+                        </div>
+                      </div>
+
+                      {/* Back */}
+                      <div style={{
+                        position:"absolute",inset:0,backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",
+                        transform:"rotateY(180deg)",
+                        background:"var(--text)",
+                        borderRadius:16,padding:"clamp(18px,3vw,24px)",
+                        display:"flex",flexDirection:"column",justifyContent:"space-between",
+                      }}>
+                        <div>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                            <span className="mono" style={{fontSize:14,color:stock.color,fontWeight:700}}>{stock.ticker}</span>
+                            <span style={{fontFamily:"DM Mono",fontSize:9,padding:"2px 8px",borderRadius:6,background:`${stock.color}22`,color:stock.color}}>{stock.industry}</span>
+                          </div>
+                          <p style={{fontFamily:"DM Sans",fontSize:12,color:"rgba(255,255,255,0.6)",lineHeight:1.7,margin:0}}>
+                            {stock.description}
+                          </p>
+                        </div>
+                        <button
+                          onClick={e=>{e.stopPropagation();setShowStockDetail(true);}}
+                          style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:stock.color,background:`${stock.color}15`,border:`1px solid ${stock.color}33`,borderRadius:8,padding:"8px 0",cursor:"pointer",width:"100%"}}>
+                          See full details →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Why notable */}
+                  <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(16px,2.5vw,22px)",boxShadow:"var(--shadow)",height:"100%",display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
+                    <div>
+                      <div className="mono" style={{fontSize:9,color:"var(--muted2)",letterSpacing:1,marginBottom:10}}>WHY IT'S TRENDING</div>
+                      <p style={{fontFamily:"DM Sans",fontSize:"clamp(13px,2vw,14px)",color:"var(--muted)",lineHeight:1.75,margin:0}}>{stock.why_notable}</p>
+                    </div>
+                    <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div>
+                        <div className="mono" style={{fontSize:9,color:"var(--muted2)",marginBottom:3}}>INDUSTRY</div>
+                        <div style={{fontFamily:"DM Sans",fontWeight:500,fontSize:13,color:"var(--text)"}}>{stock.industry}</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div className="mono" style={{fontSize:9,color:"var(--muted2)",marginBottom:3}}>FOUNDED</div>
+                        <div style={{fontFamily:"DM Sans",fontWeight:500,fontSize:13,color:"var(--text)"}}>{stock.founded}</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div className="mono" style={{fontSize:9,color:"var(--muted2)",marginBottom:3}}>EMPLOYEES</div>
+                        <div style={{fontFamily:"DM Sans",fontWeight:500,fontSize:13,color:"var(--text)"}}>{stock.employees}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stock detail modal */}
+                {showStockDetail && (
+                  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setShowStockDetail(false)}>
+                    <div style={{background:"white",borderRadius:20,padding:"clamp(24px,4vw,36px)",maxWidth:520,width:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}} onClick={e=>e.stopPropagation()}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
+                        <div>
+                          <div style={{fontFamily:"DM Mono",fontSize:22,fontWeight:700,color:stock.color}}>{stock.ticker}</div>
+                          <div style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",marginTop:2}}>{stock.name}</div>
+                        </div>
+                        <button onClick={()=>setShowStockDetail(false)} style={{background:"var(--bg3)",border:"none",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontFamily:"DM Mono",fontSize:12,color:"var(--muted)"}}>✕ close</button>
+                      </div>
+
+                      <div style={{background:`${stock.color}08`,border:`1px solid ${stock.color}22`,borderRadius:12,padding:"16px",marginBottom:20}}>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+                          {[{l:"Price",v:stock.price!=null?"$"+Number(stock.price).toFixed(2):stock.price_display||"—"},{l:"MTD Change",v:stock.change,c:"var(--green)"},{l:"YTD",v:stock.ytd,c:"var(--green)"},{l:"Market Cap",v:stock.market_cap},{l:"P/E Ratio",v:stock.pe_ratio},{l:"Industry",v:stock.industry}].map(s=>(
+                            <div key={s.l}>
+                              <div className="mono" style={{fontSize:9,color:"var(--muted2)",marginBottom:3}}>{s.l}</div>
+                              <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:s.c||"var(--text)"}}>{s.v}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:16,color:"var(--text)",marginBottom:8}}>About {stock.ticker}</h3>
+                      <p style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",lineHeight:1.8,marginBottom:16}}>{stock.description}</p>
+
+                      <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:16,color:"var(--text)",marginBottom:8}}>Why it's in the spotlight</h3>
+                      <p style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",lineHeight:1.8,marginBottom:20}}>{stock.why_notable}</p>
+
+                      <div style={{background:"var(--bg3)",borderRadius:10,padding:"12px 16px"}}>
+                        <p style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",margin:0,lineHeight:1.7}}>
+                          ⚠️ This is not a recommendation to buy or sell {stock.ticker}. ETF.PLAN is an ETF-focused tool. Individual stocks carry higher risk than diversified ETFs.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
         {/* ── Portfolio Growth Chart ──────────────────────────────────────── */}
           {monthlyHistory.length > 0 && (
