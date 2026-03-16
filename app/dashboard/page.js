@@ -168,7 +168,7 @@ function EtfCompareCard({ ticker, isNew, isRemoved, poolRow }) {
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
         <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <span style={{fontFamily:"DM Mono",fontSize:14,color:meta.color,fontWeight:600}}>{ticker}</span>
+          <a href={`/etf/${ticker}`} style={{fontFamily:"DM Mono",fontSize:14,color:meta.color,fontWeight:600,textDecoration:"none"}}>{ticker} ↗</a>
           {meta.leveraged && <span style={{fontFamily:"DM Mono",fontSize:8,padding:"1px 5px",borderRadius:3,background:"rgba(255,71,87,0.1)",color:"#ff4757"}}>3X</span>}
         </div>
         <div style={{textAlign:"right"}}>
@@ -228,9 +228,11 @@ export default function DashboardPage() {
   const [showScores,   setShowScores]   = useState(false);
   const [news,         setNews]         = useState([]);
   const [newsLoading,  setNewsLoading]  = useState(true);
-  const [userPlan,     setUserPlan]     = useState(null);   // saved plan from DB
+  const [userPlan,     setUserPlan]     = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [monthlyHistory, setMonthlyHistory] = useState([]);
+  const [showPlanSwap,   setShowPlanSwap]   = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -469,9 +471,33 @@ export default function DashboardPage() {
                   <div style={{textAlign:"right"}}>
                     <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4}}>MONTHLY</div>
                     <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:36,color:"white",lineHeight:1}}>${amount}</div>
-                    <button onClick={()=>setShowOnboarding(true)} style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.35)",background:"none",border:"none",cursor:"pointer",marginTop:4,textDecoration:"underline"}}>
-                      change plan
+                    <button onClick={()=>setShowPlanSwap(!showPlanSwap)} style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.4)",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:6,cursor:"pointer",marginTop:4,padding:"3px 8px"}}>
+                      {showPlanSwap ? "✕ cancel" : "change plan"}
                     </button>
+                    {showPlanSwap && (
+                      <div style={{marginTop:12,background:"rgba(255,255,255,0.06)",borderRadius:12,padding:"12px",border:"1px solid rgba(255,255,255,0.1)"}}>
+                        <div className="mono" style={{fontSize:9,color:"rgba(255,255,255,0.3)",marginBottom:10,letterSpacing:1}}>SWITCH TO</div>
+                        {Object.entries(PROFILE_CONFIG).filter(([k])=>k!==risk).map(([key,p])=>(
+                          <button key={key} onClick={async()=>{
+                            await handlePlanChange(key, amount);
+                            setShowPlanSwap(false);
+                          }} style={{
+                            display:"flex",justifyContent:"space-between",alignItems:"center",
+                            width:"100%",padding:"10px 12px",borderRadius:10,border:`1px solid ${p.accentColor}44`,
+                            background:`${p.accentColor}0a`,cursor:"pointer",marginBottom:6,
+                          }}>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              <span>{p.icon}</span>
+                              <span style={{fontFamily:"DM Sans",fontWeight:600,fontSize:14,color:"white"}}>{p.label}</span>
+                              <span className="mono" style={{fontSize:10,color:p.accentColor}}>{p.rate}</span>
+                            </div>
+                            <span style={{fontFamily:"DM Sans",fontWeight:700,fontSize:15,color:p.accentColor}}>
+                              +{fmt(project(amount,FALLBACK_PLANS[key].allocations,etfPool,60,false,p.targetReturn)-amount*60)}/5yr
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -488,7 +514,7 @@ export default function DashboardPage() {
                       return (
                         <div key={t} style={{background:"rgba(255,255,255,0.07)",borderRadius:10,padding:"12px 14px",border:`1px solid ${meta.color}33`}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                            <span className="mono" style={{fontSize:13,color:meta.color,fontWeight:600}}>{t}</span>
+                            <a href={`/etf/${t}`} style={{fontFamily:"DM Mono",fontSize:13,color:meta.color,fontWeight:600,textDecoration:"none"}}>{t}</a>
                             <span style={{fontFamily:"DM Sans",fontWeight:700,fontSize:15,color:"white"}}>${dollars}</span>
                           </div>
                           <div style={{fontFamily:"DM Sans",fontSize:11,color:"rgba(255,255,255,0.4)"}}>{pct}% of your ${amount}</div>
@@ -695,6 +721,144 @@ export default function DashboardPage() {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+        {/* ── Portfolio Growth Chart ──────────────────────────────────────── */}
+          {monthlyHistory.length > 0 && (
+            <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(18px,3vw,24px)",boxShadow:"var(--shadow2)",marginBottom:20}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:10}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/>
+                  <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--muted2)"}}>PORTFOLIO GROWTH</div>
+                </div>
+                <button onClick={()=>setShowComparison(!showComparison)} style={{
+                  fontFamily:"DM Mono",fontSize:10,color:"var(--green)",
+                  background:"var(--green2)",border:"1px solid rgba(0,185,107,0.2)",
+                  borderRadius:8,padding:"5px 12px",cursor:"pointer",
+                }}>
+                  {showComparison ? "Hide comparison" : "Compare plans →"}
+                </button>
+              </div>
+
+              {!showComparison ? (
+                // ── Actual portfolio chart ──────────────────────────────────
+                (() => {
+                  const invested = monthlyHistory.reduce((s,a)=>s+a.amount,0);
+                  const chartPoints = [...monthlyHistory].reverse().map((action, i) => {
+                    const tickers = action.tickers || [];
+                    const currentVal = tickers.reduce((s,t)=>{
+                      const ep = action.entry_prices?.[t];
+                      const cp = etfPool.find(r=>r.ticker===t)?.price;
+                      const dollars = action.amounts_invested?.[t] || Math.round(action.amount*(action.allocations?.[t]||25)/100);
+                      return s + (ep&&cp ? dollars*(cp/ep) : dollars);
+                    }, 0);
+                    return { month: new Date(action.month_key+"-01").toLocaleDateString("en-US",{month:"short"}), invested: action.amount*(i+1), value: currentVal + action.amount*i };
+                  });
+
+                  const totalInvested = invested;
+                  const estimatedValue = chartPoints[chartPoints.length-1]?.value || invested;
+                  const gain = estimatedValue - totalInvested;
+                  const gainPct = totalInvested > 0 ? (gain/totalInvested*100).toFixed(1) : "0.0";
+
+                  return (
+                    <div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:20}}>
+                        {[
+                          {l:"Total Invested",  v:fmt(totalInvested),  c:"var(--muted)"},
+                          {l:"Current Value",   v:fmt(estimatedValue), c:"var(--text)"},
+                          {l:"Total Gain",      v:`+${gainPct}%`,      c:"var(--green)"},
+                        ].map(s=>(
+                          <div key={s.l} style={{background:"var(--bg3)",borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
+                            <div className="mono" style={{fontSize:9,color:"var(--muted2)",marginBottom:4}}>{s.l}</div>
+                            <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(16px,3vw,22px)",color:s.c}}>{s.v}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <ResponsiveContainer width="100%" height={180}>
+                        <AreaChart data={chartPoints} margin={{top:5,right:5,bottom:0,left:0}}>
+                          <defs>
+                            <linearGradient id="gV" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#00b96b" stopOpacity={0.15}/>
+                              <stop offset="95%" stopColor="#00b96b" stopOpacity={0}/>
+                            </linearGradient>
+                            <linearGradient id="gI" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#d4d4cc" stopOpacity={0.1}/>
+                              <stop offset="95%" stopColor="#d4d4cc" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="month" tick={{fontFamily:"DM Mono",fontSize:9,fill:"var(--muted2)"}} axisLine={false} tickLine={false}/>
+                          <YAxis tick={{fontFamily:"DM Mono",fontSize:9,fill:"var(--muted2)"}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`}/>
+                          <Tooltip content={({active,payload,label})=>active&&payload?.length?(<div style={{background:"white",border:"1px solid var(--border)",borderRadius:8,padding:"8px 12px",boxShadow:"var(--shadow)"}}>
+                            <p style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:4}}>{label}</p>
+                            {payload.map(p=>(<p key={p.name} style={{fontFamily:"DM Mono",fontSize:11,color:p.color}}>{p.name}: {fmt(p.value)}</p>))}
+                          </div>):null}/>
+                          <Area type="monotone" dataKey="invested" stroke="#d4d4cc" strokeWidth={1.5} fill="url(#gI)" name="Invested"/>
+                          <Area type="monotone" dataKey="value" stroke="#00b96b" strokeWidth={2} fill="url(#gV)" name="Value"/>
+                        </AreaChart>
+                      </ResponsiveContainer>
+                      <p className="mono" style={{fontSize:10,color:"var(--muted2)",textAlign:"center",marginTop:10}}>
+                        Based on entry prices vs current prices · Updates daily at market close
+                      </p>
+                    </div>
+                  );
+                })()
+              ) : (
+                // ── Comparison mode ──────────────────────────────────────────
+                <div>
+                  <p style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",marginBottom:20,textAlign:"center"}}>
+                    What would ${amount}/month look like over 5 years across all three plans?
+                  </p>
+                  <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"repeat(3,1fr)",gap:14,marginBottom:20}}>
+                    {Object.entries(PROFILE_CONFIG).map(([key,p])=>{
+                      const fb = FALLBACK_PLANS[key];
+                      const gain5  = project(amount,fb.allocations,etfPool,60,false,p.targetReturn)-amount*60;
+                      const total5 = project(amount,fb.allocations,etfPool,60,false,p.targetReturn);
+                      const gain12 = project(amount,fb.allocations,etfPool,12,false,p.targetReturn)-amount*12;
+                      const isActive = key===risk;
+                      return (
+                        <div key={key} style={{
+                          border:`2px solid ${isActive?p.accentColor:"var(--border)"}`,
+                          borderRadius:14,padding:"clamp(16px,2.5vw,22px)",
+                          background:isActive?`${p.accentColor}05`:"white",
+                          position:"relative",
+                        }}>
+                          {isActive && <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",fontFamily:"DM Mono",fontSize:9,background:p.accentColor,color:"white",padding:"2px 10px",borderRadius:10}}>YOUR PLAN</div>}
+                          <div style={{textAlign:"center",marginBottom:14}}>
+                            <div style={{fontSize:28,marginBottom:6}}>{p.icon}</div>
+                            <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:18,color:"var(--text)"}}>{p.label}</div>
+                            <div className="mono" style={{fontSize:11,color:p.accentColor,marginTop:2}}>{p.rate}</div>
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                            {[
+                              {l:"After 12 months",  v:fmt(project(amount,fb.allocations,etfPool,12,false,p.targetReturn)), gain:fmt(gain12)},
+                              {l:"After 5 years",    v:fmt(total5), gain:fmt(gain5)},
+                            ].map(s=>(
+                              <div key={s.l} style={{background:"var(--bg3)",borderRadius:8,padding:"10px 12px"}}>
+                                <div className="mono" style={{fontSize:9,color:"var(--muted2)",marginBottom:3}}>{s.l.toUpperCase()}</div>
+                                <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:20,color:"var(--text)"}}>{s.v}</div>
+                                <div className="mono" style={{fontSize:10,color:"var(--green)"}}>+{s.gain} gain</div>
+                              </div>
+                            ))}
+                          </div>
+                          {key !== risk && (
+                            <button onClick={()=>{ handlePlanChange(key,amount); setShowComparison(false); }} style={{
+                              width:"100%",marginTop:12,padding:"10px 0",borderRadius:8,
+                              border:`1px solid ${p.accentColor}44`,background:`${p.accentColor}08`,
+                              color:p.accentColor,fontFamily:"DM Sans",fontWeight:600,fontSize:13,cursor:"pointer",
+                            }}>
+                              Switch to {p.label} →
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="mono" style={{fontSize:10,color:"var(--muted2)",textAlign:"center"}}>
+                    Based on target annual returns · ${amount}/month · Past performance ≠ future results
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
