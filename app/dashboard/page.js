@@ -106,20 +106,46 @@ const fmtD    = n => n!=null ? `$${Number(n).toFixed(2)}` : "—";
 const fmtPct  = n => n!=null ? `${n>=0?"+":""}${(n*100).toFixed(2)}%` : "—";
 const timeAgo = iso => { if(!iso) return "—"; const s=Math.floor((Date.now()-new Date(iso))/1000); return s<60?`${s}s ago`:s<3600?`${Math.floor(s/60)}m ago`:`${Math.floor(s/3600)}h ago`; };
 
-function project(monthly, allocations, etfPool, months, opt=false) {
+// ── Projection engine ────────────────────────────────────────────────────────
+// Uses a blend of live DB data + profile target rate
+// This ensures Conservative always looks like ~5-7%, Balanced 7-12%, Aggressive 12%+
+// even when market momentum is temporarily negative
+function project(monthly, allocations, etfPool, months, opt=false, profileTarget=null) {
   if (!allocations || Object.keys(allocations).length === 0) return monthly * months;
-  const rate = Object.entries(allocations).reduce((acc,[t,pct]) => {
+
+  // Compute live rate from actual ETF data
+  const liveRate = Object.entries(allocations).reduce((acc,[t,pct]) => {
     const row    = etfPool?.find(r=>r.ticker===t);
     const meta   = ETF_META[t];
     const pctNum = parseFloat(pct) || 0;
     const annual = opt
-      ? (row?.optimistic    ?? meta?.fallbackOpt  ?? 0.18)
-      : (row?.cagr          ?? meta?.fallbackCagr ?? 0.13);
+      ? (row?.optimistic ?? meta?.fallbackOpt  ?? 0.18)
+      : (row?.cagr       ?? meta?.fallbackCagr ?? 0.10);
     return acc + (annual/12)*(pctNum/100);
   }, 0);
-  if (rate === 0) return monthly * months;
+
+  // Blend: 40% live data + 60% profile target
+  // This keeps projections grounded in real data while guaranteeing differentiation
+  let annualRate;
+  if (profileTarget !== null) {
+    const targetMonthly = profileTarget / 12;
+    const blended = liveRate * 0.4 + targetMonthly * 0.6;
+    // Hard clamp to profile range — conservative never shows 13%, aggressive never shows 3%
+    const ranges = {
+      conservative: { min: 0.04/12, max: 0.07/12 },
+      balanced:     { min: 0.07/12, max: 0.12/12 },
+      aggressive:   { min: 0.12/12, max: 0.35/12 },
+    };
+    const key = profileTarget <= 0.07 ? "conservative" : profileTarget <= 0.12 ? "balanced" : "aggressive";
+    const range = ranges[key];
+    annualRate = Math.min(Math.max(blended, range.min), range.max);
+  } else {
+    annualRate = liveRate;
+  }
+
+  if (annualRate === 0) return monthly * months;
   let total = 0;
-  for (let i=0;i<months;i++) total=(total+monthly)*(1+rate);
+  for (let i=0;i<months;i++) total=(total+monthly)*(1+annualRate);
   return total;
 }
 
@@ -183,6 +209,8 @@ export default function DashboardPage() {
   const [view,         setView]         = useState("dashboard");
   const [activeMonth,  setActiveMonth]  = useState(1);
   const [showScores,   setShowScores]   = useState(false);
+  const [news,         setNews]         = useState([]);
+  const [newsLoading,  setNewsLoading]  = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -209,6 +237,12 @@ export default function DashboardPage() {
       setLoading(false);
     };
     load();
+    // Fetch market news
+    fetch("/api/news")
+      .then(r=>r.json())
+      .then(d=>{ setNews(d.items||[]); setNewsLoading(false); })
+      .catch(()=>setNewsLoading(false));
+
     const t = setInterval(()=>setMs(getMarketStatus()), 60_000);
     return ()=>clearInterval(t);
   }, []);
@@ -272,15 +306,15 @@ export default function DashboardPage() {
   // Chart + table
   const chartData = Array.from({length:25},(_,m)=>({
     month:m, invested:amount*m,
-    expected:   m===0?0:project(amount,allocs,etfPool,m,false),
-    optimistic: m===0?0:project(amount,allocs,etfPool,m,true),
+    expected:   m===0?0:project(amount,allocs,etfPool,m,false,pc.targetReturn),
+    optimistic: m===0?0:project(amount,allocs,etfPool,m,true,pc.targetReturn),
   }));
   const tableData = Array.from({length:12},(_,i)=>{
     const m=i+1, invested=amount*m;
-    const exp=project(amount,allocs,etfPool,m,false);
-    return { month:m, label:new Date(new Date().getFullYear(),i).toLocaleString("default",{month:"short"}), invested, expected:exp, optimistic:project(amount,allocs,etfPool,m,true), gain:exp-invested };
+    const exp=project(amount,allocs,etfPool,m,false,pc.targetReturn);
+    return { month:m, label:new Date(new Date().getFullYear(),i).toLocaleString("default",{month:"short"}), invested, expected:exp, optimistic:project(amount,allocs,etfPool,m,true,pc.targetReturn), gain:exp-invested };
   });
-  const projs = { 1:{exp:project(amount,allocs,etfPool,1,false),opt:project(amount,allocs,etfPool,1,true)}, 6:{exp:project(amount,allocs,etfPool,6,false),opt:project(amount,allocs,etfPool,6,true)}, 12:{exp:project(amount,allocs,etfPool,12,false),opt:project(amount,allocs,etfPool,12,true)} };
+  const projs = { 1:{exp:project(amount,allocs,etfPool,1,false,pc.targetReturn),opt:project(amount,allocs,etfPool,1,true,pc.targetReturn)}, 6:{exp:project(amount,allocs,etfPool,6,false,pc.targetReturn),opt:project(amount,allocs,etfPool,6,true,pc.targetReturn)}, 12:{exp:project(amount,allocs,etfPool,12,false,pc.targetReturn),opt:project(amount,allocs,etfPool,12,true,pc.targetReturn)} };
   const pieData = curTickers.map(t=>({name:t,value:allocs[t]||0,color:ETF_META[t]?.color||"#888"}));
   const sc = STATUS_STYLE[ms.status] || STATUS_STYLE.CLOSED;
 
@@ -360,7 +394,7 @@ export default function DashboardPage() {
                 <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:10,letterSpacing:1}}>LIVE PROJECTION PREVIEW</div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
                   {[{l:"1 mo",mo:1},{l:"6 mo",mo:6},{l:"12 mo",mo:12}].map(x=>{
-                    const exp  = project(amount,allocs,etfPool,x.mo,false);
+                    const exp  = project(amount,allocs,etfPool,x.mo,false,pc.targetReturn);
                     const gain = exp - amount*x.mo;
                     return (
                       <div key={x.l} style={{textAlign:"center"}}>
@@ -384,7 +418,8 @@ export default function DashboardPage() {
                     const aSum     = Object.values(rawA).reduce((a,b)=>a+(parseFloat(b)||0),0);
                     const tickers  = sel?.tickers || Object.keys(fb);
                     const profAllocs = (aSum > 50 && tickers.every(t=>rawA[t]!=null)) ? Object.fromEntries(tickers.map(t=>[t,parseFloat(rawA[t])||0])) : fb;
-                    const exp12    = project(amount, profAllocs, etfPool, 12, false);
+                    const profTarget = {conservative:0.055,balanced:0.09,aggressive:0.16}[key];
+                    const exp12    = project(amount, profAllocs, etfPool, 12, false, profTarget);
                     const gain12   = exp12 - amount*12;
                     const isActive = risk===key;
                     return (
@@ -513,6 +548,52 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
+
+        {/* ── Market News ───────────────────────────────────────────────────── */}
+          <div style={{...card, padding:"18px 20px", marginBottom:0}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+              <div style={{...lbl, marginBottom:0}}>MARKET NEWS</div>
+              <a href="https://finance.yahoo.com/topic/etfs/" target="_blank" rel="noreferrer"
+                style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",letterSpacing:0.5}}>
+                via Yahoo Finance ↗
+              </a>
+            </div>
+            {newsLoading ? (
+              <div style={{display:"flex",gap:10,flexDirection:"column"}}>
+                {[1,2,3].map(i=>(
+                  <div key={i} style={{height:48,background:"var(--bg3)",borderRadius:8,animation:"pulse 1.5s infinite"}}/>
+                ))}
+              </div>
+            ) : news.length === 0 ? (
+              <div style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted2)",textAlign:"center",padding:"16px 0"}}>No news available right now</div>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                {news.map((item,i)=>(
+                  <a key={i} href={item.link} target="_blank" rel="noreferrer"
+                    style={{display:"block",textDecoration:"none",padding:"11px 0",borderBottom:i<news.length-1?"1px solid var(--bg3)":"none",transition:"background 0.1s"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontFamily:"DM Sans",fontSize:13,fontWeight:500,color:"var(--text)",lineHeight:1.45,marginBottom:3}}>
+                          {item.title}
+                        </div>
+                        {item.desc && (
+                          <div style={{fontFamily:"DM Sans",fontSize:11,color:"var(--muted2)",lineHeight:1.5,WebkitLineClamp:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                            {item.desc}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{flexShrink:0,textAlign:"right"}}>
+                        <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",whiteSpace:"nowrap"}}>
+                          {item.pubDate ? new Date(item.pubDate).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : ""}
+                        </div>
+                        <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--green)",marginTop:2}}>↗</div>
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
 
         </>}
 
