@@ -355,7 +355,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Market status */}}
+          {/* Market status */}
           <div style={{background:sc.bg,border:`1px solid ${sc.border}`,borderRadius:16,padding:"20px 28px",marginBottom:24}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16}}>
               <div>
