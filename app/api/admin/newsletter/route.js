@@ -1,7 +1,7 @@
 // app/api/admin/newsletter/route.js
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import { sendNewsletter } from "../../../lib/email";
+import { sendNewsletter } from "@/lib/email";
 
 function isAdmin(cookieStore) {
   const session = cookieStore.get("admin_session");
