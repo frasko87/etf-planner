@@ -71,6 +71,13 @@ export default function Onboarding({ user, onComplete }) {
         });
       if (actionErr) throw actionErr;
 
+      // Trigger welcome email (non-blocking)
+      fetch("/api/send-welcome", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      }).catch(()=>{}); // fire and forget
+
       onComplete({ profile, amount });
     } catch (e) {
       setError(e.message || "Something went wrong. Please try again.");
