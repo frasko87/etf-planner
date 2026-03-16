@@ -31,11 +31,10 @@ const WHY_ETFS = [
 ];
 
 const ETFS = [
-  { ticker:"VTI",  name:"Total Market",  ret:"~13.5%/yr", color:"#00b96b", risk:"Low"  },
-  { ticker:"VOO",  name:"S&P 500",       ret:"~13.2%/yr", color:"#3b82f6", risk:"Low"  },
-  { ticker:"BND",  name:"Bonds",         ret:"~4.8%/yr",  color:"#64748b", risk:"VLow" },
-  { ticker:"QQQ",  name:"Nasdaq-100",    ret:"~18.0%/yr", color:"#8b5cf6", risk:"Med"  },
-  { ticker:"SCHD", name:"Dividends",     ret:"~12.0%/yr", color:"#c9a84c", risk:"Low"  },
+  { ticker:"QQQ",  name:"Nasdaq-100",    ret:"~18.0%/yr", color:"#8b5cf6", risk:"Med" },
+  { ticker:"VTI",  name:"Total Market",  ret:"~13.5%/yr", color:"#00b96b", risk:"Low" },
+  { ticker:"VOO",  name:"S&P 500",       ret:"~13.2%/yr", color:"#3b82f6", risk:"Low" },
+  { ticker:"SCHD", name:"Dividends",     ret:"~12.0%/yr", color:"#c9a84c", risk:"Low" },
 ];
 
 const tape = [...ETFS,...ETFS,...ETFS];
@@ -78,7 +77,7 @@ export default function HomePage() {
       <section style={{textAlign:"center",padding:"clamp(52px,9vw,100px) clamp(16px,4vw,20px) clamp(40px,6vw,72px)",maxWidth:740,margin:"0 auto"}}>
         <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"var(--green2)",border:"1px solid rgba(0,185,107,0.25)",borderRadius:100,padding:"6px 16px",marginBottom:24}}>
           <span style={{width:6,height:6,borderRadius:"50%",background:"var(--green)",display:"inline-block",animation:"pulse 2s infinite"}}/>
-          <span className="mono" style={{fontSize:10,color:"var(--green)"}}>LIVE MARKET DATA · 42 ETFs TRACKED DAILY</span>
+          <span className="mono" style={{fontSize:10,color:"var(--green)"}}>LIVE MARKET DATA · ETFs TRACKED DAILY</span>
         </div>
 
         <h1 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(36px,8vw,72px)",color:"var(--text)",lineHeight:1.0,letterSpacing:"-2.5px",marginBottom:24}}>
@@ -223,7 +222,7 @@ export default function HomePage() {
           {/* Plan context */}
           <div style={{padding:"12px 16px",background:"var(--green2)",borderRadius:10,border:"1px solid rgba(0,185,107,0.2)",marginBottom:20}}>
             <p style={{fontFamily:"DM Sans",fontSize:"clamp(11px,1.8vw,13px)",color:"var(--green)",margin:0,lineHeight:1.7}}>
-              📊 Balanced plan · ~9% annual return target · 42 ETFs tracked daily · <strong>Sign up for a personalised plan with live data.</strong>
+              📊 Balanced plan · ~9% annual return target · <strong>We show you exactly what to buy.</strong> You execute on <a href="#platforms" style={{color:"var(--green)",fontWeight:600}}>one of our recommended platforms</a> — takes 5 minutes.
             </p>
           </div>
 
@@ -265,10 +264,10 @@ export default function HomePage() {
       </section>
 
       {/* ── ETF strip ───────────────────────────────────────────────────────── */}
-      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(40px,6vw,64px)",maxWidth:900,margin:"0 auto"}}>
+      <section id="etfs" style={{padding:"0 clamp(16px,4vw,20px) clamp(40px,6vw,64px)",maxWidth:900,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:20}}>
           <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:8,letterSpacing:1}}>WHAT'S IN YOUR PLAN</div>
-          <p style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)"}}>42 ETFs scored daily. Our engine picks the best performers for your risk level.</p>
+          <p style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)"}}>Our engine scores ETFs daily and picks the best performers for your risk level.</p>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,160px),1fr))",gap:10}}>
           {ETFS.map(etf=>(
@@ -288,7 +287,7 @@ export default function HomePage() {
       <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)"}}>
         <div style={{background:"var(--text)",borderRadius:16,padding:"clamp(24px,4vw,36px)",maxWidth:820,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:24,textAlign:"center"}}>
           {[
-            {n:"42",     l:"ETFs tracked daily"},
+            {n:"Daily",  l:"ETF scoring engine"},
             {n:"$50",    l:"Minimum to start"},
             {n:"50yr+",  l:"of S&P 500 data"},
             {n:"Free",   l:"No credit card needed"},
@@ -302,19 +301,36 @@ export default function HomePage() {
       </section>
 
       {/* ── Learn CTA ───────────────────────────────────────────────────────── */}
-      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)",maxWidth:640,margin:"0 auto",textAlign:"center"}}>
-        <div style={{background:"var(--bg3)",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(24px,4vw,36px)"}}>
-          <div style={{fontSize:28,marginBottom:12}}>📖</div>
-          <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(18px,3vw,24px)",color:"var(--text)",marginBottom:10}}>
-            Never heard of ETFs before?
-          </h3>
-          <p style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",marginBottom:20,lineHeight:1.7}}>
-            Our plain-English guide explains what ETFs are, why they outperform savings accounts, and which platforms to use to buy them.
-          </p>
-          <Link href="/learn" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:600,fontSize:14,color:"var(--text)",background:"white",border:"1px solid var(--border)",padding:"12px 24px",borderRadius:10,boxShadow:"var(--shadow)"}}>
-            Read the beginner's guide →
-          </Link>
-        </div>
+      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)",maxWidth:700,margin:"0 auto"}}>
+        <Link href="/learn" style={{display:"block",textDecoration:"none"}}>
+          <div style={{
+            background:"var(--text)",borderRadius:20,
+            padding:"clamp(28px,4vw,40px) clamp(24px,4vw,36px)",
+            display:"flex",alignItems:"center",justifyContent:"space-between",
+            gap:20,flexWrap:"wrap",cursor:"pointer",
+            border:"1px solid rgba(255,255,255,0.06)",
+            transition:"transform 0.15s, box-shadow 0.15s",
+            boxShadow:"0 4px 20px rgba(0,0,0,0.12)",
+          }}
+          onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 32px rgba(0,0,0,0.2)";}}
+          onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="0 4px 20px rgba(0,0,0,0.12)";}}>
+            <div style={{flex:1}}>
+              <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.35)",letterSpacing:1.5,marginBottom:10}}>BEFORE YOU INVEST</div>
+              <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(20px,4vw,30px)",color:"white",marginBottom:8,letterSpacing:"-0.5px",lineHeight:1.15}}>
+                New to ETFs? Read this first.
+              </h3>
+              <p style={{fontFamily:"DM Sans",fontSize:"clamp(13px,2vw,15px)",color:"rgba(255,255,255,0.5)",lineHeight:1.7,margin:0}}>
+                What they are, why they beat savings accounts, and exactly where to open an account — in plain English.
+              </p>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,flexShrink:0}}>
+              <div style={{width:56,height:56,borderRadius:14,background:"rgba(255,255,255,0.06)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>
+                📚
+              </div>
+              <span style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)",whiteSpace:"nowrap"}}>Read guide →</span>
+            </div>
+          </div>
+        </Link>
       </section>
 
       {/* ── Final CTA ───────────────────────────────────────────────────────── */}
