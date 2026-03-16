@@ -117,6 +117,24 @@ export default function LearnPage() {
         </div>
       </nav>
 
+      {/* ── Ticker tape ── */}
+      <div style={{ overflow:"hidden", background:"var(--text)", padding:"9px 0" }}>
+        <div style={{ display:"flex", gap:40, animation:"ticker 28s linear infinite", width:"max-content" }}>
+          {[
+            {ticker:"QQQ",ret:"+18.0%"},{ticker:"VTI",ret:"+13.5%"},{ticker:"VOO",ret:"+13.2%"},
+            {ticker:"SCHD",ret:"+12.0%"},{ticker:"VGT",ret:"+20.0%"},{ticker:"BND",ret:"+4.8%"},
+            {ticker:"QQQ",ret:"+18.0%"},{ticker:"VTI",ret:"+13.5%"},{ticker:"VOO",ret:"+13.2%"},
+            {ticker:"SCHD",ret:"+12.0%"},{ticker:"VGT",ret:"+20.0%"},{ticker:"BND",ret:"+4.8%"},
+          ].map((e,i)=>(
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, whiteSpace:"nowrap" }}>
+              <span style={{ fontFamily:"DM Mono", fontSize:10, color:"rgba(255,255,255,0.45)" }}>{e.ticker}</span>
+              <span style={{ fontFamily:"DM Mono", fontSize:11, color:"#00ff88", fontWeight:500 }}>{e.ret}</span>
+              <span style={{ fontFamily:"DM Mono", fontSize:9, color:"rgba(255,255,255,0.15)" }}>|</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "0 24px 80px" }}>
 
         {/* Hero */}

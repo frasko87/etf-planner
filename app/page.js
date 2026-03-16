@@ -222,7 +222,7 @@ export default function HomePage() {
           {/* Plan context */}
           <div style={{padding:"12px 16px",background:"var(--green2)",borderRadius:10,border:"1px solid rgba(0,185,107,0.2)",marginBottom:20}}>
             <p style={{fontFamily:"DM Sans",fontSize:"clamp(11px,1.8vw,13px)",color:"var(--green)",margin:0,lineHeight:1.7}}>
-              📊 Balanced plan · ~9% annual return target · <strong>We show you exactly what to buy.</strong> You execute on <a href="#platforms" style={{color:"var(--green)",fontWeight:600}}>one of our recommended platforms</a> — takes 5 minutes.
+              📊 Balanced plan · ~9% annual return target · <strong>We show you exactly what to buy.</strong> You execute on <a href="/learn#platforms" style={{color:"var(--green)",fontWeight:600}}>one of our recommended platforms</a> — takes 5 minutes.
             </p>
           </div>
 
