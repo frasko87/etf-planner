@@ -11,8 +11,7 @@ export default function WhatAreETFs() {
       <nav style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0 clamp(16px,4vw,40px)", height:60, background:"rgba(248,248,245,0.96)", backdropFilter:"blur(12px)", borderBottom:"1px solid var(--border)", position:"sticky", top:0, zIndex:100 }}>
         <Link href="/" className="pixel" style={{ fontSize:11, color:"var(--text)", textDecoration:"none" }}>ETF<span style={{ color:"var(--green)" }}>.</span>PLAN</Link>
         <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-          <Link href="/dashboard" style={{ fontFamily:"DM Sans", fontSize:14, color:"var(--muted)", textDecoration:"none" }}>← Dashboard</Link>
-          <Link href="/login?mode=signup" style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:13, color:"white", background:"var(--green)", padding:"8px 16px", borderRadius:8, textDecoration:"none" }}>Start free</Link>
+          <Link href="/dashboard" style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", textDecoration:"none", padding:"7px 14px", border:"1px solid var(--border)", borderRadius:8 }}>← Library</Link>
         </div>
       </nav>
 
@@ -20,7 +19,7 @@ export default function WhatAreETFs() {
 
         {/* Breadcrumb */}
         <div style={{ fontFamily:"DM Mono", fontSize:11, color:"var(--muted2)", marginBottom:24 }}>
-          <Link href="/dashboard" style={{ color:"var(--muted2)", textDecoration:"none" }}>Library</Link>
+          <Link href="/dashboard?tab=library" style={{ color:"var(--muted2)", textDecoration:"none" }}>← Library</Link>
           <span style={{ margin:"0 8px" }}>→</span>
           <span>What are ETFs?</span>
         </div>
@@ -128,9 +127,12 @@ export default function WhatAreETFs() {
           ))}
         </div>
 
-        <div style={{ textAlign:"center" }}>
-          <Link href="/dashboard" style={{ display:"inline-block", fontFamily:"DM Sans", fontWeight:700, fontSize:16, color:"white", background:"var(--green)", padding:"14px 32px", borderRadius:12, textDecoration:"none", boxShadow:"0 4px 20px rgba(0,185,107,0.3)" }}>
-            Back to my dashboard →
+        <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+          <Link href="/dashboard" style={{ display:"inline-block", fontFamily:"DM Sans", fontWeight:500, fontSize:15, color:"var(--text)", background:"white", padding:"13px 24px", borderRadius:12, textDecoration:"none", border:"1px solid var(--border)", boxShadow:"var(--shadow)" }}>
+            ← Back to Library
+          </Link>
+          <Link href="/login?mode=signup" style={{ display:"inline-block", fontFamily:"DM Sans", fontWeight:700, fontSize:15, color:"white", background:"var(--green)", padding:"13px 28px", borderRadius:12, textDecoration:"none", boxShadow:"0 4px 20px rgba(0,185,107,0.3)" }}>
+            Start my free plan →
           </Link>
         </div>
 

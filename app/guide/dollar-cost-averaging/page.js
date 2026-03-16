@@ -19,16 +19,15 @@ export default function DCAGuide() {
     <div style={{ minHeight:"100vh", background:"var(--bg)" }}>
       <nav style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0 clamp(16px,4vw,40px)", height:60, background:"rgba(248,248,245,0.96)", backdropFilter:"blur(12px)", borderBottom:"1px solid var(--border)", position:"sticky", top:0, zIndex:100 }}>
         <Link href="/" className="pixel" style={{ fontSize:11, color:"var(--text)", textDecoration:"none" }}>ETF<span style={{ color:"var(--green)" }}>.</span>PLAN</Link>
-        <div style={{ display:"flex", gap:12 }}>
-          <Link href="/dashboard" style={{ fontFamily:"DM Sans", fontSize:14, color:"var(--muted)", textDecoration:"none" }}>← Dashboard</Link>
-          <Link href="/login?mode=signup" style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:13, color:"white", background:"var(--green)", padding:"8px 16px", borderRadius:8, textDecoration:"none" }}>Start free</Link>
+        <div style={{ display:"flex", gap:12, alignItems:"center" }}>
+          <Link href="/dashboard" style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", textDecoration:"none", padding:"7px 14px", border:"1px solid var(--border)", borderRadius:8 }}>← Library</Link>
         </div>
       </nav>
 
       <div style={{ maxWidth:720, margin:"0 auto", padding:"clamp(32px,6vw,64px) clamp(16px,4vw,24px) 80px" }}>
 
         <div style={{ fontFamily:"DM Mono", fontSize:11, color:"var(--muted2)", marginBottom:24 }}>
-          <Link href="/dashboard" style={{ color:"var(--muted2)", textDecoration:"none" }}>Library</Link>
+          <Link href="/dashboard?tab=library" style={{ color:"var(--muted2)", textDecoration:"none" }}>← Library</Link>
           <span style={{ margin:"0 8px" }}>→</span>
           <span>Dollar-cost averaging</span>
         </div>

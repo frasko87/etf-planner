@@ -11,7 +11,7 @@ function useWindowWidth() {
   }, []);
   return width;
 }
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "../../lib/supabase/client";
 import { getMarketStatus, STATUS_STYLE } from "../../lib/market";
@@ -230,6 +230,7 @@ export default function DashboardPage() {
   const supabase = createClient();
 
   const [user,         setUser]         = useState(null);
+  const searchParams = useSearchParams();
   const [etfPool,      setEtfPool]      = useState([]);
   const [selections,   setSelections]   = useState({});   // { conservative: {...}, balanced: {...}, aggressive: {...} }
   const [macroData,    setMacroData]    = useState(null);
@@ -301,6 +302,12 @@ export default function DashboardPage() {
         .eq("month_key", monthKey)
         .single();
       if (stockData) setStockOfMonth(stockData);
+
+      // Check for tab param in URL (e.g. /dashboard?tab=library)
+      const tabParam = searchParams?.get("tab");
+      if (tabParam && ["dashboard","plan","library"].includes(tabParam)) {
+        setView(tabParam);
+      }
 
       setLoading(false);
     };
