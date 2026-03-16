@@ -491,6 +491,39 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* ── New user CTA — shows if first visit ─────────────────────────── */}
+          {monthlyHistory.length === 0 && !userPlan?.has_bought && (
+            <div style={{
+              background:"linear-gradient(135deg,rgba(0,185,107,0.1),rgba(0,185,107,0.03))",
+              border:"2px solid rgba(0,185,107,0.3)",borderRadius:16,
+              padding:"clamp(20px,3vw,28px)",marginBottom:20,
+              display:"flex",justifyContent:"space-between",alignItems:"center",
+              flexWrap:"wrap",gap:16,
+            }}>
+              <div style={{display:"flex",alignItems:"center",gap:16,flex:1}}>
+                <div style={{width:52,height:52,borderRadius:14,background:"rgba(0,185,107,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>
+                  🛒
+                </div>
+                <div>
+                  <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(16px,3vw,20px)",color:"var(--text)",margin:"0 0 4px",letterSpacing:"-0.3px"}}>
+                    Ready to make your first purchase?
+                  </h3>
+                  <p style={{fontFamily:"DM Sans",fontSize:"clamp(12px,2vw,14px)",color:"var(--muted)",margin:0,lineHeight:1.6}}>
+                    Your plan is set. Follow our step-by-step guide to buy your first ETFs in 15 minutes.
+                  </p>
+                </div>
+              </div>
+              <button onClick={()=>setView("library")} style={{
+                fontFamily:"DM Sans",fontWeight:700,fontSize:14,color:"white",
+                background:"var(--green)",border:"none",borderRadius:10,
+                padding:"12px 22px",cursor:"pointer",flexShrink:0,
+                boxShadow:"0 4px 16px rgba(0,185,107,0.3)",whiteSpace:"nowrap",
+              }}>
+                How to buy ETFs →
+              </button>
+            </div>
+          )}
+
           {/* Market status */}
           <div style={{background:sc.bg,border:`1.5px solid ${sc.border}`,borderRadius:16,padding:"clamp(16px,3vw,24px) clamp(16px,3vw,28px)",marginBottom:24,boxShadow:"var(--shadow)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16}}>
@@ -1164,46 +1197,102 @@ export default function DashboardPage() {
         </>}
 
         {view === "library" && (
-          <div style={{maxWidth:860,margin:"0 auto"}}>
+          <div style={{maxWidth:900,margin:"0 auto"}}>
             {/* Library header */}
-            <div style={{background:"var(--text)",borderRadius:16,padding:"clamp(20px,3vw,28px) clamp(20px,4vw,32px)",marginBottom:20}}>
-              <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:2,marginBottom:8}}>RESOURCE LIBRARY</div>
-              <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(22px,4vw,32px)",color:"white",margin:"0 0 6px",letterSpacing:"-0.5px"}}>
-                📚 Learn & grow your knowledge
+            <div style={{background:"var(--text)",borderRadius:16,padding:"clamp(24px,4vw,36px)",marginBottom:24}}>
+              <div className="mono" style={{fontSize:11,color:"rgba(255,255,255,0.3)",letterSpacing:2,marginBottom:10}}>RESOURCE LIBRARY</div>
+              <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(26px,5vw,40px)",color:"white",margin:"0 0 8px",letterSpacing:"-1px",lineHeight:1.1}}>
+                Everything you need to invest smarter 📚
               </h2>
-              <p style={{fontFamily:"DM Sans",fontSize:15,color:"rgba(255,255,255,0.45)",margin:0}}>
-                Everything you need to invest smarter — from ETF basics to advanced strategies.
+              <p style={{fontFamily:"DM Sans",fontSize:"clamp(14px,2vw,17px)",color:"rgba(255,255,255,0.45)",margin:0,lineHeight:1.7}}>
+                From opening your first brokerage account to understanding ETF strategies — all in one place.
               </p>
             </div>
 
-            {/* Quick guides */}
-            <div style={{marginBottom:20}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                <div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/>
+            {/* ── HOW TO BUY YOUR FIRST ETF ── */}
+            <div style={{marginBottom:24}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+                <div style={{height:3,width:24,background:"var(--green)",borderRadius:2}}/>
+                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--text)",fontWeight:500}}>HOW TO BUY YOUR FIRST ETF</div>
+              </div>
+
+              {/* Pinned CTA card */}
+              <div style={{background:"linear-gradient(135deg,rgba(0,185,107,0.08),rgba(0,185,107,0.02))",border:"1.5px solid rgba(0,185,107,0.25)",borderRadius:16,padding:"clamp(20px,3vw,28px)",marginBottom:16}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16,marginBottom:20}}>
+                  <div>
+                    <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(18px,3vw,24px)",color:"var(--text)",margin:"0 0 8px",letterSpacing:"-0.3px"}}>
+                      Never bought an ETF before? Start here.
+                    </h3>
+                    <p style={{fontFamily:"DM Sans",fontSize:"clamp(13px,2vw,15px)",color:"var(--muted)",margin:0,lineHeight:1.7}}>
+                      Follow these 4 steps and you'll be invested in your first ETF in under 15 minutes.
+                    </p>
+                  </div>
+                  <div className="mono" style={{fontSize:10,padding:"4px 12px",borderRadius:10,background:"rgba(0,185,107,0.1)",color:"var(--green)",border:"1px solid rgba(0,185,107,0.2)",whiteSpace:"nowrap",alignSelf:"flex-start"}}>
+                    ⏱ 15 min · One time setup
+                  </div>
+                </div>
+
+                <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"repeat(2,1fr)",gap:10}}>
+                  {[
+                    { n:"01", icon:"🏦", title:"Choose your platform", desc:"Open a free account on Robinhood, eToro, Vanguard or Interactive Brokers. All are regulated, commission-free for ETFs and take under 10 minutes to sign up.", link:"/learn#platforms", cta:"Compare platforms →", color:"#3b82f6" },
+                    { n:"02", icon:"💳", title:"Fund your account", desc:"Connect your bank account and transfer your first month's amount ($50, $100 or $150). Most platforms process transfers in 1–3 business days.", link:null, cta:null, color:"#c9a84c" },
+                    { n:"03", icon:"🔍", title:"Search your ETF ticker", desc:"In the search bar, type the ticker symbol from your plan — e.g. VOO, QQQ or VTI. Click the result to open the ETF page.", link:null, cta:null, color:"#8b5cf6" },
+                    { n:"04", icon:"✅", title:"Buy the dollar amount", desc:"Select 'Buy', choose 'Dollar amount' (not shares), type your allocated amount (e.g. $40), confirm and submit. You're now an investor.", link:null, cta:null, color:"#00b96b" },
+                  ].map(step=>(
+                    <div key={step.n} style={{background:"white",borderRadius:12,padding:"clamp(14px,2.5vw,18px)",border:`1px solid ${step.color}22`,boxShadow:"var(--shadow)"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                        <div style={{display:"flex",alignItems:"center",gap:10}}>
+                          <div style={{width:32,height:32,borderRadius:10,background:`${step.color}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{step.icon}</div>
+                          <div>
+                            <div className="mono" style={{fontSize:9,color:step.color,letterSpacing:1,marginBottom:1}}>STEP {step.n}</div>
+                            <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(14px,2vw,15px)",color:"var(--text)"}}>{step.title}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{fontFamily:"DM Sans",fontSize:"clamp(12px,1.8vw,13px)",color:"var(--muted)",lineHeight:1.75}}>{step.desc}</div>
+                      {step.link && (
+                        <Link href={step.link} style={{display:"inline-block",fontFamily:"DM Mono",fontSize:11,color:step.color,marginTop:10,textDecoration:"none",fontWeight:500}}>{step.cta}</Link>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{marginTop:16,padding:"12px 16px",background:"rgba(0,0,0,0.03)",borderRadius:10,border:"1px solid var(--border)"}}>
+                  <p style={{fontFamily:"DM Sans",fontSize:"clamp(11px,1.8vw,13px)",color:"var(--muted2)",margin:0,lineHeight:1.7}}>
+                    💡 <strong style={{color:"var(--text)"}}>Tip:</strong> Set up a monthly automatic transfer from your bank to your broker on the same day each month. Then just log in once and buy — takes 2 minutes after the first time.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Quick guides ── */}
+            <div style={{marginBottom:24}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+                <div style={{height:3,width:24,background:"#3b82f6",borderRadius:2}}/>
                 <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--text)",fontWeight:500}}>GUIDES</div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"repeat(2,1fr)",gap:12}}>
                 {[
-                  { icon:"🧭", title:"What are ETFs?", desc:"The complete beginner's guide. What they are, why they work, and how to start.", link:"/learn", tag:"Beginner", color:"#00b96b" },
-                  { icon:"⚖️", title:"Picking your risk level", desc:"Conservative vs Balanced vs Aggressive — which is right for you?", link:"/learn#plans", tag:"Beginner", color:"#3b82f6" },
-                  { icon:"🏦", title:"Which platform to use", desc:"Robinhood, eToro, Vanguard, Interactive Brokers — compared.", link:"/learn#platforms", tag:"Beginner", color:"#c9a84c" },
-                  { icon:"📈", title:"Dollar-cost averaging", desc:"Why investing the same amount every month beats trying to time the market.", link:"/learn#dca", tag:"Strategy", color:"#8b5cf6" },
+                  { icon:"🧭", title:"What are ETFs?", desc:"The complete beginner's guide. What they are, why they work, and how to start with $50/month.", link:"/learn", tag:"Beginner", color:"#00b96b" },
+                  { icon:"⚖️", title:"Picking your risk level", desc:"Conservative vs Balanced vs Aggressive — what the numbers actually mean for your money.", link:"/learn", tag:"Beginner", color:"#3b82f6" },
+                  { icon:"🏦", title:"Which platform to use", desc:"Robinhood, eToro, Vanguard, Interactive Brokers — fees, features and who each is best for.", link:"/learn#platforms", tag:"Beginner", color:"#c9a84c" },
+                  { icon:"📈", title:"Dollar-cost averaging", desc:"Why investing the same amount every month beats trying to time the market — with real data.", link:"/learn", tag:"Strategy", color:"#8b5cf6" },
                 ].map(g=>(
                   <Link key={g.title} href={g.link} style={{
                     display:"block",textDecoration:"none",
                     background:"white",border:"1px solid var(--border)",borderRadius:14,
-                    padding:"clamp(16px,2.5vw,20px)",boxShadow:"var(--shadow)",
+                    padding:"clamp(16px,2.5vw,22px)",boxShadow:"var(--shadow)",
                     transition:"transform 0.15s, box-shadow 0.15s",
                   }}
                   onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="var(--shadow2)";}}
                   onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="var(--shadow)";}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                      <span style={{fontSize:24}}>{g.icon}</span>
-                      <span style={{fontFamily:"DM Mono",fontSize:9,padding:"2px 8px",borderRadius:6,background:`${g.color}10`,color:g.color,border:`1px solid ${g.color}22`}}>{g.tag}</span>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                      <span style={{fontSize:26}}>{g.icon}</span>
+                      <span style={{fontFamily:"DM Mono",fontSize:10,padding:"3px 10px",borderRadius:6,background:`${g.color}10`,color:g.color,border:`1px solid ${g.color}22`}}>{g.tag}</span>
                     </div>
-                    <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:15,color:"var(--text)",marginBottom:6}}>{g.title}</div>
-                    <div style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",lineHeight:1.7}}>{g.desc}</div>
-                    <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)",marginTop:10}}>Read guide →</div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(15px,2.5vw,17px)",color:"var(--text)",marginBottom:8}}>{g.title}</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:"clamp(13px,2vw,14px)",color:"var(--muted)",lineHeight:1.75}}>{g.desc}</div>
+                    <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)",marginTop:12,fontWeight:500}}>Read guide →</div>
                   </Link>
                 ))}
               </div>
@@ -1212,21 +1301,21 @@ export default function DashboardPage() {
             {/* ETF Glossary */}
             <div style={{marginBottom:20}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                <div style={{height:3,width:20,background:"var(--gold)",borderRadius:2}}/>
-                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--text)",fontWeight:500}}>YOUR ETFs — QUICK REFERENCE</div>
+                <div style={{height:3,width:24,background:"var(--gold)",borderRadius:2}}/>
+                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--text)",fontWeight:500}}>YOUR ETFs — CLICK FOR FULL DETAILS</div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:isMob?"repeat(2,1fr)":"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
                 {Object.entries(ETF_META).filter(([,m])=>!m.leveraged).slice(0,8).map(([ticker,meta])=>(
                   <Link key={ticker} href={`/etf/${ticker}`} style={{
                     display:"block",textDecoration:"none",
                     background:"white",border:`1.5px solid ${meta.color}22`,borderRadius:12,
-                    padding:"clamp(12px,2vw,16px)",boxShadow:"var(--shadow)",
+                    padding:"clamp(14px,2vw,18px)",boxShadow:"var(--shadow)",
                     transition:"transform 0.15s",
                   }}
                   onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
                   onMouseLeave={e=>e.currentTarget.style.transform=""}>
-                    <div style={{fontFamily:"DM Mono",fontSize:13,color:meta.color,fontWeight:600,marginBottom:4}}>{ticker}</div>
-                    <div style={{fontFamily:"DM Sans",fontSize:11,color:"var(--muted)",marginBottom:8}}>{meta.name}</div>
+                    <div style={{fontFamily:"DM Mono",fontSize:14,color:meta.color,fontWeight:600,marginBottom:5}}>{ticker}</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",marginBottom:8}}>{meta.name}</div>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <span style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)"}}>{meta.risk} risk</span>
                       <span style={{fontFamily:"DM Mono",fontSize:9,color:"var(--green)"}}>Details →</span>
@@ -1239,8 +1328,8 @@ export default function DashboardPage() {
             {/* Key concepts */}
             <div style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(18px,3vw,24px)",boxShadow:"var(--shadow2)"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
-                <div style={{height:3,width:20,background:"#8b5cf6",borderRadius:2}}/>
-                <div className="mono" style={{fontSize:11,letterSpacing:2,color:"var(--text)",fontWeight:500}}>KEY CONCEPTS</div>
+                <div style={{height:3,width:24,background:"#8b5cf6",borderRadius:2}}/>
+                <div className="mono" style={{fontSize:12,letterSpacing:2,color:"var(--text)",fontWeight:500}}>KEY CONCEPTS — INVESTING GLOSSARY</div>
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:0}}>
                 {[
@@ -1252,8 +1341,8 @@ export default function DashboardPage() {
                   { term:"Leveraged ETF", def:"Amplifies daily returns by 2x or 3x using derivatives. TQQQ goes up 3% when QQQ goes up 1% — but also down 3% when QQQ drops 1%. High risk." },
                 ].map((c,i,arr)=>(
                   <div key={c.term} style={{padding:"14px 0",borderBottom:i<arr.length-1?"1px solid var(--bg3)":"none"}}>
-                    <div style={{fontFamily:"DM Mono",fontSize:12,color:"var(--text)",fontWeight:500,marginBottom:4}}>{c.term}</div>
-                    <div style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",lineHeight:1.75}}>{c.def}</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:15,fontWeight:700,color:"var(--text)",marginBottom:5}}>{c.term}</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",lineHeight:1.8}}>{c.def}</div>
                   </div>
                 ))}
               </div>
