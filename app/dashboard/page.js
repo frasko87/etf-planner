@@ -412,6 +412,9 @@ export default function DashboardPage() {
   const removedETFs = prevTickers.filter(t => !curTickers.includes(t));
   const unchangedETFs = curTickers.filter(t => prevTickers.includes(t));
 
+  // Start projection from user's actual start date (or today if no plan yet)
+  const planStartDate = userPlan?.started_at ? new Date(userPlan.started_at) : new Date();
+
   // Chart + table
   const chartData = Array.from({length:25},(_,m)=>({
     month: (() => {
@@ -423,8 +426,6 @@ export default function DashboardPage() {
     expected:   m===0?0:project(amount,allocs,etfPool,m,false,pc.targetReturn),
     optimistic: m===0?0:project(amount,allocs,etfPool,m,true,pc.targetReturn),
   }));
-  // Start projection from user's actual start date (or today if no plan yet)
-  const planStartDate = userPlan?.started_at ? new Date(userPlan.started_at) : new Date();
   const tableData = Array.from({length:12},(_,i)=>{
     const m=i+1, invested=amount*m;
     const exp=project(amount,allocs,etfPool,m,false,pc.targetReturn);
