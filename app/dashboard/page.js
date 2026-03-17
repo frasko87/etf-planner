@@ -1218,6 +1218,18 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
+              {/* Instagram link in footer */}
+              <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",marginTop:16,paddingTop:14,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+                <a href="https://www.instagram.com/etfplan/" target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:7,fontFamily:"DM Sans",fontSize:12,color:"rgba(255,255,255,0.4)",textDecoration:"none"}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2"/>
+                    <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2"/>
+                    <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+                  </svg>
+                  Follow @etfplan on Instagram
+                </a>
+                <span style={{fontFamily:"DM Mono",fontSize:9,color:"rgba(255,255,255,0.2)"}}>Not financial advice · Past performance ≠ future results</span>
+              </div>
             </div>
           )}
 
