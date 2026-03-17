@@ -27,7 +27,7 @@ export async function GET() {
     { data: recentPlans                       },
   ] = await Promise.all([
     supabase.auth.admin.listUsers(),
-    supabase.from("user_plans").select("profile, amount, started_at"),
+    supabase.from("user_plans").select("profile, amount, started_at, user_id"),
     supabase.from("email_preferences").select("email, user_id, subscribed_at, unsubscribed", { count:"exact" }).eq("unsubscribed", false),
     supabase.from("fetch_log").select("*").order("fetched_at", { ascending:false }).limit(10),
     supabase.from("weekly_selections").select("profile, tickers, week_start, is_current").eq("is_current", true),
@@ -53,14 +53,7 @@ export async function GET() {
       last_sign:  u.last_sign_in_at,
     }));
 
-  // Subscribers with plan info
-  const subList = (subscribers || []).map(s => {
-    const plan = (plans || []).find(p => {
-      const rp = (recentPlans || []).find(r => r.user_id === s.user_id);
-      return rp;
-    });
-    return s;
-  });
+
 
   return Response.json({
     stats: {
