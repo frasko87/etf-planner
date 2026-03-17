@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Returns for $50/$100/$150 at ~9% balanced rate (1mo/6mo/12mo)
 const PROJECTIONS = {
