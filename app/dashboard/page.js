@@ -1687,27 +1687,24 @@ export default function DashboardPage() {
 
             return (
               <div style={card}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:10}}>
+                <div style={{display:"flex",flexDirection:isMob?"column":"row",justifyContent:"space-between",alignItems:isMob?"flex-start":"center",marginBottom:20,gap:12}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/>
                     <div style={lbl}>MY PORTFOLIO</div>
                   </div>
                   {hasBought && (
-                    <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:2}}>TOTAL INVESTED</div>
-                        <div style={{fontFamily:"DM Mono",fontSize:16,color:"var(--text)",fontWeight:600}}>{fmt(totalInvested)}</div>
-                      </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:2}}>CURRENT VALUE</div>
-                        <div style={{fontFamily:"DM Mono",fontSize:16,color:"var(--green)",fontWeight:600}}>{fmt(totalValue)}</div>
-                      </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:2}}>TOTAL GAIN</div>
-                        <div style={{fontFamily:"DM Mono",fontSize:16,color:totalGain>=0?"var(--green)":"#ff4757",fontWeight:600}}>
-                          {totalGain>=0?"+":""}{fmt(totalGain)} <span style={{fontSize:12}}>({totalGainPct>=0?"+":""}{totalGainPct.toFixed(1)}%)</span>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:12,width:isMob?"100%":"auto"}}>
+                      {[
+                        {label:"INVESTED",  value:fmt(totalInvested), color:"var(--text)"},
+                        {label:"VALUE NOW",  value:fmt(totalValue),    color:"var(--green)"},
+                        {label:"TOTAL GAIN", value:(totalGain>=0?"+":"")+fmt(totalGain), color:totalGain>=0?"var(--green)":"#ff4757"},
+                      ].map(s=>(
+                        <div key={s.label} style={{background:"var(--bg3)",borderRadius:8,padding:"8px 12px"}}>
+                          <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:3}}>{s.label}</div>
+                          <div style={{fontFamily:"DM Mono",fontSize:15,color:s.color,fontWeight:600}}>{s.value}</div>
+                          {s.label==="TOTAL GAIN" && <div style={{fontFamily:"DM Mono",fontSize:10,color:s.color}}>{totalGainPct>=0?"+":""}{totalGainPct.toFixed(1)}%</div>}
                         </div>
-                      </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -1780,37 +1777,70 @@ export default function DashboardPage() {
             );
           })()}
 
-          {/* Month-by-month projection table */}
-          <div style={{...card,overflowX:"auto"}}>
-            <div style={lbl}>PROJECTED MONTH-BY-MONTH</div>
-            <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead>
-                <tr>{["Month","Invested","Expected","Optimistic","Gain"].map(h=>(
-                  <th key={h} style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted2)",textAlign:"left",paddingBottom:12,letterSpacing:1,fontWeight:400}}>{h.toUpperCase()}</th>
-                ))}</tr>
-              </thead>
-              <tbody>
-                {tableData.map(row=>{
-                  const active=row.month===activeMonth;
+          {/* Month-by-month projection — mobile cards, desktop table */}
+          <div style={card}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{height:3,width:20,background:"var(--gold)",borderRadius:2}}/>
+                <div style={lbl}>12-MONTH PROJECTION</div>
+              </div>
+              <span style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",padding:"3px 10px",borderRadius:8,background:"var(--bg3)"}}>AT {Math.round((pc.targetReturn||0.09)*100)}% TARGET RETURN</span>
+            </div>
+
+            {isMob ? (
+              /* Mobile: card grid */
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {tableData.map(row => {
+                  const active = row.month === activeMonth;
                   return (
-                    <tr key={row.month} onClick={()=>setActiveMonth(row.month)} style={{background:active?"rgba(0,185,107,0.03)":"transparent",cursor:"pointer",borderTop:"1px solid var(--border)"}}>
-                      <td style={{padding:"9px 8px"}}>
-                        <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <div style={{width:4,height:4,borderRadius:"50%",background:active?"var(--green)":"transparent"}}/>
-                          <span style={{fontFamily:"DM Mono",fontSize:14,color:active?"var(--green)":"var(--muted)"}}>{row.label}</span>
-                        </div>
-                      </td>
-                      <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:11,color:"var(--muted)"}}>{fmt(row.invested)}</td>
-                      <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:11,color:"var(--text)"}}>{fmt(row.expected)}</td>
-                      <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:11,color:"var(--green)"}}>{fmt(row.optimistic)}</td>
-                      <td style={{padding:"9px 8px"}}>
-                        <span style={{fontFamily:"DM Mono",fontSize:12,color:"var(--green)",background:"rgba(0,185,107,0.06)",padding:"4px 9px",borderRadius:4}}>+{fmt(row.gain)}</span>
-                      </td>
-                    </tr>
+                    <div key={row.month} onClick={()=>setActiveMonth(row.month)}
+                      style={{
+                        background: active ? "rgba(0,185,107,0.04)" : "var(--bg3)",
+                        border: `1.5px solid ${active ? "rgba(0,185,107,0.3)" : "var(--border)"}`,
+                        borderRadius:10, padding:"10px 12px", cursor:"pointer",
+                      }}>
+                      <div style={{fontFamily:"DM Mono",fontSize:11,color:active?"var(--green)":"var(--muted2)",marginBottom:4,fontWeight:active?600:400}}>{row.label}</div>
+                      <div style={{fontFamily:"DM Mono",fontSize:14,color:"var(--text)",fontWeight:600,marginBottom:2}}>{fmt(row.expected)}</div>
+                      <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)"}}>+{fmt(row.gain)}</div>
+                      <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginTop:2}}>{fmt(row.invested)} in</div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+            ) : (
+              /* Desktop: table */
+              <div style={{overflowX:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse"}}>
+                  <thead>
+                    <tr>{["Month","Invested","Expected","Optimistic","Gain"].map(h=>(
+                      <th key={h} style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",textAlign:"left",paddingBottom:10,letterSpacing:1,fontWeight:400}}>{h}</th>
+                    ))}</tr>
+                  </thead>
+                  <tbody>
+                    {tableData.map(row=>{
+                      const active=row.month===activeMonth;
+                      return (
+                        <tr key={row.month} onClick={()=>setActiveMonth(row.month)}
+                          style={{background:active?"rgba(0,185,107,0.03)":"transparent",cursor:"pointer",borderTop:"1px solid var(--border)"}}>
+                          <td style={{padding:"9px 8px"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:6}}>
+                              <div style={{width:4,height:4,borderRadius:"50%",background:active?"var(--green)":"var(--border)"}}/>
+                              <span style={{fontFamily:"DM Mono",fontSize:13,color:active?"var(--green)":"var(--muted)"}}>{row.label}</span>
+                            </div>
+                          </td>
+                          <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:12,color:"var(--muted)"}}>{fmt(row.invested)}</td>
+                          <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:12,color:"var(--text)",fontWeight:500}}>{fmt(row.expected)}</td>
+                          <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:12,color:"var(--green)"}}>{fmt(row.optimistic)}</td>
+                          <td style={{padding:"9px 8px"}}>
+                            <span style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)",background:"rgba(0,185,107,0.06)",padding:"3px 8px",borderRadius:4}}>+{fmt(row.gain)}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           <p style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted2)",textAlign:"center",marginTop:28,lineHeight:1.6}}>
