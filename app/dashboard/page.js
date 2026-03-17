@@ -385,25 +385,20 @@ export default function DashboardPage() {
   const usingFallback = !currentSel;
   const pc           = PROFILE_CONFIG[risk];
 
-  // Normalize allocations — handle JSONB from Supabase (may have string values or missing keys)
-  const rawAllocs = currentSel?.allocations || {};
-  const allocSum  = Object.values(rawAllocs).reduce((a,b) => a + (parseFloat(b)||0), 0);
-  const allocs    = (() => {
-    // If DB has valid allocations with correct tickers, use them
-    if (allocSum > 50 && curTickers.every(t => rawAllocs[t] != null)) {
+  // Allocations — use FALLBACK_PLANS as authoritative source (correct percentages)
+  // DB allocations from weekly_selections are for scoring only, not display
+  const allocs = (() => {
+    const fallbackAllocs = fallback.allocations;
+    // If DB has valid allocations matching exactly the fallback tickers, use them
+    const rawAllocs = currentSel?.allocations || {};
+    const allocSum  = Object.values(rawAllocs).reduce((a,b) => a + (parseFloat(b)||0), 0);
+    if (allocSum > 50 && curTickers.every(t => rawAllocs[t] != null) && allocSum >= 90) {
       const normalized = {};
       curTickers.forEach(t => { normalized[t] = parseFloat(rawAllocs[t]) || 0; });
       return normalized;
     }
-    // Otherwise distribute equally among selected tickers
-    const equal = {};
-    const base  = Math.floor(100 / curTickers.length / 5) * 5;
-    let rem     = 100;
-    curTickers.forEach((t,i) => {
-      equal[t] = i === curTickers.length-1 ? rem : base;
-      rem -= base;
-    });
-    return equal;
+    // Always fall back to the plan's defined allocations
+    return fallbackAllocs;
   })();
   const prevAllocs = currentSel?.prev_allocations || {};
 
