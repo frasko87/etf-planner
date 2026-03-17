@@ -49,6 +49,16 @@ export async function POST(req) {
     const name  = user.email.split("@")[0];
     const name1 = name.charAt(0).toUpperCase() + name.slice(1);
 
+    // Register in email_preferences
+    await supabase.from("email_preferences").upsert({
+      email:           user.email,
+      user_id:         userId,
+      unsubscribed:    false,
+      welcome_sent:    true,
+      welcome_sent_at: new Date().toISOString(),
+      source:          "onboarding",
+    }, { onConflict: "email" });
+
     await sendWelcomeEmail({
       email:       user.email,
       name:        name1,

@@ -338,14 +338,37 @@ export default function AdminPage() {
               </div>
 
               {sendResult && (
-                <div style={{ padding:"12px 16px", borderRadius:10, marginBottom:16,
-                  background: sendResult.error ? "rgba(255,71,87,0.08)" : "rgba(0,185,107,0.08)",
-                  border: `1px solid ${sendResult.error ? "rgba(255,71,87,0.2)" : "rgba(0,185,107,0.2)"}`,
-                }}>
-                  {sendResult.error
-                    ? <span style={{ fontFamily:"DM Sans", fontSize:13, color:"#ff4757" }}>Error: {sendResult.error}</span>
-                    : <span style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--green)" }}>✅ Sent {sendResult.sent} emails · {sendResult.failed} failed</span>
-                  }
+                <div style={{ borderRadius:10, marginBottom:16, overflow:"hidden", border:"1px solid var(--border)" }}>
+                  {/* Summary bar */}
+                  <div style={{ padding:"12px 16px", display:"flex", gap:16, alignItems:"center",
+                    background: sendResult.error ? "rgba(255,71,87,0.08)" : sendResult.failed > 0 ? "rgba(255,165,0,0.08)" : "rgba(0,185,107,0.08)",
+                  }}>
+                    {sendResult.error
+                      ? <span style={{ fontFamily:"DM Sans", fontSize:13, color:"#ff4757" }}>❌ Error: {sendResult.error}</span>
+                      : <>
+                          <span style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--green)", fontWeight:600 }}>✅ Sent: {sendResult.sent}</span>
+                          {sendResult.failed > 0 && <span style={{ fontFamily:"DM Sans", fontSize:13, color:"#ff4757", fontWeight:600 }}>❌ Failed: {sendResult.failed}</span>}
+                          <span style={{ fontFamily:"DM Mono", fontSize:11, color:"var(--muted2)" }}>Total: {sendResult.total}</span>
+                        </>
+                    }
+                  </div>
+                  {/* Per-email results */}
+                  {sendResult.results && sendResult.results.length > 0 && (
+                    <div style={{ background:"white", maxHeight:200, overflowY:"auto" }}>
+                      {sendResult.results.map((r,i) => (
+                        <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 16px", borderBottom:"1px solid var(--bg3)" }}>
+                          <span style={{ fontFamily:"DM Sans", fontSize:12, color:"var(--text)" }}>{r.email}</span>
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            {r.error && <span style={{ fontFamily:"DM Mono", fontSize:10, color:"var(--muted2)", maxWidth:180, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.error}</span>}
+                            <span style={{ fontFamily:"DM Mono", fontSize:10, padding:"2px 8px", borderRadius:5,
+                              background: r.status === "sent" ? "rgba(0,185,107,0.1)" : "rgba(255,71,87,0.1)",
+                              color: r.status === "sent" ? "var(--green)" : "#ff4757",
+                            }}>{r.status}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

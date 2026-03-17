@@ -34,6 +34,7 @@ export async function POST(req) {
     : (subscribers || []);
 
   let sent = 0, failed = 0;
+  const results = [];
 
   for (const sub of targets) {
     try {
@@ -49,11 +50,13 @@ export async function POST(req) {
         rawHtml: rawHtml || null,
       });
       sent++;
+      results.push({ email: sub.email, status: "sent" });
     } catch(e) {
       console.error(`Newsletter failed for ${sub.email}:`, e.message);
       failed++;
+      results.push({ email: sub.email, status: "failed", error: e.message });
     }
   }
 
-  return Response.json({ sent, failed, total: targets.length });
+  return Response.json({ sent, failed, total: targets.length, results });
 }
