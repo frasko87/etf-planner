@@ -300,9 +300,16 @@ export default function DashboardPage() {
       if (savedPlan && (!history || !history.find(a => a.month_key === new Date().toISOString().slice(0,7)))) {
         const monthKey = new Date().toISOString().slice(0,7);
         const prof = savedPlan.profile;
+        const FALLBACK = {
+          conservative: { tickers:["BND","SCHD","VTI","VOO"],     allocations:{ BND:40, SCHD:30, VTI:20, VOO:10 } },
+          balanced:     { tickers:["VOO","VTI","QQQ","SCHD"],     allocations:{ VOO:40, VTI:25, QQQ:25, SCHD:10 } },
+          aggressive:   { tickers:["QQQ","VGT","TQQQ","ARKK"],   allocations:{ QQQ:35, VGT:25, TQQQ:25, ARKK:15 } },
+        };
+        // Use live DB selections if available, otherwise use hardcoded fallback
         const profileSels = selByProfile[prof];
-        const tickers = profileSels?.tickers || [];
-        const allocations = profileSels?.allocations || {};
+        const tickers     = (profileSels?.tickers?.length > 0) ? profileSels.tickers     : FALLBACK[prof]?.tickers     || [];
+        const allocations = (profileSels?.tickers?.length > 0) ? (profileSels.allocations || {}) : FALLBACK[prof]?.allocations || {};
+
         if (tickers.length > 0) {
           await supabase.from("user_monthly_actions").upsert({
             user_id:    user.id,
