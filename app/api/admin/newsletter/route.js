@@ -14,10 +14,10 @@ export async function POST(req) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { subject, headline, body, ctaText, ctaUrl, segment } = await req.json();
+  const { subject, headline, body, ctaText, ctaUrl, segment, rawHtml } = await req.json();
 
-  if (!subject || !headline || !body) {
-    return Response.json({ error: "Subject, headline and body required" }, { status: 400 });
+  if (!subject || !body) {
+    return Response.json({ error: "Subject and body required" }, { status: 400 });
   }
 
   const supabase = createClient(
@@ -42,10 +42,11 @@ export async function POST(req) {
         email: sub.email,
         name,
         subject,
-        headline,
+        headline: headline || "",
         body,
         ctaText: ctaText || null,
         ctaUrl: ctaUrl || null,
+        rawHtml: rawHtml || null,
       });
       sent++;
     } catch(e) {

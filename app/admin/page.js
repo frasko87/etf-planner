@@ -21,7 +21,7 @@ export default function AdminPage() {
   const [data,       setData]      = useState(null);
   const [loading,    setLoading]   = useState(true);
   const [tab,        setTab]       = useState("overview");
-  const [newsletter, setNewsletter] = useState({ subject:"", headline:"", body:"", ctaText:"", ctaUrl:"", segment:"all" });
+  const [newsletter, setNewsletter] = useState({ subject:"", headline:"", body:"", ctaText:"", ctaUrl:"", segment:"all", rawHtml:false });
   const [sending,    setSending]   = useState(false);
   const [sendResult, setSendResult] = useState(null);
   const [search,     setSearch]    = useState("");
@@ -46,7 +46,11 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newsletter),
+        body: JSON.stringify({
+          ...newsletter,
+          rawHtml: newsletter.rawHtml ? newsletter.body : null,
+          body: newsletter.rawHtml ? "" : newsletter.body,
+        }),
       });
       const result = await res.json();
       setSendResult(result);
@@ -289,12 +293,29 @@ export default function AdminPage() {
               ))}
 
               <div style={{ marginBottom:14 }}>
-                <label style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", display:"block", marginBottom:6 }}>Body (HTML or plain text)</label>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                  <label style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)" }}>
+                    {newsletter.rawHtml ? "Full HTML email" : "Body (HTML snippet)"}
+                  </label>
+                  <button onClick={() => setNewsletter({...newsletter, rawHtml:!newsletter.rawHtml})} style={{
+                    fontFamily:"DM Mono", fontSize:10, padding:"3px 10px", borderRadius:6, cursor:"pointer",
+                    background: newsletter.rawHtml ? "var(--green)" : "var(--bg3)",
+                    color: newsletter.rawHtml ? "white" : "var(--muted)",
+                    border: "1px solid var(--border)",
+                  }}>
+                    {newsletter.rawHtml ? "✓ RAW HTML ON" : "RAW HTML OFF"}
+                  </button>
+                </div>
+                {newsletter.rawHtml && (
+                  <div style={{ fontFamily:"DM Sans", fontSize:11, color:"var(--green)", marginBottom:6, padding:"6px 10px", background:"rgba(0,185,107,0.06)", borderRadius:6, border:"1px solid rgba(0,185,107,0.2)" }}>
+                    ✓ Paste your full HTML email below. It will be sent exactly as-is.
+                  </div>
+                )}
                 <textarea
                   value={newsletter.body}
                   onChange={e => setNewsletter({...newsletter, body:e.target.value})}
-                  placeholder="<p>This month, markets moved significantly...</p>"
-                  rows={6}
+                  placeholder={newsletter.rawHtml ? "<!DOCTYPE html><html>...</html>" : "<p>This month, markets moved significantly...</p>"}
+                  rows={newsletter.rawHtml ? 12 : 6}
                   style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid var(--border)", fontFamily:"DM Mono", fontSize:12, outline:"none", resize:"vertical", boxSizing:"border-box", lineHeight:1.6 }}
                 />
               </div>
