@@ -92,14 +92,14 @@ export default function Onboarding({ user, onComplete }) {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    padding: "24px clamp(16px,4vw,40px)",
+    padding: "16px clamp(14px,4vw,40px)",
   };
 
   const card = {
     background: "white",
     border: "1px solid var(--border)",
     borderRadius: 20,
-    padding: "clamp(28px,5vw,48px)",
+    padding: "clamp(20px,5vw,40px) clamp(16px,4vw,40px)",
     boxShadow: "var(--shadow2)",
     width: "100%",
     maxWidth: 520,
@@ -303,7 +303,7 @@ export default function Onboarding({ user, onComplete }) {
             </div>
           </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:16 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:8, marginBottom:16 }}>
             {[
               { l:"12 months", v:fmt(amount * 12 * (1 + pc.rate.replace("~","").replace("%/yr","") / 100 * 0.5)) },
               { l:"5yr gain",  v:"+"+fmt(pc.gain5yr[amount]) },
