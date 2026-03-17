@@ -296,6 +296,34 @@ export default function DashboardPage() {
         setShowOnboarding(true);
       }
 
+      // Auto-create monthly action for current month if missing
+      if (savedPlan && (!history || !history.find(a => a.month_key === new Date().toISOString().slice(0,7)))) {
+        const monthKey = new Date().toISOString().slice(0,7);
+        const prof = savedPlan.profile;
+        const profileSels = selByProfile[prof];
+        const tickers = profileSels?.tickers || [];
+        const allocations = profileSels?.allocations || {};
+        if (tickers.length > 0) {
+          await supabase.from("user_monthly_actions").upsert({
+            user_id:    user.id,
+            month_key:  monthKey,
+            profile:    prof,
+            amount:     savedPlan.amount,
+            tickers,
+            allocations,
+            created_at: new Date().toISOString(),
+          }, { onConflict: "user_id,month_key" });
+          // Refresh history
+          const { data: freshHistory } = await supabase
+            .from("user_monthly_actions")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("month_key", { ascending: false })
+            .limit(12);
+          setMonthlyHistory(freshHistory || []);
+        }
+      }
+
       // Load stock of the month from DB
       const monthKey = new Date().toISOString().slice(0,7);
       try {
@@ -326,11 +354,51 @@ export default function DashboardPage() {
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/"); };
 
-  const handleOnboardingComplete = ({ profile, amount: amt }) => {
+  // Auto-create a monthly action entry for the current month if one doesn't exist
+  const createMonthlyActionIfNeeded = async (profile, amt) => {
+    if (!user) return;
+    const monthKey = new Date().toISOString().slice(0, 7);
+    const profileSels = selections[profile] || FALLBACK_PLANS[profile];
+    const tickers = profileSels?.tickers || FALLBACK_PLANS[profile]?.tickers || [];
+    const allocations = profileSels?.allocations || FALLBACK_PLANS[profile]?.allocations || {};
+
+    // Check if already exists
+    const { data: existing } = await supabase
+      .from("user_monthly_actions")
+      .select("month_key")
+      .eq("user_id", user.id)
+      .eq("month_key", monthKey)
+      .single();
+
+    if (existing) return; // already exists
+
+    await supabase.from("user_monthly_actions").insert({
+      user_id:     user.id,
+      month_key:   monthKey,
+      profile,
+      amount:      amt,
+      tickers,
+      allocations,
+      created_at:  new Date().toISOString(),
+    });
+
+    // Refresh monthly history
+    const { data: history } = await supabase
+      .from("user_monthly_actions")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("month_key", { ascending: false })
+      .limit(12);
+    setMonthlyHistory(history || []);
+  };
+
+  const handleOnboardingComplete = async ({ profile, amount: amt }) => {
     setRisk(profile);
     setAmount(amt);
     setUserPlan({ profile, amount: amt });
     setShowOnboarding(false);
+    // Auto-create this month's action entry so user can mark as bought
+    await createMonthlyActionIfNeeded(profile, amt);
   };
 
   const handlePlanChange = async (newProfile, newAmount) => {
@@ -341,6 +409,7 @@ export default function DashboardPage() {
       updated_at: new Date().toISOString(),
     });
     setUserPlan({ profile: newProfile, amount: newAmount });
+    await createMonthlyActionIfNeeded(newProfile, newAmount);
   };
 
   const [markingBought, setMarkingBought] = useState(null);
