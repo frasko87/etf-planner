@@ -800,10 +800,7 @@ async function main() {
   try {
     const allTrackedTickers = [
       ...new Set([
-        ...Object.keys(ETF_META),
-        "XLE","XLF","XLV","XLI","XLC","XLB","XLU","XLP",
-        "VB","IJR","IWM","TLT","LQD","VEA","VWO","EEM",
-        "VNQ","GLD","IAU","DBC","BITO","IBIT","DVYE","HDV"
+        ...Object.keys(ETF_POOL),
       ])
     ];
     await ensureEtfMetadata(allTrackedTickers, poolData || []);
@@ -835,4 +832,3 @@ async function main() {
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
-
