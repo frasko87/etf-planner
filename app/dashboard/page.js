@@ -460,14 +460,22 @@ export default function DashboardPage() {
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           {isMob && (
-            <div style={{display:"flex",gap:2}}>
-              {[{v:"dashboard",icon:"📊"},{v:"plan",icon:"📋"},{v:"library",icon:"📚"}].map(tab=>(
+            <div style={{display:"flex",gap:3}}>
+              {[
+                {v:"dashboard", label:"Home"},
+                {v:"plan",      label:"My Plan"},
+                {v:"library",   label:"Library"},
+              ].map(tab=>(
                 <button key={tab.v} onClick={()=>setView(tab.v)} style={{
-                  fontSize:15,background:view===tab.v?"white":"transparent",
+                  fontFamily:"DM Sans",fontSize:12,fontWeight:view===tab.v?600:400,
+                  color:view===tab.v?"var(--text)":"var(--muted)",
+                  background:view===tab.v?"white":"transparent",
                   border:view===tab.v?"1px solid var(--border)":"1px solid transparent",
-                  borderRadius:7,padding:"5px 7px",cursor:"pointer",
+                  borderRadius:8,padding:"6px 10px",cursor:"pointer",
+                  boxShadow:view===tab.v?"var(--shadow)":"none",
+                  whiteSpace:"nowrap",
                 }}>
-                  {tab.icon}
+                  {tab.label}
                 </button>
               ))}
             </div>
@@ -647,7 +655,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Quick projection */}
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,paddingTop:16,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))",gap:8,paddingTop:16,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
                   {[
                     {l:"12 months",v:fmt(projs[12].exp),gain:fmt(projs[12].exp-amount*12)},
                     {l:"5 year gain",v:"+"+fmt(projs[60].exp-amount*60),gain:null},
@@ -967,7 +975,7 @@ export default function DashboardPage() {
                       </div>
 
                       <div style={{background:`${stock.color}08`,border:`1px solid ${stock.color}22`,borderRadius:12,padding:"16px",marginBottom:20}}>
-                        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+                        <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"repeat(3,1fr)",gap:10}}>
                           {[{l:"Price",v:stock.price!=null?"$"+Number(stock.price).toFixed(2):stock.price_display||"—"},{l:"MTD Change",v:stock.change,c:"var(--green)"},{l:"YTD",v:stock.ytd,c:"var(--green)"},{l:"Market Cap",v:stock.market_cap},{l:"P/E Ratio",v:stock.pe_ratio},{l:"Industry",v:stock.industry}].map(s=>(
                             <div key={s.l}>
                               <div className="mono" style={{fontSize:9,color:"var(--muted2)",marginBottom:3}}>{s.l}</div>
@@ -1405,23 +1413,27 @@ export default function DashboardPage() {
           )}
 
           {/* Projection cards */}
-          <div style={{display:"grid",gridTemplateColumns:isMob?"repeat(2,1fr)":"repeat(4,1fr)",gap:isMob?10:14,marginBottom:24}}>
+          <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"repeat(3,1fr)",gap:12,marginBottom:24}}>
             {[1,6,12].map(mo=>(
               <div key={mo} style={card}>
                 <div style={lbl}>{mo===60?"5 YEARS":mo+" MONTH"+(mo===1?"":"S")}</div>
-                <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)"}}>Invested</div>
-                <div style={{fontFamily:"DM Sans",fontSize:22,color:"var(--muted)",marginBottom:10}}>{fmt(amount*mo)}</div>
-                <div style={{height:1,background:"var(--border)",marginBottom:10}}/>
-                <div style={{display:"flex",justifyContent:"space-between"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                   <div>
-                    <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted2)"}}>Expected</div>
-                    <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:28,color:"var(--text)"}}>{fmt(projs[mo].exp)}</div>
-                    <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)"}}>+{fmt(projs[mo].exp-amount*mo)}</div>
+                    <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:2}}>Invested</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:"clamp(16px,3vw,22px)",color:"var(--muted)"}}>{fmt(amount*mo)}</div>
                   </div>
-                  <div style={{textAlign:"right"}}>
-                    <div style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted2)"}}>Optimistic</div>
-                    <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:28,color:"var(--green)"}}>{fmt(projs[mo].opt)}</div>
-                    <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--green)"}}>+{fmt(projs[mo].opt-amount*mo)}</div>
+                </div>
+                <div style={{height:1,background:"var(--border)",marginBottom:10}}/>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  <div>
+                    <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:2}}>Expected</div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(20px,3vw,26px)",color:"var(--text)"}}>{fmt(projs[mo].exp)}</div>
+                    <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)"}}>+{fmt(projs[mo].exp-amount*mo)}</div>
+                  </div>
+                  <div>
+                    <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginBottom:2}}>Optimistic</div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(20px,3vw,26px)",color:"var(--green)"}}>{fmt(projs[mo].opt)}</div>
+                    <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--green)"}}>+{fmt(projs[mo].opt-amount*mo)}</div>
                   </div>
                 </div>
               </div>
