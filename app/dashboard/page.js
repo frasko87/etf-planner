@@ -1645,65 +1645,172 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Pie + Table */}
-          <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":isTab?"1fr":"240px 1fr",gap:14}}>
-            <div style={card}>
-              <div style={lbl}>ALLOCATION</div>
-              <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
-                <PieChart width={130} height={130}>
-                  <Pie data={pieData} dataKey="value" cx={65} cy={65} innerRadius={38} outerRadius={60} paddingAngle={3}>
-                    {pieData.map((e,i)=><Cell key={i} fill={e.color}/>)}
-                  </Pie>
-                </PieChart>
-              </div>
-              {curTickers.map(t=>{
-                const pct = typeof allocs[t]==="number" ? allocs[t] : parseInt(allocs[t])||0;
-                return (
-                  <div key={t} style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <div style={{width:8,height:8,borderRadius:"50%",background:ETF_META[t]?.color||"#888"}}/>
-                      <span style={{fontFamily:"DM Mono",fontSize:13,color:ETF_META[t]?.color||"#888"}}>{t}</span>
+          {/* Real Portfolio Chart — what was actually bought */}
+          {(() => {
+            const boughtMonths = [...monthlyHistory].filter(a => a.entry_prices && Object.values(a.entry_prices).some(v=>v!=null)).reverse();
+            const hasBought = boughtMonths.length > 0;
+
+            // Build chart: for each bought month, calculate current value
+            const portfolioData = boughtMonths.map((action, i) => {
+              const invested = action.amount || amount;
+              let currentValue = 0;
+              (action.tickers || []).forEach(t => {
+                const entryPrice   = action.entry_prices?.[t];
+                const currentPrice = etfPool.find(r=>r.ticker===t)?.price;
+                const dollars      = action.amounts_invested?.[t] || Math.round(invested * (parseFloat(action.allocations?.[t]) || 25) / 100);
+                if (entryPrice && currentPrice) {
+                  currentValue += dollars * (currentPrice / entryPrice);
+                } else {
+                  currentValue += dollars; // no price data yet — flat
+                }
+              });
+              return {
+                label: new Date(action.month_key+"-01").toLocaleDateString("en-US",{month:"short",year:"2-digit"}),
+                invested,
+                value: Math.round(currentValue),
+                gain: Math.round(currentValue - invested),
+              };
+            });
+
+            // Running totals
+            let runInvested = 0, runValue = 0;
+            const cumulativeData = portfolioData.map(d => {
+              runInvested += d.invested;
+              runValue    += d.value;
+              return { label: d.label, invested: runInvested, value: runValue, gain: runValue - runInvested };
+            });
+
+            const totalInvested = runInvested;
+            const totalValue    = runValue;
+            const totalGain     = totalValue - totalInvested;
+            const totalGainPct  = totalInvested > 0 ? (totalGain / totalInvested * 100) : 0;
+
+            return (
+              <div style={card}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:10}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/>
+                    <div style={lbl}>MY PORTFOLIO</div>
+                  </div>
+                  {hasBought && (
+                    <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:2}}>TOTAL INVESTED</div>
+                        <div style={{fontFamily:"DM Mono",fontSize:16,color:"var(--text)",fontWeight:600}}>{fmt(totalInvested)}</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:2}}>CURRENT VALUE</div>
+                        <div style={{fontFamily:"DM Mono",fontSize:16,color:"var(--green)",fontWeight:600}}>{fmt(totalValue)}</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",marginBottom:2}}>TOTAL GAIN</div>
+                        <div style={{fontFamily:"DM Mono",fontSize:16,color:totalGain>=0?"var(--green)":"#ff4757",fontWeight:600}}>
+                          {totalGain>=0?"+":""}{fmt(totalGain)} <span style={{fontSize:12}}>({totalGainPct>=0?"+":""}{totalGainPct.toFixed(1)}%)</span>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{textAlign:"right"}}>
-                      <span style={{fontFamily:"DM Mono",fontSize:15,color:"var(--text)",fontWeight:500}}>{pct}%</span>
-                      <span style={{fontFamily:"DM Mono",fontSize:12,color:"var(--muted2)",marginLeft:8}}>{fmt((amount*pct)/100)}/mo</span>
+                  )}
+                </div>
+
+                {!hasBought ? (
+                  <div style={{textAlign:"center",padding:"40px 20px"}}>
+                    <div style={{fontSize:32,marginBottom:12}}>📊</div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:15,color:"var(--text)",marginBottom:8}}>No purchases tracked yet</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",lineHeight:1.7,maxWidth:320,margin:"0 auto"}}>
+                      Go to your monthly history and click <strong>"✓ Mark as bought"</strong> after each purchase to start tracking your real portfolio value here.
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ) : (
+                  <>
+                    {/* Area chart */}
+                    <ResponsiveContainer width="100%" height={200}>
+                      <AreaChart data={cumulativeData} margin={{top:10,right:10,left:0,bottom:0}}>
+                        <defs>
+                          <linearGradient id="pgValue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#00b96b" stopOpacity={0.15}/>
+                            <stop offset="95%" stopColor="#00b96b" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="pgInvested" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.1}/>
+                            <stop offset="95%" stopColor="#94a3b8" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="label" tick={{fontFamily:"DM Mono",fontSize:10,fill:"#aaa"}} axisLine={false} tickLine={false}/>
+                        <YAxis tick={{fontFamily:"DM Mono",fontSize:10,fill:"#aaa"}} axisLine={false} tickLine={false} tickFormatter={v=>"$"+v}/>
+                        <Tooltip formatter={(v,n)=>["$"+v.toFixed(0), n==="value"?"Portfolio Value":"Invested"]} contentStyle={{fontFamily:"DM Sans",fontSize:12,borderRadius:8,border:"1px solid var(--border)"}}/>
+                        <Area type="monotone" dataKey="invested" stroke="#94a3b8" strokeWidth={1.5} fill="url(#pgInvested)" strokeDasharray="4 2" name="invested"/>
+                        <Area type="monotone" dataKey="value" stroke="#00b96b" strokeWidth={2} fill="url(#pgValue)" name="value"/>
+                      </AreaChart>
+                    </ResponsiveContainer>
 
-            <div style={{...card,overflowX:"auto"}}>
-              <div style={lbl}>MONTH-BY-MONTH PLAN</div>
-              <table style={{width:"100%",borderCollapse:"collapse"}}>
-                <thead>
-                  <tr>{["Month","Invested","Expected","Optimistic","Gain"].map(h=>(
-                    <th key={h} style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted2)",textAlign:"left",paddingBottom:12,letterSpacing:1,fontWeight:400}}>{h.toUpperCase()}</th>
-                  ))}</tr>
-                </thead>
-                <tbody>
-                  {tableData.map(row=>{
-                    const active=row.month===activeMonth;
-                    return (
-                      <tr key={row.month} onClick={()=>setActiveMonth(row.month)} style={{background:active?"rgba(0,185,107,0.03)":"transparent",cursor:"pointer",borderTop:"1px solid var(--border)"}}>
-                        <td style={{padding:"9px 8px"}}>
-                          <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <div style={{width:4,height:4,borderRadius:"50%",background:active?"var(--green)":"transparent"}}/>
-                            <span style={{fontFamily:"DM Mono",fontSize:14,color:active?"var(--green)":"var(--muted)"}}>{row.label}</span>
+                    {/* Month breakdown */}
+                    <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:8}}>
+                      {portfolioData.map((d,i) => {
+                        const action = boughtMonths[i];
+                        return (
+                          <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"var(--bg3)",borderRadius:10,flexWrap:"wrap",gap:6}}>
+                            <div style={{display:"flex",alignItems:"center",gap:10}}>
+                              <div style={{fontFamily:"DM Mono",fontSize:12,color:"var(--text)",fontWeight:500}}>{d.label}</div>
+                              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                                {(action.tickers||[]).map(t=>(
+                                  <span key={t} style={{fontFamily:"DM Mono",fontSize:9,padding:"2px 6px",borderRadius:4,background:(ETF_META[t]?.color||"#888")+"22",color:ETF_META[t]?.color||"#888",border:`1px solid ${ETF_META[t]?.color||"#888"}44`}}>{t}</span>
+                                ))}
+                              </div>
+                            </div>
+                            <div style={{display:"flex",gap:16,alignItems:"center"}}>
+                              <div style={{textAlign:"right"}}>
+                                <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)"}}>BOUGHT</div>
+                                <div style={{fontFamily:"DM Mono",fontSize:13,color:"var(--text)"}}>{fmt(d.invested)}</div>
+                              </div>
+                              <div style={{textAlign:"right"}}>
+                                <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)"}}>NOW WORTH</div>
+                                <div style={{fontFamily:"DM Mono",fontSize:13,color:"var(--green)"}}>{fmt(d.value)}</div>
+                              </div>
+                              <div style={{fontFamily:"DM Mono",fontSize:12,color:d.gain>=0?"var(--green)":"#ff4757",fontWeight:600,minWidth:60,textAlign:"right"}}>
+                                {d.gain>=0?"+":""}{fmt(d.gain)}
+                              </div>
+                            </div>
                           </div>
-                        </td>
-                        <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:11,color:"var(--muted)"}}>{fmt(row.invested)}</td>
-                        <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:11,color:"var(--text)"}}>{fmt(row.expected)}</td>
-                        <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:11,color:"var(--green)"}}>{fmt(row.optimistic)}</td>
-                        <td style={{padding:"9px 8px"}}>
-                          <span style={{fontFamily:"DM Mono",fontSize:12,color:"var(--green)",background:"rgba(0,185,107,0.06)",padding:"4px 9px",borderRadius:4}}>+{fmt(row.gain)}</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Month-by-month projection table */}
+          <div style={{...card,overflowX:"auto"}}>
+            <div style={lbl}>PROJECTED MONTH-BY-MONTH</div>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead>
+                <tr>{["Month","Invested","Expected","Optimistic","Gain"].map(h=>(
+                  <th key={h} style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted2)",textAlign:"left",paddingBottom:12,letterSpacing:1,fontWeight:400}}>{h.toUpperCase()}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {tableData.map(row=>{
+                  const active=row.month===activeMonth;
+                  return (
+                    <tr key={row.month} onClick={()=>setActiveMonth(row.month)} style={{background:active?"rgba(0,185,107,0.03)":"transparent",cursor:"pointer",borderTop:"1px solid var(--border)"}}>
+                      <td style={{padding:"9px 8px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          <div style={{width:4,height:4,borderRadius:"50%",background:active?"var(--green)":"transparent"}}/>
+                          <span style={{fontFamily:"DM Mono",fontSize:14,color:active?"var(--green)":"var(--muted)"}}>{row.label}</span>
+                        </div>
+                      </td>
+                      <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:11,color:"var(--muted)"}}>{fmt(row.invested)}</td>
+                      <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:11,color:"var(--text)"}}>{fmt(row.expected)}</td>
+                      <td style={{padding:"9px 8px",fontFamily:"DM Mono",fontSize:11,color:"var(--green)"}}>{fmt(row.optimistic)}</td>
+                      <td style={{padding:"9px 8px"}}>
+                        <span style={{fontFamily:"DM Mono",fontSize:12,color:"var(--green)",background:"rgba(0,185,107,0.06)",padding:"4px 9px",borderRadius:4}}>+{fmt(row.gain)}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
 
           <p style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted2)",textAlign:"center",marginTop:28,lineHeight:1.6}}>
