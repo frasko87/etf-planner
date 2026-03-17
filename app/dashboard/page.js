@@ -385,20 +385,41 @@ export default function DashboardPage() {
   const usingFallback = !currentSel;
   const pc           = PROFILE_CONFIG[risk];
 
-  // Allocations — use FALLBACK_PLANS as authoritative source (correct percentages)
-  // DB allocations from weekly_selections are for scoring only, not display
+  // Allocations — build from whatever tickers we're actually showing
   const allocs = (() => {
-    const fallbackAllocs = fallback.allocations;
-    // If DB has valid allocations matching exactly the fallback tickers, use them
     const rawAllocs = currentSel?.allocations || {};
-    const allocSum  = Object.values(rawAllocs).reduce((a,b) => a + (parseFloat(b)||0), 0);
-    if (allocSum > 50 && curTickers.every(t => rawAllocs[t] != null) && allocSum >= 90) {
+
+    // DB allocations can be stored as numbers or strings — normalise all to numbers
+    const parsed = {};
+    Object.entries(rawAllocs).forEach(([k,v]) => { parsed[k] = parseFloat(v) || 0; });
+    const allocSum = Object.values(parsed).reduce((a,b) => a+b, 0);
+
+    // Case 1: DB has allocations covering ALL current tickers with valid sum
+    if (allocSum >= 80 && curTickers.every(t => parsed[t] > 0)) {
+      // Rescale to exactly 100% in case of rounding
+      const scale = 100 / allocSum;
       const normalized = {};
-      curTickers.forEach(t => { normalized[t] = parseFloat(rawAllocs[t]) || 0; });
+      curTickers.forEach((t,i,arr) => {
+        normalized[t] = i === arr.length-1
+          ? 100 - Object.values(normalized).reduce((a,b)=>a+b,0)
+          : Math.round(parsed[t] * scale);
+      });
       return normalized;
     }
-    // Always fall back to the plan's defined allocations
-    return fallbackAllocs;
+
+    // Case 2: No live selections or using same tickers as fallback — use plan defaults
+    if (!currentSel) return fallback.allocations;
+
+    // Case 3: Live tickers but missing/zero allocations — use score-weighted equal split
+    const n = curTickers.length;
+    const base = Math.floor(100 / n / 5) * 5;
+    const equal = {};
+    let rem = 100;
+    curTickers.forEach((t,i) => {
+      equal[t] = i === n-1 ? rem : base;
+      rem -= base;
+    });
+    return equal;
   })();
   const prevAllocs = currentSel?.prev_allocations || {};
 
