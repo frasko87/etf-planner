@@ -342,6 +342,45 @@ export default function DashboardPage() {
     });
     setUserPlan({ profile: newProfile, amount: newAmount });
   };
+
+  const [markingBought, setMarkingBought] = useState(null);
+
+  const handleMarkBought = async (monthKey, tickers) => {
+    setMarkingBought(monthKey);
+    try {
+      // Capture current prices as entry prices
+      const entryPrices = {};
+      const amountsInvested = {};
+      const action = monthlyHistory.find(a => a.month_key === monthKey);
+      tickers.forEach(t => {
+        const currentPrice = etfPool.find(r => r.ticker === t)?.price;
+        if (currentPrice) entryPrices[t] = currentPrice;
+        const pct = parseFloat(action?.allocations?.[t]) || (100/tickers.length);
+        amountsInvested[t] = Math.round((action?.amount || amount) * pct / 100);
+      });
+
+      await supabase.from("user_monthly_actions")
+        .update({
+          entry_prices:     entryPrices,
+          amounts_invested: amountsInvested,
+          bought_at:        new Date().toISOString(),
+        })
+        .eq("user_id", user.id)
+        .eq("month_key", monthKey);
+
+      // Refresh history
+      const { data: history } = await supabase
+        .from("user_monthly_actions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("month_key", { ascending: false })
+        .limit(12);
+      setMonthlyHistory(history || []);
+    } catch(e) {
+      console.error("Mark bought failed:", e);
+    }
+    setMarkingBought(null);
+  };
   const width  = useWindowWidth();
   const isMob  = width < 640;
   const isTab  = width < 1024;
@@ -803,13 +842,40 @@ export default function DashboardPage() {
                       boxShadow:"var(--shadow)",
                     }}>
                       {/* Header */}
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-                        <div style={{display:"flex",alignItems:"center",gap:10}}>
-                          <div className="mono" style={{fontSize:14,color:"var(--text)",fontWeight:500}}>{monthLabel}</div>
-                          {isCurrentMonth && <span style={{fontFamily:"DM Mono",fontSize:9,padding:"3px 10px",borderRadius:10,background:"rgba(0,185,107,0.1)",color:"var(--green)",border:"1px solid rgba(0,185,107,0.2)"}}>THIS MONTH</span>}
-                        </div>
-                        <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:18,color:"var(--text)"}}>${action.amount} <span style={{fontSize:13,fontWeight:400,color:"var(--muted)"}}>invested</span></div>
-                      </div>
+                      {(() => {
+                        const isBought = action.entry_prices && Object.values(action.entry_prices).some(v => v != null);
+                        const isLoading = markingBought === action.month_key;
+                        return (
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:isMob?"flex-start":"center",marginBottom:16,flexWrap:"wrap",gap:8,flexDirection:isMob?"column":"row"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                              <div className="mono" style={{fontSize:14,color:"var(--text)",fontWeight:500}}>{monthLabel}</div>
+                              {isCurrentMonth && <span style={{fontFamily:"DM Mono",fontSize:9,padding:"3px 10px",borderRadius:10,background:"rgba(0,185,107,0.1)",color:"var(--green)",border:"1px solid rgba(0,185,107,0.2)"}}>THIS MONTH</span>}
+                              {isBought
+                                ? <span style={{fontFamily:"DM Mono",fontSize:9,padding:"3px 10px",borderRadius:10,background:"rgba(0,185,107,0.08)",color:"var(--green)",border:"1px solid rgba(0,185,107,0.2)"}}>✓ BOUGHT</span>
+                                : <span style={{fontFamily:"DM Mono",fontSize:9,padding:"3px 10px",borderRadius:10,background:"rgba(255,165,0,0.1)",color:"#f59e0b",border:"1px solid rgba(255,165,0,0.3)"}}>⏳ PENDING PURCHASE</span>
+                              }
+                            </div>
+                            <div style={{display:"flex",flexDirection:"column",alignItems:isMob?"flex-start":"flex-end",gap:8}}>
+                              <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:18,color:"var(--text)"}}>${action.amount} <span style={{fontSize:13,fontWeight:400,color:"var(--muted)"}}>invested</span></div>
+                              {!isBought && (
+                                <button
+                                  onClick={() => handleMarkBought(action.month_key, action.tickers || [])}
+                                  disabled={isLoading}
+                                  style={{
+                                    fontFamily:"DM Sans",fontWeight:600,fontSize:13,
+                                    color:"white",background:isLoading?"var(--muted)":"var(--green)",
+                                    border:"none",borderRadius:8,padding:"8px 16px",
+                                    cursor:isLoading?"not-allowed":"pointer",
+                                    boxShadow:"0 2px 8px rgba(0,185,107,0.3)",
+                                    whiteSpace:"nowrap",width:isMob?"100%":"auto",
+                                  }}>
+                                  {isLoading ? "Saving..." : "✓ Mark as bought"}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"160px 1fr",gap:16,alignItems:"center"}}>
                         {/* Pie chart */}
@@ -832,7 +898,7 @@ export default function DashboardPage() {
                         </div>
 
                         {/* ETF list */}
-                        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,160px),1fr))",gap:8}}>
                           {tickers.map(t=>{
                             const meta = ETF_META[t]||{color:"#888",name:t};
                             const pct  = parseFloat(action.allocations?.[t])||25;
