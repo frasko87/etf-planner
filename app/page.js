@@ -206,7 +206,7 @@ export default function HomePage() {
           </div>
 
           {/* 1 / 6 / 12 month results */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"clamp(4px,2vw,10px)",marginBottom:20}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,140px),1fr))",gap:"clamp(4px,2vw,10px)",marginBottom:20}}>
             {[
               {l:"1 month",  v:p.r1,  g:p.g1,  accent:false},
               {l:"6 months", v:p.r6,  g:p.g6,  accent:false},
@@ -409,7 +409,7 @@ export default function HomePage() {
                 Every month is tracked. See your real gains, allocation breakdown and portfolio growth chart.
               </p>
               {/* Mini tracker mockup */}
-              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))",gap:8}}>
                 {[{l:"Invested",v:"$600",c:"var(--muted)"},{l:"Value",v:"$638",c:"var(--text)"},{l:"Gain",v:"+6.3%",c:"var(--green)"}].map(s=>(
                   <div key={s.l} style={{background:"var(--bg3)",borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
                     <div className="mono" style={{fontSize:8,color:"var(--muted2)",marginBottom:3}}>{s.l}</div>

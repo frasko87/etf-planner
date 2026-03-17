@@ -54,7 +54,7 @@ export default function WhatAreETFs() {
         {/* What ETF stands for */}
         <div style={{ background:"white", border:"1px solid var(--border)", borderRadius:16, padding:"clamp(20px,3vw,28px)", marginBottom:20, boxShadow:"var(--shadow)" }}>
           <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(18px,3vw,22px)", color:"var(--text)", marginBottom:20 }}>ETF = Exchange-Traded Fund</h2>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,160px),1fr))", gap:12 }}>
             {[
               { letter:"E", word:"Exchange", desc:"It trades on the stock market like a regular share — you can buy and sell any time markets are open." },
               { letter:"T", word:"Traded",   desc:"The price updates in real time throughout the day, not once at close like a mutual fund." },
@@ -113,7 +113,7 @@ export default function WhatAreETFs() {
 
         {/* Next steps */}
         <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(18px,3vw,22px)", color:"var(--text)", marginBottom:16 }}>What to read next</h2>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,200px),1fr))", gap:10, marginBottom:32 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,180px),1fr))", gap:10, marginBottom:32 }}>
           {[
             { title:"Pick your risk level", desc:"Conservative, Balanced or Aggressive?", href:"/guide/risk-levels", color:"#3b82f6" },
             { title:"Which platform to use", desc:"Where to actually open an account.", href:"/guide/platforms", color:"#c9a84c" },

@@ -111,7 +111,7 @@ export default function PlatformsGuide() {
               </a>
             </div>
 
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:8, marginBottom:16 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,180px),1fr))", gap:8, marginBottom:16 }}>
               {[{l:"Min. deposit",v:p.min},{l:"ETF fees",v:p.fees}].map(s=>(
                 <div key={s.l} style={{ background:"var(--bg3)", borderRadius:8, padding:"10px 12px" }}>
                   <div className="mono" style={{ fontSize:9, color:"var(--muted2)", marginBottom:3 }}>{s.l}</div>
@@ -134,7 +134,7 @@ export default function PlatformsGuide() {
               </div>
             </div>
 
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,200px),1fr))", gap:10, marginBottom:14 }}>
               <div>
                 {p.pros.map(pr => <div key={pr} style={{ fontFamily:"DM Sans", fontSize:12, color:"var(--muted)", marginBottom:4, display:"flex", gap:6 }}><span style={{ color:"var(--green)", flexShrink:0 }}>✓</span>{pr}</div>)}
               </div>
