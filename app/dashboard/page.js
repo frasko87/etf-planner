@@ -1484,7 +1484,7 @@ export default function DashboardPage() {
         {view === "plan" && <>
 
           {/* Plan header */}
-          <div style={{display:"flex",flexDirection:isMob?"column":"row",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,borderBottom:"1px solid var(--border)",paddingBottom:20,gap:16}}>
+          <div style={{display:"flex",flexDirection:isMob?"column":"row",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,borderBottom:"1px solid var(--border)",paddingBottom:20,gap:16}}>
             <div>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                 <div style={{background:pc.accentColor==="var(--gold)"?"linear-gradient(135deg,#c9a84c,#e8c96a)":pc.accentColor,padding:"6px 14px",display:"inline-block"}}>
@@ -1516,7 +1516,7 @@ export default function DashboardPage() {
           )}
 
           {/* Projection cards */}
-          <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"repeat(3,1fr)",gap:12,marginBottom:24}}>
+          <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"repeat(3,1fr)",gap:12,marginBottom:20}}>
             {[1,6,12].map(mo=>(
               <div key={mo} style={card}>
                 <div style={lbl}>{mo===60?"5 YEARS":mo+" MONTH"+(mo===1?"":"S")}</div>
@@ -1544,7 +1544,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Chart */}
-          <div style={{...card,marginBottom:24}}>
+          <div style={{...card,marginBottom:20}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
               <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:18,color:"var(--text)"}}>24-Month Growth Projection</div>
               <div style={{display:"flex",gap:16}}>
@@ -1577,7 +1577,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ETF breakdown */}
-          <div style={{marginBottom:24}}>
+          <div style={{marginBottom:20}}>
             <div style={lbl}>THIS WEEK'S ETF SELECTION</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:16}}>
               {curTickers.map(t=>{
@@ -1646,6 +1646,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Real Portfolio Chart — what was actually bought */}
+          <div style={{marginBottom:20}}>
           {(() => {
             const boughtMonths = [...monthlyHistory].filter(a => a.entry_prices && Object.values(a.entry_prices).some(v=>v!=null)).reverse();
             const hasBought = boughtMonths.length > 0;
@@ -1776,9 +1777,10 @@ export default function DashboardPage() {
               </div>
             );
           })()}
+          </div>
 
           {/* Month-by-month projection — mobile cards, desktop table */}
-          <div style={card}>
+          <div style={{...card,marginBottom:20}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <div style={{height:3,width:20,background:"var(--gold)",borderRadius:2}}/>
