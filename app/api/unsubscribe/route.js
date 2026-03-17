@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const email = searchParams.get("email");
-  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://etf-planner.vercel.app";
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://etfplan.app";
 
   if (!email) {
     return new Response("Invalid unsubscribe link.", { status: 400 });

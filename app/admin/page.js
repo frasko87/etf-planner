@@ -323,7 +323,7 @@ export default function AdminPage() {
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
                 {[
                   { key:"ctaText", label:"CTA button text (optional)",  placeholder:"View my dashboard →" },
-                  { key:"ctaUrl",  label:"CTA button URL (optional)",   placeholder:"https://etf-planner.vercel.app/dashboard" },
+                  { key:"ctaUrl",  label:"CTA button URL (optional)",   placeholder:"https://etfplan.app/dashboard" },
                 ].map(f => (
                   <div key={f.key}>
                     <label style={{ fontFamily:"DM Sans", fontSize:12, color:"var(--muted)", display:"block", marginBottom:4 }}>{f.label}</label>
