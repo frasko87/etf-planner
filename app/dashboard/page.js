@@ -1584,7 +1584,6 @@ export default function DashboardPage() {
                 const row   = etfPool.find(r=>r.ticker===t);
                 const meta  = ETF_META[t]||{name:t,color:"#888",leveraged:false,risk:"—",category:"—",fallbackCagr:0.13,fallbackOpt:0.18,topHoldings:[],description:""};
                 const isNew = addedETFs.includes(t);
-                const pct   = typeof allocs[t] === "number" ? allocs[t] : parseInt(allocs[t]) || 0;
                 const cagr  = row?.cagr ?? meta.fallbackCagr;
                 const realC = row?.real_cagr ?? (meta.fallbackCagr - 0.03);
                 return (
@@ -1634,19 +1633,7 @@ export default function DashboardPage() {
                       </div>
                     )}
 
-                    {/* Allocation bar */}
-                    <div style={{background:"var(--bg3)",borderRadius:10,padding:"10px 12px"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                        <span style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",fontWeight:500}}>Your allocation</span>
-                        <div style={{textAlign:"right"}}>
-                          <span style={{fontFamily:"DM Mono",fontSize:16,color:meta.color,fontWeight:600}}>{pct}%</span>
-                          <span style={{fontFamily:"DM Mono",fontSize:13,color:"var(--muted)",marginLeft:8}}>{fmt((amount*pct)/100)}/mo</span>
-                        </div>
-                      </div>
-                      <div style={{height:4,borderRadius:2,background:"var(--border)"}}>
-                        <div style={{height:"100%",width:`${pct}%`,background:meta.color,borderRadius:2,transition:"width 0.4s ease"}}/>
-                      </div>
-                    </div>
+
 
                     <div style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",marginTop:10,display:"flex",justifyContent:"space-between"}}>
                       <span>{meta.risk} risk</span>
