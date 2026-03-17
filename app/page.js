@@ -4,17 +4,17 @@ import { useState, useEffect } from "react";
 
 // Returns for $50/$100/$150 at ~9% balanced rate (1mo/6mo/12mo)
 const PROJECTIONS = {
-  50:  { r1:"$50",   g1:"+$0",  r6:"$308",  g6:"+$8",   r12:"$628",  g12:"+$28"  },
-  100: { r1:"$101",  g1:"+$1",  r6:"$617",  g6:"+$17",  r12:"$1,256", g12:"+$56" },
-  150: { r1:"$151",  g1:"+$1",  r6:"$926",  g6:"+$26",  r12:"$1,884", g12:"+$84" },
+  50:  { r1:"$50",   g1:"+$0",  r6:"$308",  g6:"+$8",   r12:"$630",  g12:"+$30"  },
+  100: { r1:"$101",  g1:"+$1",  r6:"$616",  g6:"+$16",  r12:"$1,260", g12:"+$60" },
+  150: { r1:"$151",  g1:"+$1",  r6:"$924",  g6:"+$24",  r12:"$1,890", g12:"+$90" },
 };
 
 // Savings comparison — what your money does in each vehicle
 const SAVINGS_COMPARE = [
-  { label:"Regular savings account", rate:"0.5%",  y1:"$1,203",  y5:"$6,152",  y10:"$12,558", color:"rgba(255,255,255,0.25)", dim:true  },
-  { label:"High-yield savings",       rate:"4.5%",  y1:"$1,230",  y5:"$6,642",  y10:"$15,103", color:"rgba(255,255,255,0.4)",  dim:true  },
-  { label:"Conservative ETF plan",    rate:"~5%",   y1:"$1,233",  y5:"$6,800",  y10:"$15,528", color:"#60a5fa",               dim:false },
-  { label:"Balanced ETF plan",        rate:"~9%",   y1:"$1,256",  y5:"$7,597",  y10:"$19,351", color:"#00b96b",               dim:false },
+  { label:"Regular savings account", rate:"0.5%",  y1:"$1,203",  y5:"$6,077",  y10:"$12,308", color:"rgba(255,255,255,0.25)", dim:true  },
+  { label:"High-yield savings",       rate:"4.5%",  y1:"$1,230",  y5:"$6,740",  y10:"$15,177", color:"rgba(255,255,255,0.4)",  dim:true  },
+  { label:"Conservative ETF plan",    rate:"~5.5%", y1:"$1,236",  y5:"$6,920",  y10:"$16,024", color:"#60a5fa",               dim:false },
+  { label:"Balanced ETF plan",        rate:"~9%",   y1:"$1,260",  y5:"$7,599",  y10:"$19,497", color:"#00b96b",               dim:false },
 ];
 
 const PLANS = [

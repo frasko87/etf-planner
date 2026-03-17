@@ -414,14 +414,22 @@ export default function DashboardPage() {
 
   // Chart + table
   const chartData = Array.from({length:25},(_,m)=>({
-    month:m, invested:amount*m,
+    month: (() => {
+      if (m === 0) return "Now";
+      const d = new Date(planStartDate.getFullYear(), planStartDate.getMonth() + m);
+      return d.toLocaleString("default",{month:"short", year:"2-digit"});
+    })(),
+    invested:amount*m,
     expected:   m===0?0:project(amount,allocs,etfPool,m,false,pc.targetReturn),
     optimistic: m===0?0:project(amount,allocs,etfPool,m,true,pc.targetReturn),
   }));
+  // Start projection from user's actual start date (or today if no plan yet)
+  const planStartDate = userPlan?.started_at ? new Date(userPlan.started_at) : new Date();
   const tableData = Array.from({length:12},(_,i)=>{
     const m=i+1, invested=amount*m;
     const exp=project(amount,allocs,etfPool,m,false,pc.targetReturn);
-    return { month:m, label:new Date(new Date().getFullYear(),i).toLocaleString("default",{month:"short"}), invested, expected:exp, optimistic:project(amount,allocs,etfPool,m,true,pc.targetReturn), gain:exp-invested };
+    const labelDate = new Date(planStartDate.getFullYear(), planStartDate.getMonth() + i);
+    return { month:m, label:labelDate.toLocaleString("default",{month:"short", year: labelDate.getFullYear() !== planStartDate.getFullYear() ? "2-digit" : undefined}), invested, expected:exp, optimistic:project(amount,allocs,etfPool,m,true,pc.targetReturn), gain:exp-invested };
   });
   const projs = { 1:{exp:project(amount,allocs,etfPool,1,false,pc.targetReturn),opt:project(amount,allocs,etfPool,1,true,pc.targetReturn)}, 6:{exp:project(amount,allocs,etfPool,6,false,pc.targetReturn),opt:project(amount,allocs,etfPool,6,true,pc.targetReturn)}, 12:{exp:project(amount,allocs,etfPool,12,false,pc.targetReturn),opt:project(amount,allocs,etfPool,12,true,pc.targetReturn)}, 60:{exp:project(amount,allocs,etfPool,60,false,pc.targetReturn),opt:project(amount,allocs,etfPool,60,true,pc.targetReturn)} };
   const pieData = curTickers.map(t=>({name:t,value:allocs[t]||0,color:ETF_META[t]?.color||"#888"}));

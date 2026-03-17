@@ -10,14 +10,14 @@ const PROFILES = {
     desc:"Bonds + dividend stocks. Closest to a savings account — but better.",
     etfs:["BND","SCHD","VTI","VOO"],
     risk:"Very Low",
-    gain5yr: { 50:460, 100:920, 150:1380 },
+    gain5yr: { 50:460, 100:920, 150:1379 },
   },
   balanced: {
     icon:"⚖️", label:"Balanced", rate:"~9%/yr", color:"#c9a84c",
     desc:"Growth ETFs + stable large caps. Our most popular plan.",
     etfs:["VOO","VTI","QQQ","SCHD"],
     risk:"Low–Med",
-    gain5yr: { 50:800, 100:1599, 150:2399 },
+    gain5yr: { 50:799, 100:1599, 150:2398 },
   },
   aggressive: {
     icon:"🚀", label:"Aggressive", rate:"~16%/yr", color:"#ff4757",
