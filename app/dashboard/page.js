@@ -354,6 +354,32 @@ export default function DashboardPage() {
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/"); };
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "DELETE") return;
+    setDeleting(true);
+    try {
+      // Delete user data first
+      await supabase.from("user_monthly_actions").delete().eq("user_id", user.id);
+      await supabase.from("user_plans").delete().eq("user_id", user.id);
+      await supabase.from("email_preferences").delete().eq("user_id", user.id);
+      // Delete auth user via API route
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${session?.access_token}` }
+      });
+      await supabase.auth.signOut();
+      router.push("/");
+    } catch(e) {
+      console.error("Delete failed:", e);
+      setDeleting(false);
+    }
+  };
+
   // Auto-create a monthly action entry for the current month if one doesn't exist
   const createMonthlyActionIfNeeded = async (profile, amt) => {
     if (!user) return;
@@ -614,7 +640,40 @@ export default function DashboardPage() {
             </div>
           )}
           <Link href="/" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",padding:"6px 12px",border:"1px solid var(--border)",borderRadius:8,textDecoration:"none",display:isMob?"none":"block"}}>← Home</Link>
-          <button onClick={handleLogout} style={{fontFamily:"DM Sans",fontSize:isMob?12:13,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:isMob?"6px 10px":"6px 12px",cursor:"pointer"}}>Log out</button>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <button onClick={()=>setShowDeleteConfirm(true)} style={{fontFamily:"DM Sans",fontSize:isMob?11:12,color:"#ff4757",background:"none",border:"1px solid rgba(255,71,87,0.2)",borderRadius:8,padding:isMob?"6px 8px":"6px 10px",cursor:"pointer"}}>Delete account</button>
+            <button onClick={handleLogout} style={{fontFamily:"DM Sans",fontSize:isMob?12:13,color:"var(--muted)",background:"none",border:"1px solid var(--border)",borderRadius:8,padding:isMob?"6px 10px":"6px 12px",cursor:"pointer"}}>Log out</button>
+          </div>
+
+          {/* Delete account modal */}
+          {showDeleteConfirm && (
+            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setShowDeleteConfirm(false)}>
+              <div style={{background:"white",borderRadius:20,padding:32,maxWidth:420,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}} onClick={e=>e.stopPropagation()}>
+                <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:20,color:"#1a1a2e",marginBottom:8}}>Delete account</div>
+                <div style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",lineHeight:1.7,marginBottom:20}}>
+                  This will permanently delete your account, plan and all history. This cannot be undone.
+                </div>
+                <div style={{background:"rgba(255,71,87,0.04)",border:"1px solid rgba(255,71,87,0.15)",borderRadius:10,padding:"12px 16px",marginBottom:20}}>
+                  <div style={{fontFamily:"DM Mono",fontSize:11,color:"#ff4757",marginBottom:8}}>Type DELETE to confirm</div>
+                  <input
+                    value={deleteConfirmText}
+                    onChange={e=>setDeleteConfirmText(e.target.value.toUpperCase())}
+                    placeholder="DELETE"
+                    style={{width:"100%",fontFamily:"DM Mono",fontSize:14,padding:"8px 12px",border:"1px solid rgba(255,71,87,0.3)",borderRadius:8,outline:"none",color:"#ff4757",background:"white"}}
+                  />
+                </div>
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>{setShowDeleteConfirm(false);setDeleteConfirmText("");}} style={{flex:1,fontFamily:"DM Sans",fontSize:14,padding:"10px",border:"1px solid var(--border)",borderRadius:10,cursor:"pointer",background:"var(--bg3)",color:"var(--muted)"}}>Cancel</button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleteConfirmText !== "DELETE" || deleting}
+                    style={{flex:1,fontFamily:"DM Sans",fontWeight:600,fontSize:14,padding:"10px",border:"none",borderRadius:10,cursor:deleteConfirmText==="DELETE"?"pointer":"not-allowed",background:deleteConfirmText==="DELETE"?"#ff4757":"rgba(255,71,87,0.2)",color:"white"}}>
+                    {deleting ? "Deleting..." : "Delete forever"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
