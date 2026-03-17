@@ -270,24 +270,36 @@ function scoreETF(ticker, data, profile) {
 // Distributes % weights based on score within selected ETFs
 // ─────────────────────────────────────────────────────────────────────────────
 function computeAllocations(selectedTickers, scores) {
-  const totalScore = selectedTickers.reduce((a,t) => a + (scores[t]?.score ?? 0.5), 0);
-  const raw = {};
+  if (!selectedTickers || selectedTickers.length === 0) return {};
+
+  // Use score if available, otherwise equal weight
+  const weights = {};
   selectedTickers.forEach(t => {
-    raw[t] = (scores[t]?.score ?? 0.5) / totalScore;
+    const score = scores?.[t]?.score;
+    weights[t] = (typeof score === "number" && score > 0) ? score : 0.5;
   });
+
+  const totalWeight = Object.values(weights).reduce((a,b) => a+b, 0);
 
   // Round to nearest 5% and ensure sum = 100
   const rounded = {};
   let remaining = 100;
-  const sorted  = [...selectedTickers].sort((a,b) => (raw[b]??0) - (raw[a]??0));
+  const sorted = [...selectedTickers].sort((a,b) => weights[b] - weights[a]);
 
   sorted.forEach((t, i) => {
     if (i === sorted.length - 1) {
-      rounded[t] = remaining; // last one gets remainder
+      rounded[t] = Math.max(remaining, 5); // last gets remainder, min 5%
     } else {
-      const pct = Math.round(raw[t] * 100 / 5) * 5;
-      rounded[t] = Math.max(pct, 10); // minimum 10% allocation
+      const pct = Math.round((weights[t] / totalWeight) * 100 / 5) * 5;
+      rounded[t] = Math.max(pct, 10); // minimum 10%
       remaining -= rounded[t];
+    }
+  });
+
+  // Verify all values are numbers
+  selectedTickers.forEach(t => {
+    if (typeof rounded[t] !== "number" || isNaN(rounded[t])) {
+      rounded[t] = Math.floor(100 / selectedTickers.length);
     }
   });
 
@@ -1107,24 +1119,36 @@ function scoreETF(ticker, data, profile) {
 // Distributes % weights based on score within selected ETFs
 // ─────────────────────────────────────────────────────────────────────────────
 function computeAllocations(selectedTickers, scores) {
-  const totalScore = selectedTickers.reduce((a,t) => a + (scores[t]?.score ?? 0.5), 0);
-  const raw = {};
+  if (!selectedTickers || selectedTickers.length === 0) return {};
+
+  // Use score if available, otherwise equal weight
+  const weights = {};
   selectedTickers.forEach(t => {
-    raw[t] = (scores[t]?.score ?? 0.5) / totalScore;
+    const score = scores?.[t]?.score;
+    weights[t] = (typeof score === "number" && score > 0) ? score : 0.5;
   });
+
+  const totalWeight = Object.values(weights).reduce((a,b) => a+b, 0);
 
   // Round to nearest 5% and ensure sum = 100
   const rounded = {};
   let remaining = 100;
-  const sorted  = [...selectedTickers].sort((a,b) => (raw[b]??0) - (raw[a]??0));
+  const sorted = [...selectedTickers].sort((a,b) => weights[b] - weights[a]);
 
   sorted.forEach((t, i) => {
     if (i === sorted.length - 1) {
-      rounded[t] = remaining; // last one gets remainder
+      rounded[t] = Math.max(remaining, 5); // last gets remainder, min 5%
     } else {
-      const pct = Math.round(raw[t] * 100 / 5) * 5;
-      rounded[t] = Math.max(pct, 10); // minimum 10% allocation
+      const pct = Math.round((weights[t] / totalWeight) * 100 / 5) * 5;
+      rounded[t] = Math.max(pct, 10); // minimum 10%
       remaining -= rounded[t];
+    }
+  });
+
+  // Verify all values are numbers
+  selectedTickers.forEach(t => {
+    if (typeof rounded[t] !== "number" || isNaN(rounded[t])) {
+      rounded[t] = Math.floor(100 / selectedTickers.length);
     }
   });
 
@@ -1955,24 +1979,36 @@ function scoreETF(ticker, data, profile) {
 // Distributes % weights based on score within selected ETFs
 // ─────────────────────────────────────────────────────────────────────────────
 function computeAllocations(selectedTickers, scores) {
-  const totalScore = selectedTickers.reduce((a,t) => a + (scores[t]?.score ?? 0.5), 0);
-  const raw = {};
+  if (!selectedTickers || selectedTickers.length === 0) return {};
+
+  // Use score if available, otherwise equal weight
+  const weights = {};
   selectedTickers.forEach(t => {
-    raw[t] = (scores[t]?.score ?? 0.5) / totalScore;
+    const score = scores?.[t]?.score;
+    weights[t] = (typeof score === "number" && score > 0) ? score : 0.5;
   });
+
+  const totalWeight = Object.values(weights).reduce((a,b) => a+b, 0);
 
   // Round to nearest 5% and ensure sum = 100
   const rounded = {};
   let remaining = 100;
-  const sorted  = [...selectedTickers].sort((a,b) => (raw[b]??0) - (raw[a]??0));
+  const sorted = [...selectedTickers].sort((a,b) => weights[b] - weights[a]);
 
   sorted.forEach((t, i) => {
     if (i === sorted.length - 1) {
-      rounded[t] = remaining; // last one gets remainder
+      rounded[t] = Math.max(remaining, 5); // last gets remainder, min 5%
     } else {
-      const pct = Math.round(raw[t] * 100 / 5) * 5;
-      rounded[t] = Math.max(pct, 10); // minimum 10% allocation
+      const pct = Math.round((weights[t] / totalWeight) * 100 / 5) * 5;
+      rounded[t] = Math.max(pct, 10); // minimum 10%
       remaining -= rounded[t];
+    }
+  });
+
+  // Verify all values are numbers
+  selectedTickers.forEach(t => {
+    if (typeof rounded[t] !== "number" || isNaN(rounded[t])) {
+      rounded[t] = Math.floor(100 / selectedTickers.length);
     }
   });
 
@@ -2792,24 +2828,36 @@ function scoreETF(ticker, data, profile) {
 // Distributes % weights based on score within selected ETFs
 // ─────────────────────────────────────────────────────────────────────────────
 function computeAllocations(selectedTickers, scores) {
-  const totalScore = selectedTickers.reduce((a,t) => a + (scores[t]?.score ?? 0.5), 0);
-  const raw = {};
+  if (!selectedTickers || selectedTickers.length === 0) return {};
+
+  // Use score if available, otherwise equal weight
+  const weights = {};
   selectedTickers.forEach(t => {
-    raw[t] = (scores[t]?.score ?? 0.5) / totalScore;
+    const score = scores?.[t]?.score;
+    weights[t] = (typeof score === "number" && score > 0) ? score : 0.5;
   });
+
+  const totalWeight = Object.values(weights).reduce((a,b) => a+b, 0);
 
   // Round to nearest 5% and ensure sum = 100
   const rounded = {};
   let remaining = 100;
-  const sorted  = [...selectedTickers].sort((a,b) => (raw[b]??0) - (raw[a]??0));
+  const sorted = [...selectedTickers].sort((a,b) => weights[b] - weights[a]);
 
   sorted.forEach((t, i) => {
     if (i === sorted.length - 1) {
-      rounded[t] = remaining; // last one gets remainder
+      rounded[t] = Math.max(remaining, 5); // last gets remainder, min 5%
     } else {
-      const pct = Math.round(raw[t] * 100 / 5) * 5;
-      rounded[t] = Math.max(pct, 10); // minimum 10% allocation
+      const pct = Math.round((weights[t] / totalWeight) * 100 / 5) * 5;
+      rounded[t] = Math.max(pct, 10); // minimum 10%
       remaining -= rounded[t];
+    }
+  });
+
+  // Verify all values are numbers
+  selectedTickers.forEach(t => {
+    if (typeof rounded[t] !== "number" || isNaN(rounded[t])) {
+      rounded[t] = Math.floor(100 / selectedTickers.length);
     }
   });
 
