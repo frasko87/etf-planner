@@ -16,7 +16,7 @@ export async function POST(req) {
 
   const { subject, headline, body, ctaText, ctaUrl, segment, rawHtml } = await req.json();
 
-  if (!subject || !body) {
+  if (!subject || (!body && !rawHtml)) {
     return Response.json({ error: "Subject and body required" }, { status: 400 });
   }
 
