@@ -19,19 +19,23 @@ export async function GET() {
   );
 
   const [
-    { data: users,       count: totalUsers    },
-    { data: plans                             },
-    { data: subscribers, count: totalSubs     },
-    { data: fetchLogs                         },
-    { data: selections                        },
-    { data: recentPlans                       },
+    { data: users },
+    { data: plans },
+    { data: subscribers, count: totalSubs },
+    { data: fetchLogs },
+    { data: selections },
+    { data: recentPlans },
+    { data: broadcastLogs },
+    { data: overrides },
   ] = await Promise.all([
     supabase.auth.admin.listUsers(),
-    supabase.from("user_plans").select("profile, amount, started_at, user_id"),
+    supabase.from("user_plans").select("profile, amount, started_at, user_id, admin_note"),
     supabase.from("email_preferences").select("email, user_id, subscribed_at, unsubscribed", { count:"exact" }).eq("unsubscribed", false),
     supabase.from("fetch_log").select("*").order("fetched_at", { ascending:false }).limit(10),
-    supabase.from("weekly_selections").select("profile, tickers, week_start, is_current").eq("is_current", true),
-    supabase.from("user_plans").select("profile, amount, started_at, user_id").order("started_at", { ascending:false }).limit(20),
+    supabase.from("weekly_selections").select("profile, tickers, allocations, week_start, is_current").eq("is_current", true),
+    supabase.from("user_plans").select("profile, amount, started_at, user_id, admin_note").order("started_at", { ascending:false }).limit(20),
+    supabase.from("broadcast_log").select("*").order("sent_at", { ascending:false }).limit(20),
+    supabase.from("etf_overrides").select("*").eq("active", true),
   ]);
 
   // Plan breakdown
@@ -42,32 +46,51 @@ export async function GET() {
   const amountBreakdown = { 50:0, 100:0, 150:0 };
   (plans || []).forEach(p => { if (amountBreakdown[p.amount] !== undefined) amountBreakdown[p.amount]++; });
 
-  // Recent signups with emails
-  const recentUsers = (users?.users || [])
+  // Growth chart — signups per week for last 12 weeks
+  const allUsers = users?.users || [];
+  const now = new Date();
+  const weeklyGrowth = Array.from({ length: 12 }, (_, i) => {
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - (11 - i) * 7);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+    const count = allUsers.filter(u => {
+      const d = new Date(u.created_at);
+      return d >= weekStart && d < weekEnd;
+    }).length;
+    return {
+      week: weekStart.toLocaleDateString("en-US", { month:"short", day:"numeric" }),
+      signups: count,
+    };
+  });
+
+  // MRR calculation
+  const mrr = (plans || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+
+  // Recent signups
+  const recentUsers = allUsers
     .sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 20)
-    .map(u => ({
-      id:         u.id,
-      email:      u.email,
-      created_at: u.created_at,
-      last_sign:  u.last_sign_in_at,
-    }));
-
-
+    .map(u => ({ id: u.id, email: u.email, created_at: u.created_at, last_sign: u.last_sign_in_at }));
 
   return Response.json({
     stats: {
-      totalUsers:   users?.users?.length || 0,
+      totalUsers:   allUsers.length,
       totalPlans:   (plans || []).length,
       totalSubs:    totalSubs || 0,
       planBreakdown,
       amountBreakdown,
+      mrr,
     },
     recentUsers,
-    subscribers:  subscribers || [],
-    fetchLogs:    fetchLogs || [],
-    selections:   selections || [],
-    recentPlans:  recentPlans || [],
-    plans:        plans || [],
+    subscribers:    subscribers || [],
+    fetchLogs:      fetchLogs || [],
+    selections:     selections || [],
+    recentPlans:    recentPlans || [],
+    plans:          plans || [],
+    weeklyGrowth:   weeklyGrowth,
+    broadcastLogs:  broadcastLogs || [],
+    overrides:      overrides || [],
   });
 }

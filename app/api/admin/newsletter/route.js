@@ -25,7 +25,6 @@ export async function POST(req) {
     process.env.SUPABASE_SERVICE_KEY
   );
 
-  // Get subscribers — optionally filter by plan segment
   let query = supabase.from("active_subscribers").select("email, profile");
   const { data: subscribers } = await query;
 
@@ -57,6 +56,16 @@ export async function POST(req) {
       results.push({ email: sub.email, status: "failed", error: e.message });
     }
   }
+
+  // Log the broadcast
+  await supabase.from("broadcast_log").insert({
+    subject,
+    headline: headline || "",
+    segment:  segment || "all",
+    sent_count:   sent,
+    failed_count: failed,
+    sent_at:  new Date().toISOString(),
+  });
 
   return Response.json({ sent, failed, total: targets.length, results });
 }

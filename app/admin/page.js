@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -26,7 +27,20 @@ export default function AdminPage() {
   const [sendResult, setSendResult] = useState(null);
   const [search,     setSearch]    = useState("");
   const [actionLoading, setActionLoading] = useState(null); // email being actioned
-  const [confirmDelete, setConfirmDelete] = useState(null); // user obj to confirm delete
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [editNote, setEditNote] = useState(null);
+  const [winWidth, setWinWidth] = useState(1200);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setWinWidth(window.innerWidth);
+    const handler = () => setWinWidth(window.innerWidth);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  const isMob = winWidth < 680;
+  const isTab = winWidth < 960;
+  const [overrideForm, setOverrideForm] = useState({ profile:"balanced", tickers:"", note:"", allocations:"" });
+  const [overrideMsg, setOverrideMsg] = useState(""); // user obj to confirm delete
 
   const handleUnsubscribe = async (email) => {
     if (!confirm(`Remove ${email} from newsletter?`)) return;
@@ -43,6 +57,36 @@ export default function AdminPage() {
     await fetch("/api/admin/delete-user", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ userId, email }) });
     const res = await fetch("/api/admin/stats"); const d = await res.json(); setData(d);
     setActionLoading(null);
+  };
+
+  const handleSaveNote = async (userId, note) => {
+    setActionLoading(userId+"_note");
+    await fetch("/api/admin/save-note", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ userId, note }) });
+    const res = await fetch("/api/admin/stats"); const d = await res.json(); setData(d);
+    setEditNote(null); setActionLoading(null);
+  };
+
+  const handleSetOverride = async (e) => {
+    e.preventDefault();
+    setOverrideMsg("Saving...");
+    const tickers = overrideForm.tickers.split(",").map(t => t.trim().toUpperCase()).filter(Boolean);
+    // Build equal allocations if not provided
+    let allocations = {};
+    if (overrideForm.allocations.trim()) {
+      try { allocations = JSON.parse(overrideForm.allocations); } catch(e) { setOverrideMsg("Invalid JSON in allocations"); return; }
+    } else {
+      const base = Math.floor(100 / tickers.length / 5) * 5;
+      tickers.forEach((t,i) => { allocations[t] = i === tickers.length-1 ? 100 - base*(tickers.length-1) : base; });
+    }
+    const res = await fetch("/api/admin/etf-override", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ profile:overrideForm.profile, tickers, allocations, note:overrideForm.note }) });
+    const d = await res.json();
+    setOverrideMsg(d.success ? "✓ Override set — dashboard updated" : "Error: "+d.error);
+    const statsRes = await fetch("/api/admin/stats"); const statsData = await statsRes.json(); setData(statsData);
+  };
+
+  const handleRemoveOverride = async (profile) => {
+    await fetch("/api/admin/etf-override", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ profile, active:false }) });
+    const res = await fetch("/api/admin/stats"); const d = await res.json(); setData(d);
   };
 
   useEffect(() => {
@@ -98,26 +142,26 @@ export default function AdminPage() {
     <div style={{ minHeight:"100vh", background:"var(--bg)" }}>
 
       {/* Nav */}
-      <nav style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0 clamp(16px,3vw,32px)", height:56, background:"var(--text)", borderBottom:"1px solid rgba(255,255,255,0.08)", position:"sticky", top:0, zIndex:100 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:20 }}>
+      <nav style={{ background:"var(--text)", borderBottom:"1px solid rgba(255,255,255,0.08)", position:"sticky", top:0, zIndex:100 }}>
+        {/* Top bar: logo + site link + logout */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0 clamp(14px,3vw,32px)", height:50 }}>
           <div className="pixel" style={{ fontSize:10, color:"white" }}>ETF<span style={{ color:"var(--green)" }}>.</span>PLAN <span style={{ opacity:0.35, fontSize:8 }}>ADMIN</span></div>
-          <div style={{ display:"flex", gap:2 }}>
-            {["overview","users","subscribers","newsletter","etf-status"].map(t => (
-              <button key={t} onClick={() => setTab(t)} style={{
-                fontFamily:"DM Sans", fontSize:13, fontWeight:tab===t?600:400,
-                color: tab===t ? "white" : "rgba(255,255,255,0.4)",
-                background: tab===t ? "rgba(255,255,255,0.1)" : "transparent",
-                border: "none", borderRadius:8, padding:"6px 12px", cursor:"pointer",
-                textTransform:"capitalize",
-              }}>
-                {t.replace("-"," ")}
-              </button>
-            ))}
+          <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+            <Link href="/" style={{ fontFamily:"DM Sans", fontSize:12, color:"rgba(255,255,255,0.4)", textDecoration:"none" }}>← Site</Link>
+            <button onClick={handleLogout} style={{ fontFamily:"DM Sans", fontSize:12, color:"rgba(255,255,255,0.4)", background:"none", border:"1px solid rgba(255,255,255,0.15)", borderRadius:6, padding:"4px 10px", cursor:"pointer" }}>Log out</button>
           </div>
         </div>
-        <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-          <Link href="/" style={{ fontFamily:"DM Sans", fontSize:13, color:"rgba(255,255,255,0.4)", textDecoration:"none" }}>← Site</Link>
-          <button onClick={handleLogout} style={{ fontFamily:"DM Sans", fontSize:13, color:"rgba(255,255,255,0.4)", background:"none", border:"1px solid rgba(255,255,255,0.15)", borderRadius:8, padding:"5px 12px", cursor:"pointer" }}>Log out</button>
+        {/* Tab row — horizontally scrollable on mobile */}
+        <div style={{ display:"flex", gap:2, overflowX:"auto", padding:"0 clamp(14px,3vw,32px)", paddingBottom:8, scrollbarWidth:"none", msOverflowStyle:"none" }}>
+          {["overview","users","subscribers","newsletter","etf-status"].map(t => (
+            <button key={t} onClick={() => setTab(t)} style={{
+              fontFamily:"DM Sans", fontSize:13, fontWeight:tab===t?600:400,
+              color: tab===t ? "white" : "rgba(255,255,255,0.4)",
+              background: tab===t ? "rgba(255,255,255,0.1)" : "transparent",
+              border: "none", borderRadius:8, padding:"6px 14px", cursor:"pointer",
+              whiteSpace:"nowrap", flexShrink:0, textTransform:"capitalize",
+            }}>{t.replace("-"," ")}</button>
+          ))}
         </div>
       </nav>
 
@@ -129,10 +173,11 @@ export default function AdminPage() {
             {/* Stats grid */}
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:12, marginBottom:24 }}>
               {[
-                { l:"Total Users",      v:fmt(stats?.totalUsers),   c:"var(--green)",  icon:"👤" },
-                { l:"Active Plans",     v:fmt(stats?.totalPlans),   c:"#3b82f6",       icon:"📋" },
-                { l:"Subscribers",      v:fmt(stats?.totalSubs),    c:"#c9a84c",       icon:"📧" },
-                { l:"Conservative",     v:fmt(stats?.planBreakdown?.conservative), c:"#3b82f6", icon:"🛡️" },
+                { l:"Total Users",      v:fmt(stats?.totalUsers),   c:"var(--green)" },
+                { l:"Active Plans",     v:fmt(stats?.totalPlans),   c:"#3b82f6" },
+                { l:"Subscribers",      v:fmt(stats?.totalSubs),    c:"#c9a84c" },
+                { l:"MRR",              v:stats?.mrr ? "$"+fmt(stats.mrr)+"/mo" : "—", c:"var(--green)" },
+                { l:"Conservative",     v:fmt(stats?.planBreakdown?.conservative), c:"#3b82f6" },
                 { l:"Balanced",         v:fmt(stats?.planBreakdown?.balanced),     c:"#c9a84c", icon:"⚖️" },
                 { l:"Aggressive",       v:fmt(stats?.planBreakdown?.aggressive),   c:"#ff4757", icon:"🚀" },
               ].map(s => (
@@ -173,7 +218,7 @@ export default function AdminPage() {
                 {(recentUsers || []).slice(0,10).map((u,i,arr) => {
                   const plan = (plans || []).find(p => p.user_id === u.id);
                   return (
-                    <div key={u.id} style={{ display:"grid", gridTemplateColumns:"1fr auto auto", gap:12, alignItems:"center", padding:"10px 0", borderBottom:i<arr.length-1?"1px solid var(--bg3)":"none" }}>
+                    <div key={u.id} style={{ display:"flex", flexWrap:"wrap", justifyContent:"space-between", alignItems:"center", padding:"10px 0", gap:8, borderBottom:i<arr.length-1?"1px solid var(--bg3)":"none" }}>
                       <div>
                         <div style={{ fontFamily:"DM Sans", fontSize:14, color:"var(--text)", fontWeight:500 }}>{u.email}</div>
                         <div className="mono" style={{ fontSize:10, color:"var(--muted2)" }}>Signed up {timeAgo(u.created_at)}</div>
@@ -191,6 +236,49 @@ export default function AdminPage() {
                 })}
               </div>
             </div>
+
+            {/* Growth chart */}
+            <div style={{ ...card, marginBottom:16 }}>
+              <div style={lbl}>WEEKLY SIGNUPS — LAST 12 WEEKS</div>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={data?.weeklyGrowth || []} margin={{ top:10, right:10, left:0, bottom:0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)"/>
+                  <XAxis dataKey="week" tick={{ fontFamily:"DM Mono", fontSize:9, fill:"var(--muted2)" }} axisLine={false} tickLine={false}/>
+                  <YAxis tick={{ fontFamily:"DM Mono", fontSize:9, fill:"var(--muted2)" }} axisLine={false} tickLine={false} allowDecimals={false}/>
+                  <Tooltip contentStyle={{ fontFamily:"DM Sans", fontSize:12, borderRadius:8, border:"1px solid var(--border)" }}/>
+                  <Bar dataKey="signups" fill="var(--green)" radius={[4,4,0,0]} name="New signups"/>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Broadcast history */}
+            {(data?.broadcastLogs || []).length > 0 && (
+              <div style={card}>
+                <div style={lbl}>BROADCAST HISTORY</div>
+                <div style={{ overflowX:"auto" }}>
+                  <table style={{ width:"100%", borderCollapse:"collapse", minWidth:400 }}>
+                    <thead>
+                      <tr style={{ background:"var(--bg3)" }}>
+                        {["Date","Subject","Segment","Sent","Failed"].map(h => (
+                          <th key={h} style={{ ...lbl, padding:"8px 12px", textAlign:"left", marginBottom:0, whiteSpace:"nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(data?.broadcastLogs || []).map((b,i,arr) => (
+                        <tr key={b.id} style={{ borderBottom:i<arr.length-1?"1px solid var(--bg3)":"none" }}>
+                          <td style={{ fontFamily:"DM Mono", fontSize:11, padding:"9px 12px", color:"var(--muted2)", whiteSpace:"nowrap" }}>{fmtDate(b.sent_at)}</td>
+                          <td style={{ fontFamily:"DM Sans", fontSize:13, padding:"9px 12px", color:"var(--text)" }}>{b.subject}</td>
+                          <td style={{ padding:"9px 12px" }}><span style={{ fontFamily:"DM Mono", fontSize:10, padding:"2px 8px", borderRadius:6, background:"var(--bg3)", color:"var(--muted2)", textTransform:"capitalize" }}>{b.segment}</span></td>
+                          <td style={{ fontFamily:"DM Mono", fontSize:12, padding:"9px 12px", color:"var(--green)" }}>{b.sent_count}</td>
+                          <td style={{ fontFamily:"DM Mono", fontSize:12, padding:"9px 12px", color:b.failed_count>0?"#ff4757":"var(--muted2)" }}>{b.failed_count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -205,11 +293,11 @@ export default function AdminPage() {
                 style={{ fontFamily:"DM Sans", fontSize:13, padding:"8px 14px", borderRadius:8, border:"1px solid var(--border)", background:"var(--bg3)", outline:"none", width:220 }}
               />
             </div>
-            <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <div style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
                 <thead>
                   <tr style={{ background:"var(--bg3)" }}>
-                    {["Email","Plan","Amount","Signed up","Last active",""].map(h => (
+                    {["Email","Plan","Amount","Signed up","Last active","Note",""].map(h => (
                       <th key={h} style={{ ...lbl, padding:"8px 12px", textAlign:"left", whiteSpace:"nowrap", marginBottom:0 }}>{h}</th>
                     ))}
                   </tr>
@@ -229,12 +317,27 @@ export default function AdminPage() {
                           <td style={{ fontFamily:"DM Mono", fontSize:12, padding:"10px 12px", color:"var(--muted)" }}>{plan ? `$${plan.amount}` : "—"}</td>
                           <td style={{ fontFamily:"DM Mono", fontSize:11, padding:"10px 12px", color:"var(--muted2)", whiteSpace:"nowrap" }}>{fmtDate(u.created_at)}</td>
                           <td style={{ fontFamily:"DM Mono", fontSize:11, padding:"10px 12px", color:"var(--muted2)", whiteSpace:"nowrap" }}>{timeAgo(u.last_sign)}</td>
+                          <td style={{ fontFamily:"DM Sans", fontSize:12, padding:"10px 12px", color:"var(--muted)", maxWidth:160 }}>
+                            {editNote?.userId === u.id ? (
+                              <div style={{ display:"flex", gap:4 }}>
+                                <input autoFocus value={editNote.note} onChange={e=>setEditNote({...editNote, note:e.target.value})}
+                                  style={{ fontFamily:"DM Sans", fontSize:12, padding:"3px 8px", border:"1px solid var(--border)", borderRadius:6, outline:"none", width:120 }}/>
+                                <button onClick={()=>handleSaveNote(u.id, editNote.note)} style={{ fontFamily:"DM Mono", fontSize:9, padding:"3px 8px", borderRadius:6, background:"var(--green)", color:"white", border:"none", cursor:"pointer" }}>✓</button>
+                                <button onClick={()=>setEditNote(null)} style={{ fontFamily:"DM Mono", fontSize:9, padding:"3px 8px", borderRadius:6, background:"var(--bg3)", color:"var(--muted)", border:"1px solid var(--border)", cursor:"pointer" }}>✕</button>
+                              </div>
+                            ) : (
+                              <span onClick={()=>setEditNote({ userId:u.id, note:(plans||[]).find(p=>p.user_id===u.id)?.admin_note||"" })}
+                                style={{ cursor:"pointer", color:(plans||[]).find(p=>p.user_id===u.id)?.admin_note ? "var(--text)" : "var(--muted2)", fontStyle:(plans||[]).find(p=>p.user_id===u.id)?.admin_note?"normal":"italic" }}>
+                                {(plans||[]).find(p=>p.user_id===u.id)?.admin_note || "add note..."}
+                              </span>
+                            )}
+                          </td>
                           <td style={{ padding:"10px 12px" }}>
                             <button
                               onClick={() => setConfirmDelete({ id:u.id, email:u.email })}
                               disabled={actionLoading === u.id}
                               style={{ fontFamily:"DM Mono", fontSize:9, padding:"3px 8px", borderRadius:6, border:"1px solid rgba(255,71,87,0.3)", background:"rgba(255,71,87,0.05)", color:"#ff4757", cursor:"pointer", whiteSpace:"nowrap" }}>
-                              {actionLoading === u.id ? "..." : "🗑 delete"}
+                              {actionLoading === u.id ? "..." : "delete"}
                             </button>
                           </td>
                         </tr>
@@ -257,8 +360,8 @@ export default function AdminPage() {
                 style={{ fontFamily:"DM Sans", fontSize:13, padding:"8px 14px", borderRadius:8, border:"1px solid var(--border)", background:"var(--bg3)", outline:"none", width:220 }}
               />
             </div>
-            <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <div style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", minWidth:500 }}>
                 <thead>
                   <tr style={{ background:"var(--bg3)" }}>
                     {["Email","Plan","Monthly","Subscribed",""].map(h => (
@@ -297,7 +400,7 @@ export default function AdminPage() {
 
         {/* ── NEWSLETTER ── */}
         {tab === "newsletter" && (
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, alignItems:"start" }}>
+          <div style={{ display:"grid", gridTemplateColumns:isTab?"1fr":"1fr 1fr", gap:20, alignItems:"start" }}>
             <div style={card}>
               <div style={lbl}>COMPOSE NEWSLETTER</div>
 
@@ -355,7 +458,7 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
+              <div style={{ display:"grid", gridTemplateColumns:isMob?"1fr":"1fr 1fr", gap:10, marginBottom:20 }}>
                 {[
                   { key:"ctaText", label:"CTA button text (optional)",  placeholder:"View my dashboard →" },
                   { key:"ctaUrl",  label:"CTA button URL (optional)",   placeholder:"https://etfplan.app/dashboard" },
@@ -458,7 +561,7 @@ export default function AdminPage() {
               <div style={lbl}>FETCH LOG — LAST 10 RUNS</div>
               <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
                 {(fetchLogs || []).map((log,i,arr) => (
-                  <div key={log.id} style={{ display:"grid", gridTemplateColumns:"auto 1fr auto auto", gap:16, alignItems:"center", padding:"10px 0", borderBottom:i<arr.length-1?"1px solid var(--bg3)":"none" }}>
+                  <div key={log.id} style={{ display:"flex", flexWrap:"wrap", alignItems:"center", padding:"10px 0", gap:8, borderBottom:i<arr.length-1?"1px solid var(--bg3)":"none" }}>
                     <div style={{ width:8, height:8, borderRadius:"50%", background:log.error_count>0?"#ff4757":"var(--green)", flexShrink:0 }}/>
                     <div>
                       <div className="mono" style={{ fontSize:11, color:"var(--text)", fontWeight:500 }}>{log.trigger?.replace("_"," ") || "manual"}</div>
@@ -493,7 +596,80 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* ETF Override — shown within ETF Status tab */}
+        {tab === "etf-status" && (
+          <div style={{ ...card, marginTop:16 }}>
+            <div style={lbl}>MANUAL ETF OVERRIDE</div>
+            <div style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", marginBottom:16, lineHeight:1.6 }}>
+              Force specific ETFs into a plan, bypassing the scoring engine. The next scheduled run will overwrite this.
+            </div>
+            {(data?.overrides||[]).length > 0 && (
+              <div style={{ marginBottom:16, display:"flex", flexDirection:"column", gap:8 }}>
+                <div className="mono" style={{ fontSize:10, color:"var(--muted2)", letterSpacing:1, marginBottom:4 }}>ACTIVE OVERRIDES</div>
+                {(data.overrides||[]).map(o => (
+                  <div key={o.profile} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 14px", background:"rgba(255,165,0,0.06)", border:"1px solid rgba(255,165,0,0.2)", borderRadius:10, flexWrap:"wrap", gap:8 }}>
+                    <div>
+                      <span style={{ fontFamily:"DM Mono", fontSize:11, color:"#f59e0b", textTransform:"capitalize", fontWeight:600 }}>{o.profile}</span>
+                      <span style={{ fontFamily:"DM Sans", fontSize:12, color:"var(--muted)", marginLeft:10 }}>{(o.tickers||[]).join(", ")}</span>
+                      {o.override_note && <span style={{ fontFamily:"DM Sans", fontSize:11, color:"var(--muted2)", marginLeft:8 }}>— {o.override_note}</span>}
+                    </div>
+                    <button onClick={()=>handleRemoveOverride(o.profile)} style={{ fontFamily:"DM Mono", fontSize:9, padding:"3px 10px", borderRadius:6, border:"1px solid rgba(255,71,87,0.3)", background:"rgba(255,71,87,0.05)", color:"#ff4757", cursor:"pointer" }}>Remove</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <form onSubmit={handleSetOverride} style={{ display:"grid", gridTemplateColumns:isMob?"1fr":"1fr 1fr", gap:12 }}>
+              <div>
+                <label style={{ fontFamily:"DM Sans", fontSize:12, color:"var(--muted)", display:"block", marginBottom:4 }}>Profile</label>
+                <select value={overrideForm.profile} onChange={e=>setOverrideForm({...overrideForm, profile:e.target.value})}
+                  style={{ width:"100%", fontFamily:"DM Sans", fontSize:13, padding:"8px 12px", border:"1px solid var(--border)", borderRadius:8, outline:"none", background:"var(--bg3)" }}>
+                  <option value="conservative">Conservative</option>
+                  <option value="balanced">Balanced</option>
+                  <option value="aggressive">Aggressive</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontFamily:"DM Sans", fontSize:12, color:"var(--muted)", display:"block", marginBottom:4 }}>Tickers (comma separated)</label>
+                <input value={overrideForm.tickers} onChange={e=>setOverrideForm({...overrideForm, tickers:e.target.value})}
+                  placeholder="VOO, QQQ, VTI, SCHD"
+                  style={{ width:"100%", fontFamily:"DM Mono", fontSize:13, padding:"8px 12px", border:"1px solid var(--border)", borderRadius:8, outline:"none", background:"white" }}/>
+              </div>
+              <div>
+                <label style={{ fontFamily:"DM Sans", fontSize:12, color:"var(--muted)", display:"block", marginBottom:4 }}>Allocations JSON (optional)</label>
+                <input value={overrideForm.allocations} onChange={e=>setOverrideForm({...overrideForm, allocations:e.target.value})}
+                  placeholder='{"VOO":40,"QQQ":30,"VTI":20,"SCHD":10}'
+                  style={{ width:"100%", fontFamily:"DM Mono", fontSize:12, padding:"8px 12px", border:"1px solid var(--border)", borderRadius:8, outline:"none", background:"white" }}/>
+              </div>
+              <div>
+                <label style={{ fontFamily:"DM Sans", fontSize:12, color:"var(--muted)", display:"block", marginBottom:4 }}>Reason</label>
+                <input value={overrideForm.note} onChange={e=>setOverrideForm({...overrideForm, note:e.target.value})}
+                  placeholder="e.g. Data error in QQQ this week"
+                  style={{ width:"100%", fontFamily:"DM Sans", fontSize:13, padding:"8px 12px", border:"1px solid var(--border)", borderRadius:8, outline:"none", background:"white" }}/>
+              </div>
+              <div style={{ gridColumn:isMob?"1":"1 / -1", display:"flex", alignItems:"center", gap:12 }}>
+                <button type="submit" style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:14, padding:"10px 24px", background:"var(--green)", color:"white", border:"none", borderRadius:8, cursor:"pointer" }}>Set Override</button>
+                {overrideMsg && <span style={{ fontFamily:"DM Mono", fontSize:11, color:overrideMsg.startsWith("✓")?"var(--green)":"#ff4757" }}>{overrideMsg}</span>}
+              </div>
+            </form>
+          </div>
+        )}
+
       </div>
+    {/* Edit note modal */}
+    {editNote && !editNote.inline && (
+      <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }} onClick={()=>setEditNote(null)}>
+        <div style={{ background:"white", borderRadius:16, padding:28, maxWidth:360, width:"100%" }} onClick={e=>e.stopPropagation()}>
+          <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:16, marginBottom:12 }}>Add note for {editNote.email}</div>
+          <textarea value={editNote.note} onChange={e=>setEditNote({...editNote, note:e.target.value})} rows={3}
+            style={{ width:"100%", fontFamily:"DM Sans", fontSize:13, padding:"10px 12px", border:"1px solid var(--border)", borderRadius:8, outline:"none", resize:"vertical", marginBottom:12 }}/>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={()=>setEditNote(null)} style={{ flex:1, padding:"10px", border:"1px solid var(--border)", borderRadius:8, cursor:"pointer", background:"var(--bg3)" }}>Cancel</button>
+            <button onClick={()=>handleSaveNote(editNote.userId, editNote.note)} style={{ flex:1, padding:"10px", border:"none", borderRadius:8, cursor:"pointer", background:"var(--green)", color:"white", fontWeight:600 }}>Save note</button>
+          </div>
+        </div>
+      </div>
+    )}
+
     {/* Confirm delete modal */}
     {confirmDelete && (
       <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }} onClick={() => setConfirmDelete(null)}>
