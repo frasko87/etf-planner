@@ -25,6 +25,25 @@ export default function AdminPage() {
   const [sending,    setSending]   = useState(false);
   const [sendResult, setSendResult] = useState(null);
   const [search,     setSearch]    = useState("");
+  const [actionLoading, setActionLoading] = useState(null); // email being actioned
+  const [confirmDelete, setConfirmDelete] = useState(null); // user obj to confirm delete
+
+  const handleUnsubscribe = async (email) => {
+    if (!confirm(`Remove ${email} from newsletter?`)) return;
+    setActionLoading(email);
+    await fetch("/api/admin/unsubscribe-user", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email }) });
+    // Refresh data
+    const res = await fetch("/api/admin/stats"); const d = await res.json(); setData(d);
+    setActionLoading(null);
+  };
+
+  const handleDeleteUser = async (userId, email) => {
+    setActionLoading(userId);
+    setConfirmDelete(null);
+    await fetch("/api/admin/delete-user", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ userId, email }) });
+    const res = await fetch("/api/admin/stats"); const d = await res.json(); setData(d);
+    setActionLoading(null);
+  };
 
   useEffect(() => {
     fetch("/api/admin/stats")
@@ -39,7 +58,7 @@ export default function AdminPage() {
   };
 
   const handleSendNewsletter = async () => {
-    if (!newsletter.subject || !newsletter.headline || !newsletter.body) return;
+    if (!newsletter.subject || !newsletter.body) return;
     setSending(true);
     setSendResult(null);
     try {
@@ -190,7 +209,7 @@ export default function AdminPage() {
               <table style={{ width:"100%", borderCollapse:"collapse" }}>
                 <thead>
                   <tr style={{ background:"var(--bg3)" }}>
-                    {["Email","Plan","Amount","Signed up","Last active"].map(h => (
+                    {["Email","Plan","Amount","Signed up","Last active",""].map(h => (
                       <th key={h} style={{ ...lbl, padding:"8px 12px", textAlign:"left", whiteSpace:"nowrap", marginBottom:0 }}>{h}</th>
                     ))}
                   </tr>
@@ -210,6 +229,14 @@ export default function AdminPage() {
                           <td style={{ fontFamily:"DM Mono", fontSize:12, padding:"10px 12px", color:"var(--muted)" }}>{plan ? `$${plan.amount}` : "—"}</td>
                           <td style={{ fontFamily:"DM Mono", fontSize:11, padding:"10px 12px", color:"var(--muted2)", whiteSpace:"nowrap" }}>{fmtDate(u.created_at)}</td>
                           <td style={{ fontFamily:"DM Mono", fontSize:11, padding:"10px 12px", color:"var(--muted2)", whiteSpace:"nowrap" }}>{timeAgo(u.last_sign)}</td>
+                          <td style={{ padding:"10px 12px" }}>
+                            <button
+                              onClick={() => setConfirmDelete({ id:u.id, email:u.email })}
+                              disabled={actionLoading === u.id}
+                              style={{ fontFamily:"DM Mono", fontSize:9, padding:"3px 8px", borderRadius:6, border:"1px solid rgba(255,71,87,0.3)", background:"rgba(255,71,87,0.05)", color:"#ff4757", cursor:"pointer", whiteSpace:"nowrap" }}>
+                              {actionLoading === u.id ? "..." : "🗑 delete"}
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
@@ -234,7 +261,7 @@ export default function AdminPage() {
               <table style={{ width:"100%", borderCollapse:"collapse" }}>
                 <thead>
                   <tr style={{ background:"var(--bg3)" }}>
-                    {["Email","Plan","Monthly","Subscribed"].map(h => (
+                    {["Email","Plan","Monthly","Subscribed",""].map(h => (
                       <th key={h} style={{ ...lbl, padding:"8px 12px", textAlign:"left", whiteSpace:"nowrap", marginBottom:0 }}>{h}</th>
                     ))}
                   </tr>
@@ -251,6 +278,14 @@ export default function AdminPage() {
                         </td>
                         <td style={{ fontFamily:"DM Mono", fontSize:12, padding:"10px 12px", color:"var(--muted)" }}>{plan ? `$${plan.amount}` : "—"}</td>
                         <td style={{ fontFamily:"DM Mono", fontSize:11, padding:"10px 12px", color:"var(--muted2)", whiteSpace:"nowrap" }}>{fmtDate(s.subscribed_at)}</td>
+                        <td style={{ padding:"10px 12px" }}>
+                          <button
+                            onClick={() => handleUnsubscribe(s.email)}
+                            disabled={actionLoading === s.email}
+                            style={{ fontFamily:"DM Mono", fontSize:9, padding:"3px 8px", borderRadius:6, border:"1px solid rgba(255,165,0,0.3)", background:"rgba(255,165,0,0.05)", color:"#f59e0b", cursor:"pointer", whiteSpace:"nowrap" }}>
+                            {actionLoading === s.email ? "..." : "✕ unsub"}
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -372,7 +407,7 @@ export default function AdminPage() {
                 </div>
               )}
 
-              <button onClick={handleSendNewsletter} disabled={sending || !newsletter.subject || !newsletter.headline || !newsletter.body}
+              <button onClick={handleSendNewsletter} disabled={sending || !newsletter.subject || !newsletter.body}
                 style={{
                   width:"100%", padding:"14px 0", borderRadius:10, border:"none",
                   background: sending ? "var(--border)" : "var(--green)",
@@ -459,6 +494,27 @@ export default function AdminPage() {
         )}
 
       </div>
+    {/* Confirm delete modal */}
+    {confirmDelete && (
+      <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }} onClick={() => setConfirmDelete(null)}>
+        <div style={{ background:"white", borderRadius:16, padding:28, maxWidth:380, width:"100%", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }} onClick={e => e.stopPropagation()}>
+          <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:18, color:"#1a1a2e", marginBottom:8 }}>Delete user?</div>
+          <div style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", lineHeight:1.7, marginBottom:6 }}>
+            This will permanently delete:
+          </div>
+          <div style={{ fontFamily:"DM Mono", fontSize:12, color:"#ff4757", background:"rgba(255,71,87,0.04)", border:"1px solid rgba(255,71,87,0.15)", borderRadius:8, padding:"10px 14px", marginBottom:20 }}>
+            {confirmDelete.email}<br/>
+            <span style={{ fontSize:10, color:"var(--muted2)" }}>+ their plan, history, and email subscription</span>
+          </div>
+          <div style={{ display:"flex", gap:10 }}>
+            <button onClick={() => setConfirmDelete(null)} style={{ flex:1, fontFamily:"DM Sans", fontSize:13, padding:"10px", border:"1px solid var(--border)", borderRadius:8, cursor:"pointer", background:"var(--bg3)", color:"var(--muted)" }}>Cancel</button>
+            <button onClick={() => handleDeleteUser(confirmDelete.id, confirmDelete.email)} style={{ flex:1, fontFamily:"DM Sans", fontWeight:600, fontSize:13, padding:"10px", border:"none", borderRadius:8, cursor:"pointer", background:"#ff4757", color:"white" }}>
+              Delete forever
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 }
