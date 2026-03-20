@@ -587,6 +587,8 @@ export default function HomePage() {
         </div>
         <div style={{display:"flex",gap:20,flexWrap:"wrap",alignItems:"center"}}>
           <Link href="/learn" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>What are ETFs?</Link>
+          <Link href="/privacy" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>Privacy</Link>
+          <Link href="/terms" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>Terms</Link>
           <Link href="/login" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>Log in</Link>
           <Link href="/login?mode=signup" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--green)",fontWeight:500}}>Start free →</Link>
         </div>
