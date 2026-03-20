@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 // Returns for $50/$100/$150 at ~9% balanced rate (1mo/6mo/12mo)
 const PROJECTIONS = {
