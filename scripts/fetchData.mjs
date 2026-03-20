@@ -792,7 +792,8 @@ async function main() {
 
   // Update stock of the month (runs on 1st of month or manual trigger)
   const isFirstOfMonth = new Date().getDate() === 1;
-  if (isFirstOfMonth || process.argv.includes("--score-now")) {
+  const forceRun = process.argv.includes("--score-now") || process.argv.includes("--fetch-now");
+  if (isFirstOfMonth || forceRun) {
     await updateStockOfMonth();
   }
 

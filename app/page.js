@@ -42,6 +42,13 @@ const tape = [...ETFS,...ETFS,...ETFS];
 export default function HomePage() {
   const [amount, setAmount] = useState(100);
   const [isMob, setIsMob] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+  }, []);
   const p = PROJECTIONS[amount];
   useEffect(() => {
     const check = () => setIsMob(window.innerWidth < 680);
@@ -61,9 +68,10 @@ export default function HomePage() {
         <div style={{display:"flex",gap:"clamp(4px,2vw,20px)",alignItems:"center"}}>
           <Link href="/learn" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>What are ETFs?</Link>
           <Link href="/login" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>Log in</Link>
-          <Link href="/login?mode=signup" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"var(--green)",padding:"9px clamp(12px,2vw,20px)",borderRadius:8}}>
-            Start saving free →
-          </Link>
+          {isLoggedIn
+            ? <Link href="/dashboard" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"var(--green)",padding:"9px clamp(12px,2vw,20px)",borderRadius:8}}>My dashboard →</Link>
+            : <Link href="/login?mode=signup" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"var(--green)",padding:"9px clamp(12px,2vw,20px)",borderRadius:8}}>Start saving free →</Link>
+          }
         </div>
       </nav>
 

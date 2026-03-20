@@ -1,11 +1,15 @@
+// app/api/admin/unsubscribe-user/route.js
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
-export async function POST(req) {
-  // Verify admin session
-  const cookieStore = cookies();
+function isAdmin(cookieStore) {
   const session = cookieStore.get("admin_session");
-  if (!session?.value) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  return session?.value === process.env.ADMIN_PASSWORD;
+}
+
+export async function POST(req) {
+  const cookieStore = await cookies();
+  if (!isAdmin(cookieStore)) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { email } = await req.json();
   if (!email) return Response.json({ error: "Email required" }, { status: 400 });

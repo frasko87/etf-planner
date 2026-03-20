@@ -281,7 +281,7 @@ export default function DashboardPage() {
       // Load user's saved plan + monthly history
       const [planResult, historyResult] = await Promise.allSettled([
         supabase.from("user_plans").select("*").eq("user_id", user.id).single(),
-        supabase.from("user_monthly_actions").select("*").eq("user_id", user.id).order("month_key", { ascending:false }).limit(6),
+        supabase.from("user_monthly_actions").select("*").eq("user_id", user.id).order("month_key", { ascending:false }).limit(12),
       ]);
       const savedPlan = planResult.status === "fulfilled" ? planResult.value?.data : null;
       const history   = historyResult.status === "fulfilled" ? historyResult.value?.data : [];
