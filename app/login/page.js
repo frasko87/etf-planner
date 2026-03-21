@@ -23,9 +23,15 @@ function LoginForm() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error: err } = await supabase.auth.signUp({ email, password });
+        const { error: err } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+          },
+        });
         if (err) throw err;
-        setSuccess("Check your email to confirm your account, then log in.");
+        setSuccess("Check your email to confirm your account — you'll be taken straight to your dashboard.");
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) throw err;

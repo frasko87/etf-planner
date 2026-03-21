@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { createClient } from "../../lib/supabase/client";
+import { track } from "@/lib/analytics";
 
 const STEPS = ["welcome", "amount", "risk", "confirm"];
 
@@ -87,6 +88,30 @@ export default function Onboarding({ user, onComplete }) {
         });
       if (actionErr) throw actionErr;
 
+      // Fire Meta Pixel CompleteRegistration event
+      if (typeof window !== "undefined" && window.fbq) {
+        window.fbq("track", "CompleteRegistration", {
+          content_name: `${profile}_${amount}`,
+          currency: "USD",
+          value: amount,
+        });
+      }
+
+      // Save UTM attribution to user_plans
+      const utms = typeof window !== "undefined" && window.getUTMParams ? window.getUTMParams() : {};
+      if (Object.keys(utms).length > 0) {
+        await supabase.from("user_plans").update({ utm_data: utms }).eq("user_id", user.id);
+      }
+
+      // Track referral if came via ref link
+      if (utms.ref) {
+        await fetch("/api/referral", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: utms.ref, newUserId: user.id, newUserEmail: user.email }),
+        }).catch(() => {});
+      }
+
       // Register in email_preferences for newsletters
       await supabase.from("email_preferences").upsert({
         email:        user.email,
@@ -104,6 +129,7 @@ export default function Onboarding({ user, onComplete }) {
         body: JSON.stringify({ userId: user.id }),
       }).catch(()=>{}); // fire and forget
 
+      track("onboarding_completed", { profile, amount });
       setDone(true);
     } catch (e) {
       setError(e.message || "Something went wrong. Please try again.");
@@ -130,6 +156,75 @@ export default function Onboarding({ user, onComplete }) {
     width: "100%",
     maxWidth: 520,
   };
+
+  // ── Done screen (must be before step returns) ──────────────────────────────
+  if (done) {
+    const pc = PROFILES[profile];
+    const annualPassive = { conservative: 877, balanced: 1755, aggressive: 2632 }[profile] || 1755;
+    const shareText = `I just set up my free ETF investment plan on ETF.PLAN 📊 Investing $${amount}/month in ${pc.label} ETFs. In 10 years this generates +$${annualPassive.toLocaleString()}/yr passively. Free plan → https://etfplan.app`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+
+    return (
+      <div style={stepStyle}>
+        <div style={{ ...card, maxWidth:520, textAlign:"center" }}>
+          <div style={{ fontSize:56, marginBottom:16 }}>✅</div>
+          <div className="pixel" style={{ fontSize:11, color:"var(--text)", marginBottom:16 }}>ETF<span style={{ color:"var(--green)" }}>.</span>PLAN</div>
+          <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(22px,4vw,30px)", color:"var(--text)", marginBottom:8, letterSpacing:"-0.5px" }}>
+            Step 1 done. Now buy your ETFs.
+          </h2>
+          <p style={{ fontFamily:"DM Sans", fontSize:15, color:"var(--muted)", lineHeight:1.7, marginBottom:20 }}>
+            Your {pc.icon} <strong>{pc.label} plan</strong> is set up. Next step is to actually buy the ETFs — takes 5 minutes on any free broker app.
+          </p>
+
+          {/* What to do next */}
+          <div style={{ background:"var(--text)", borderRadius:14, padding:"20px", marginBottom:16, textAlign:"left" }}>
+            <div className="mono" style={{ fontSize:10, color:"rgba(255,255,255,0.35)", letterSpacing:1, marginBottom:14 }}>YOUR ACTION PLAN RIGHT NOW</div>
+            {[
+              { n:"1", t:"Open your broker app", d:"Robinhood, eToro, Interactive Brokers — all free. Don't have one? We'll show you.", link:"/guide/platforms", cta:"See platforms →" },
+              { n:"2", t:"Buy these ETFs this month", d:`${pc.etfs.map((t,i)=>`${t} $${Math.round(amount*(pc.allocs[i]||25)/100)}`).join(" · ")}`, link:null, cta:null },
+              { n:"3", t:"Come back and mark as bought", d:"Your dashboard tracks real gains from the moment you mark it. That's when the magic starts.", link:null, cta:null },
+            ].map((s,i)=>(
+              <div key={i} style={{ display:"flex", gap:14, marginBottom:i<2?14:0, paddingBottom:i<2?14:0, borderBottom:i<2?"1px solid rgba(255,255,255,0.06)":"none" }}>
+                <div style={{ width:28, height:28, borderRadius:"50%", background:"var(--green)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <span style={{ fontFamily:"DM Mono", fontSize:11, color:"white", fontWeight:700 }}>{s.n}</span>
+                </div>
+                <div>
+                  <div style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:14, color:"white", marginBottom:3 }}>{s.t}</div>
+                  <div style={{ fontFamily:"DM Sans", fontSize:12, color:"rgba(255,255,255,0.45)", lineHeight:1.6 }}>{s.d}</div>
+                  {s.link && <a href={s.link} style={{ fontFamily:"DM Mono", fontSize:11, color:"var(--green)", textDecoration:"none", marginTop:4, display:"inline-block" }}>{s.cta}</a>}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Share */}
+          <div style={{ background:"var(--bg3)", borderRadius:14, padding:"16px 20px", marginBottom:16, border:"1px solid var(--border)" }}>
+            <p style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", marginBottom:12, lineHeight:1.6 }}>
+              💬 Know someone with money sitting in a savings account doing nothing?
+            </p>
+            <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
+              <a href={whatsappUrl} target="_blank" rel="noreferrer" style={{ display:"flex", alignItems:"center", gap:8, fontFamily:"DM Sans", fontWeight:600, fontSize:14, color:"white", background:"#25d366", padding:"10px 20px", borderRadius:10, textDecoration:"none" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                WhatsApp
+              </a>
+              <a href={twitterUrl} target="_blank" rel="noreferrer" style={{ display:"flex", alignItems:"center", gap:8, fontFamily:"DM Sans", fontWeight:600, fontSize:14, color:"white", background:"#000", padding:"10px 20px", borderRadius:10, textDecoration:"none" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                X / Twitter
+              </a>
+            </div>
+          </div>
+
+          <button onClick={() => onComplete({ profile, amount })} style={{ width:"100%", padding:"16px 0", borderRadius:12, border:"none", background:"var(--green)", color:"white", fontFamily:"DM Sans", fontWeight:700, fontSize:16, cursor:"pointer", boxShadow:"0 4px 20px rgba(0,185,107,0.3)" }}>
+            Go to my dashboard →
+          </button>
+          <p style={{ fontFamily:"DM Mono", fontSize:10, color:"var(--muted2)", textAlign:"center", marginTop:12 }}>
+            Not financial advice · Your plan is saved and ready
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // ── Step 0: Welcome ───────────────────────────────────────────────────────
   if (step === 0) return (
@@ -223,7 +318,7 @@ export default function Onboarding({ user, onComplete }) {
           ))}
         </div>
 
-        <button onClick={() => setStep(2)} style={{
+        <button onClick={() => { setStep(2); track("onboarding_step_1", { amount }); }} style={{
           width:"100%", padding:"16px 0", borderRadius:12, border:"none",
           background:"var(--text)", color:"white", fontFamily:"DM Sans",
           fontWeight:700, fontSize:16, cursor:"pointer",
@@ -298,7 +393,7 @@ export default function Onboarding({ user, onComplete }) {
           }}>
             ← Back
           </button>
-          <button onClick={() => setStep(3)} style={{
+          <button onClick={() => { setStep(3); track("onboarding_step_2", { profile, amount }); }} style={{
             flex:2, padding:"14px 0", borderRadius:12, border:"none",
             background:pc.color, color:"white", fontFamily:"DM Sans",
             fontWeight:700, fontSize:16, cursor:"pointer",
@@ -426,98 +521,6 @@ export default function Onboarding({ user, onComplete }) {
       </div>
     </div>
   );
-
-  // ── Done screen ────────────────────────────────────────────────────────────
-  if (done) {
-    const pc = PROFILES[profile];
-    const annualPassive = { conservative: 877, balanced: 1755, aggressive: 2632 }[profile] || 1755;
-    const shareText = `I just set up my free ETF investment plan on ETF.PLAN 📊 Investing $${amount}/month in ${pc.label} ETFs. In 10 years this generates +$${annualPassive.toLocaleString()}/yr passively. Free plan → https://etfplan.app`;
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
-
-    return (
-      <div style={stepStyle}>
-        <div style={{ ...card, maxWidth:520, textAlign:"center" }}>
-          <div style={{ fontSize:56, marginBottom:16 }}>✅</div>
-          <div className="pixel" style={{ fontSize:11, color:"var(--text)", marginBottom:16 }}>ETF<span style={{ color:"var(--green)" }}>.</span>PLAN</div>
-          <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(22px,4vw,30px)", color:"var(--text)", marginBottom:8, letterSpacing:"-0.5px" }}>
-            Step 1 done. Now buy your ETFs.
-          </h2>
-          <p style={{ fontFamily:"DM Sans", fontSize:15, color:"var(--muted)", lineHeight:1.7, marginBottom:20 }}>
-            Your {pc.icon} <strong>{pc.label} plan</strong> is set up. Next step is to actually buy the ETFs — takes 5 minutes on any free broker app.
-          </p>
-
-          {/* What to do next — clear CTA */}
-          <div style={{ background:"var(--text)", borderRadius:14, padding:"20px", marginBottom:16, textAlign:"left" }}>
-            <div className="mono" style={{ fontSize:10, color:"rgba(255,255,255,0.35)", letterSpacing:1, marginBottom:14 }}>YOUR ACTION PLAN RIGHT NOW</div>
-            {[
-              { n:"1", t:"Open your broker app", d:"Robinhood, eToro, Interactive Brokers — all free. Don't have one? We'll show you.", link:"/guide/platforms", cta:"See platforms →" },
-              { n:"2", t:"Buy these ETFs this month", d:`${pc.etfs.map((t,i)=>`${t} $${Math.round(amount*(pc.allocs[i]||25)/100)}`).join(" · ")}`, link:null, cta:null },
-              { n:"3", t:"Come back and mark as bought", d:"Your dashboard tracks real gains from the moment you mark it. That's when the magic starts.", link:null, cta:null },
-            ].map((s,i)=>(
-              <div key={i} style={{ display:"flex", gap:14, marginBottom:i<2?14:0, paddingBottom:i<2?14:0, borderBottom:i<2?"1px solid rgba(255,255,255,0.06)":"none" }}>
-                <div style={{ width:28, height:28, borderRadius:"50%", background:"var(--green)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <span style={{ fontFamily:"DM Mono", fontSize:11, color:"white", fontWeight:700 }}>{s.n}</span>
-                </div>
-                <div>
-                  <div style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:14, color:"white", marginBottom:3 }}>{s.t}</div>
-                  <div style={{ fontFamily:"DM Sans", fontSize:12, color:"rgba(255,255,255,0.45)", lineHeight:1.6 }}>{s.d}</div>
-                  {s.link && <a href={s.link} style={{ fontFamily:"DM Mono", fontSize:11, color:"var(--green)", textDecoration:"none", marginTop:4, display:"inline-block" }}>{s.cta}</a>}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Share — softer, secondary */}
-          <div style={{ background:"var(--bg3)", borderRadius:14, padding:"16px 20px", marginBottom:16, border:"1px solid var(--border)" }}>
-            <p style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", marginBottom:12, lineHeight:1.6 }}>
-              💬 Know someone with money sitting in a savings account doing nothing?
-            </p>
-            <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
-              <a href={whatsappUrl} target="_blank" rel="noreferrer" style={{
-                display:"flex", alignItems:"center", gap:8,
-                fontFamily:"DM Sans", fontWeight:600, fontSize:14,
-                color:"white", background:"#25d366",
-                padding:"10px 20px", borderRadius:10, textDecoration:"none",
-              }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                WhatsApp
-              </a>
-              <a href={twitterUrl} target="_blank" rel="noreferrer" style={{
-                display:"flex", alignItems:"center", gap:8,
-                fontFamily:"DM Sans", fontWeight:600, fontSize:14,
-                color:"white", background:"#000",
-                padding:"10px 20px", borderRadius:10, textDecoration:"none",
-              }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                X / Twitter
-              </a>
-              <a href="https://www.instagram.com/etfplan/" target="_blank" rel="noreferrer" style={{
-                display:"flex", alignItems:"center", gap:8,
-                fontFamily:"DM Sans", fontWeight:600, fontSize:14,
-                color:"white", background:"linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)",
-                padding:"10px 20px", borderRadius:10, textDecoration:"none",
-              }}>
-                Follow @etfplan
-              </a>
-            </div>
-          </div>
-
-          <button onClick={() => onComplete({ profile, amount })} style={{
-            width:"100%", padding:"16px 0", borderRadius:12, border:"none",
-            background:"var(--green)", color:"white",
-            fontFamily:"DM Sans", fontWeight:700, fontSize:16, cursor:"pointer",
-            boxShadow:"0 4px 20px rgba(0,185,107,0.3)",
-          }}>
-            Go to my dashboard →
-          </button>
-          <p style={{ fontFamily:"DM Mono", fontSize:10, color:"var(--muted2)", textAlign:"center", marginTop:12 }}>
-            Not financial advice · You can change your plan any time
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return null;
 }
