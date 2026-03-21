@@ -343,6 +343,16 @@ export default function DashboardPage() {
       } catch(e) { /* table may not exist yet */ }
 
       setLoading(false);
+
+      // Load referral stats (non-blocking)
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.access_token) {
+          fetch("/api/referral", { headers: { "Authorization": `Bearer ${session.access_token}` } })
+            .then(r => r.json())
+            .then(d => { if (d.code) setReferral(d); })
+            .catch(() => {});
+        }
+      });
       } catch(e) {
         console.error("Dashboard load error:", e);
         setLoading(false);
@@ -446,6 +456,8 @@ export default function DashboardPage() {
   };
 
   const [markingBought, setMarkingBought] = useState(null);
+  const [referral, setReferral] = useState(null);
+  const [refCopied, setRefCopied] = useState(false);
 
   const handleMarkBought = async (monthKey, tickers) => {
     setMarkingBought(monthKey);
@@ -637,6 +649,22 @@ export default function DashboardPage() {
   const projs = { 1:{exp:project(amount,allocs,etfPool,1,false,pc.targetReturn),opt:project(amount,allocs,etfPool,1,true,pc.targetReturn)}, 6:{exp:project(amount,allocs,etfPool,6,false,pc.targetReturn),opt:project(amount,allocs,etfPool,6,true,pc.targetReturn)}, 12:{exp:project(amount,allocs,etfPool,12,false,pc.targetReturn),opt:project(amount,allocs,etfPool,12,true,pc.targetReturn)}, 60:{exp:project(amount,allocs,etfPool,60,false,pc.targetReturn),opt:project(amount,allocs,etfPool,60,true,pc.targetReturn)} };
   const pieData = curTickers.map(t=>({name:t,value:allocs[t]||0,color:ETF_META[t]?.color||"#888"}));
   const sc = STATUS_STYLE[ms.status] || STATUS_STYLE.CLOSED;
+
+  // Next scoring run — always at 4:05 PM ET (20:05 UTC)
+  const getNextScoringTime = () => {
+    const now = new Date();
+    const etNow = new Date(now.toLocaleString("en-US", { timeZone:"America/New_York" }));
+    const nextRun = new Date(etNow);
+    nextRun.setHours(16, 5, 0, 0);
+    if (etNow >= nextRun) nextRun.setDate(nextRun.getDate() + 1);
+    // Skip weekend
+    if (nextRun.getDay() === 6) nextRun.setDate(nextRun.getDate() + 2);
+    if (nextRun.getDay() === 0) nextRun.setDate(nextRun.getDate() + 1);
+    const diff = nextRun - etNow;
+    const h = Math.floor(diff/3600000);
+    const m = Math.floor((diff%3600000)/60000);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
 
   const card  = {background:"white",border:"1px solid var(--border)",borderRadius:16,padding:22,boxShadow:"var(--shadow2)"};
   const lbl   = {fontFamily:"DM Mono",fontSize:11,letterSpacing:2,color:"var(--muted2)",marginBottom:18,textTransform:"uppercase"};
@@ -845,9 +873,16 @@ export default function DashboardPage() {
                   <div style={{textAlign:"right"}}>
                     <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4}}>MONTHLY</div>
                     <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:36,color:"white",lineHeight:1}}>${amount}</div>
-                    <button onClick={()=>setShowPlanSwap(!showPlanSwap)} style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.4)",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:6,cursor:"pointer",marginTop:4,padding:"3px 8px"}}>
-                      {showPlanSwap ? "✕ cancel" : "change plan"}
-                    </button>
+                    <div style={{display:"flex",gap:6,marginTop:6,justifyContent:"flex-end",flexWrap:"wrap"}}>
+                      {[50,100,150].filter(v=>v!==amount).map(v=>(
+                        <button key={v} onClick={()=>handlePlanChange(risk,v)} style={{fontFamily:"DM Mono",fontSize:9,color:"rgba(255,255,255,0.4)",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:6,cursor:"pointer",padding:"3px 8px"}}>
+                          ${v}/mo
+                        </button>
+                      ))}
+                      <button onClick={()=>setShowPlanSwap(!showPlanSwap)} style={{fontFamily:"DM Mono",fontSize:9,color:"rgba(255,255,255,0.4)",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:6,cursor:"pointer",padding:"3px 8px"}}>
+                        {showPlanSwap ? "✕ cancel" : "change plan"}
+                      </button>
+                    </div>
                     {showPlanSwap && (
                       <div style={{marginTop:12,background:"rgba(255,255,255,0.06)",borderRadius:12,padding:"12px",border:"1px solid rgba(255,255,255,0.1)"}}>
                         <div className="mono" style={{fontSize:9,color:"rgba(255,255,255,0.3)",marginBottom:10,letterSpacing:1}}>SWITCH TO</div>
@@ -878,9 +913,26 @@ export default function DashboardPage() {
                 {/* This month's ETFs to buy */}
                 <div style={{marginBottom:16}}>
                   <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.35)",letterSpacing:1,marginBottom:10}}>
-                    BUY THIS MONTH — {new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"}).toUpperCase()}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span>BUY THIS MONTH — {new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"}).toUpperCase()}</span>
+                      <button onClick={()=>{
+                        const lines = curTickers.map(t=>{
+                          const pct = typeof allocs[t]==="number"?allocs[t]:parseInt(allocs[t])||0;
+                          return `${t}: $${Math.round(amount*pct/100)} (${pct}%)`;
+                        });
+                        navigator.clipboard.writeText(`My ETF.PLAN picks for ${new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"})}:
+${lines.join("
+")}
+
+Total: $${amount}/month — etfplan.app`);
+                        const btn = document.getElementById("copy-plan-btn");
+                        if(btn){btn.textContent="✓ Copied!";setTimeout(()=>{btn.textContent="Copy";},2000);}
+                      }} id="copy-plan-btn" style={{fontFamily:"DM Mono",fontSize:9,color:"rgba(255,255,255,0.4)",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:6,cursor:"pointer",padding:"3px 10px"}}>
+                        Copy
+                      </button>
+                    </div>
                   </div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,160px),1fr))",gap:8}}>
                     {curTickers.map((t,i)=>{
                       const pct   = typeof allocs[t]==="number" ? allocs[t] : parseInt(allocs[t])||0;
                       const meta  = ETF_META[t]||{color:"#888",name:t};
@@ -1412,7 +1464,50 @@ export default function DashboardPage() {
             </div>
           )}
 
-        {/* ── Market News ───────────────────────────────────────────────────── */}
+          {/* ── Refer a friend ─────────────────────────────────────────────────── */}
+          {referral && (
+            <div style={{background:"linear-gradient(135deg,#1a1a2e,#0d1117)",border:"1px solid rgba(0,185,107,0.2)",borderRadius:16,padding:"clamp(18px,3vw,24px)",marginBottom:20}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:16}}>
+                <div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                    <div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/>
+                    <span style={{fontFamily:"DM Mono",fontSize:11,letterSpacing:2,color:"rgba(255,255,255,0.4)"}}>REFER A FRIEND</span>
+                  </div>
+                  <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(16px,2.5vw,20px)",color:"white",marginBottom:4}}>
+                    Know someone losing money in a savings account?
+                  </div>
+                  <div style={{fontFamily:"DM Sans",fontSize:13,color:"rgba(255,255,255,0.45)",lineHeight:1.6}}>
+                    Share your link. It takes 10 seconds and could change their finances.
+                  </div>
+                </div>
+                {referral.signups > 0 && (
+                  <div style={{textAlign:"center",background:"rgba(0,185,107,0.1)",border:"1px solid rgba(0,185,107,0.2)",borderRadius:12,padding:"10px 16px"}}>
+                    <div style={{fontFamily:"DM Mono",fontSize:24,fontWeight:700,color:"var(--green)"}}>{referral.signups}</div>
+                    <div style={{fontFamily:"DM Sans",fontSize:11,color:"rgba(255,255,255,0.4)",marginTop:2}}>friends joined</div>
+                  </div>
+                )}
+              </div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <div style={{flex:1,minWidth:180,background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"10px 14px",fontFamily:"DM Mono",fontSize:12,color:"rgba(255,255,255,0.5)",border:"1px solid rgba(255,255,255,0.08)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  etfplan.app/?ref={referral.code}
+                </div>
+                <button onClick={()=>{
+                  navigator.clipboard.writeText(referral.referralLink);
+                  setRefCopied(true);
+                  setTimeout(()=>setRefCopied(false),2000);
+                }} style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,padding:"10px 20px",background:refCopied?"rgba(0,185,107,0.3)":"var(--green)",color:"white",border:"none",borderRadius:10,cursor:"pointer",whiteSpace:"nowrap"}}>
+                  {refCopied ? "✓ Copied!" : "Copy link"}
+                </button>
+                <a href={`https://wa.me/?text=${encodeURIComponent("Hey! I use ETF.PLAN to build passive income from $100/month — it's free: "+referral.referralLink)}`}
+                  target="_blank" rel="noreferrer"
+                  style={{display:"flex",alignItems:"center",gap:6,fontFamily:"DM Sans",fontWeight:600,fontSize:13,padding:"10px 16px",background:"#25d366",color:"white",borderRadius:10,textDecoration:"none",whiteSpace:"nowrap"}}>
+                  WhatsApp
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* ── Market News ───────────────────────────────────────────────────── */}
           <div style={{background:"var(--bg3)",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(16px,3vw,22px)",marginBottom:0}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -1491,14 +1586,20 @@ export default function DashboardPage() {
               </div>
               {/* Instagram link in footer */}
               <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",marginTop:16,paddingTop:14,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
-                <a href="https://www.instagram.com/etfplan/" target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:7,fontFamily:"DM Sans",fontSize:12,color:"rgba(255,255,255,0.4)",textDecoration:"none"}}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2"/>
-                    <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2"/>
-                    <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
-                  </svg>
-                  Follow @etfplan on Instagram
-                </a>
+                <div style={{display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+                  <a href="https://www.instagram.com/etfplan/" target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:7,fontFamily:"DM Sans",fontSize:12,color:"rgba(255,255,255,0.4)",textDecoration:"none"}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2"/>
+                      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2"/>
+                      <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+                    </svg>
+                    @etfplan
+                  </a>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{fontFamily:"DM Mono",fontSize:9,color:"rgba(255,255,255,0.25)",letterSpacing:1}}>NEXT SCORING</span>
+                    <span style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)",fontWeight:600}}>{getNextScoringTime()}</span>
+                  </div>
+                </div>
                 <span style={{fontFamily:"DM Mono",fontSize:9,color:"rgba(255,255,255,0.2)"}}>Not financial advice · Past performance ≠ future results</span>
               </div>
             </div>
