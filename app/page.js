@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { track } from "@/lib/analytics";
 
 // Passive income story — annual numbers + real-world comparisons
 const PASSIVE = {
@@ -51,7 +52,8 @@ const ETFS = [
   { ticker:"SCHD", name:"Dividends",    ret:"+12.0%", color:"#c9a84c", risk:"Low", positive:true  },
 ];
 
-const tape = [...ETFS,...ETFS,...ETFS];
+// Need enough copies to fill any screen width seamlessly
+const tape = [...ETFS,...ETFS,...ETFS,...ETFS,...ETFS,...ETFS];
 
 export default function HomePage() {
   const [amount, setAmount] = useState(100);
@@ -102,12 +104,12 @@ export default function HomePage() {
         <div style={{display:"flex",gap:40,animation:"ticker 28s linear infinite",width:"max-content"}}>
           {tape.map((e,i)=>{
             const live = liveEtfs?.find(l=>l.ticker===e.ticker);
-            const ret = live ? (live.change_pct >= 0 ? "+" : "") + (live.change_pct*100).toFixed(2)+"%" : e.ret;
-            const positive = live ? live.change_pct >= 0 : e.positive !== false;
+            // Show CAGR (long-term) not daily change — always positive for these ETFs
+            const ret = live?.cagr ? "+" + (live.cagr*100).toFixed(1)+"%" : e.ret;
             return (
               <div key={i} style={{display:"flex",alignItems:"center",gap:10,whiteSpace:"nowrap"}}>
                 <span className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.45)",letterSpacing:0.5}}>{e.ticker}</span>
-                <span className="mono" style={{fontSize:11,color:positive?"#00ff88":"#ff6b6b",fontWeight:500}}>{ret}</span>
+                <span className="mono" style={{fontSize:11,color:"#00ff88",fontWeight:500}}>{ret}</span>
                 <span className="mono" style={{fontSize:9,color:"rgba(255,255,255,0.15)"}}>|</span>
               </div>
             );
@@ -135,7 +137,7 @@ export default function HomePage() {
         </p>
 
         <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap",marginBottom:16,padding:"0 clamp(0px,2vw,20px)"}}>
-          <Link href="/login?mode=signup" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:700,fontSize:16,color:"white",background:"var(--green)",padding:"15px clamp(24px,4vw,40px)",borderRadius:12,boxShadow:"0 4px 24px rgba(0,185,107,0.35)"}}>
+          <Link href="/login?mode=signup" onClick={()=>track("cta_click", { location: "hero", text: "start_saving" })} style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:700,fontSize:16,color:"white",background:"var(--green)",padding:"15px clamp(24px,4vw,40px)",borderRadius:12,boxShadow:"0 4px 24px rgba(0,185,107,0.35)"}}>
             Start saving smarter — free →
           </Link>
           <Link href="/learn" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:400,fontSize:15,color:"var(--text)",background:"white",border:"1px solid var(--border)",padding:"15px clamp(16px,3vw,28px)",borderRadius:12,boxShadow:"var(--shadow)"}}>
@@ -234,7 +236,7 @@ export default function HomePage() {
           {/* Amount selector */}
           <div style={{display:"flex",gap:8,background:"var(--bg3)",borderRadius:12,padding:4,marginBottom:28}}>
             {[50,100,150].map(v=>(
-              <button key={v} onClick={()=>setAmount(v)} style={{
+              <button key={v} onClick={()=>{ setAmount(v); track("calculator_interaction", { amount: v }); }} style={{
                 flex:1, padding:"clamp(11px,2vw,14px) 0", borderRadius:9, border:"none", cursor:"pointer",
                 transition:"all 0.15s",
                 background: amount===v ? "white" : "transparent",
@@ -639,7 +641,7 @@ export default function HomePage() {
           <p style={{fontFamily:"DM Sans",fontSize:15,color:"rgba(255,255,255,0.5)",marginBottom:32,lineHeight:1.7}}>
             Free account. No credit card. Your first plan in 2 minutes.
           </p>
-          <Link href="/login?mode=signup" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:700,fontSize:17,color:"white",background:"var(--green)",padding:"16px clamp(28px,5vw,48px)",borderRadius:12,boxShadow:"0 6px 28px rgba(0,185,107,0.4)"}}>
+          <Link href="/login?mode=signup" onClick={()=>track("cta_click", { location: "final_cta", text: "create_account" })} style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:700,fontSize:17,color:"white",background:"var(--green)",padding:"16px clamp(28px,5vw,48px)",borderRadius:12,boxShadow:"0 6px 28px rgba(0,185,107,0.4)"}}>
             Create free account →
           </Link>
           <p className="mono" style={{fontSize:11,color:"rgba(255,255,255,0.2)",marginTop:16}}>

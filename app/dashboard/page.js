@@ -342,6 +342,7 @@ export default function DashboardPage() {
         if (stockData) setStockOfMonth(stockData);
       } catch(e) { /* table may not exist yet */ }
 
+      track("dashboard_visit", { profile: planData?.profile || "unknown" });
       setLoading(false);
 
       // Load referral stats (non-blocking)
@@ -445,13 +446,27 @@ export default function DashboardPage() {
   };
 
   const handlePlanChange = async (newProfile, newAmount) => {
+    track("plan_changed", { from_profile: risk, to_profile: newProfile, from_amount: amount, to_amount: newAmount });
+
+    // Update local state immediately
     setRisk(newProfile);
     setAmount(newAmount);
+    setShowPlanSwap(false);
+
+    // Save to DB
     await supabase.from("user_plans").upsert({
       user_id: user.id, profile: newProfile, amount: newAmount,
       updated_at: new Date().toISOString(),
     });
     setUserPlan({ profile: newProfile, amount: newAmount });
+
+    // Reload selections so new plan ETFs show immediately
+    const { data: sels } = await supabase
+      .from("weekly_selections").select("*").eq("is_current", true);
+    const selByProfile = {};
+    (sels || []).forEach(s => { selByProfile[s.profile] = s; });
+    setSelections(selByProfile);
+
     await createMonthlyActionIfNeeded(newProfile, newAmount);
   };
 
@@ -1507,6 +1522,7 @@ export default function DashboardPage() {
                 </div>
                 <button onClick={()=>{
                   navigator.clipboard.writeText(referral.referralLink);
+                  track("referral_share", { method: "copy" });
                   setRefCopied(true);
                   setTimeout(()=>setRefCopied(false),2000);
                 }} style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,padding:"10px 20px",background:refCopied?"rgba(0,185,107,0.3)":"var(--green)",color:"white",border:"none",borderRadius:10,cursor:"pointer",whiteSpace:"nowrap"}}>
