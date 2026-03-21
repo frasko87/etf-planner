@@ -918,15 +918,13 @@ export default function DashboardPage() {
                       <button onClick={()=>{
                         const lines = curTickers.map(t=>{
                           const pct = typeof allocs[t]==="number"?allocs[t]:parseInt(allocs[t])||0;
-                          return `${t}: $${Math.round(amount*pct/100)} (${pct}%)`;
+                          return t+": $"+Math.round(amount*pct/100)+" ("+pct+"%)";
                         });
-                        navigator.clipboard.writeText(`My ETF.PLAN picks for ${new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"})}:
-${lines.join("
-")}
-
-Total: $${amount}/month — etfplan.app`);
+                        const header = "My ETF.PLAN picks for "+new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"})+":";
+                        const text = header+"\n"+lines.join("\n")+"\n\nTotal: $"+amount+"/month - etfplan.app";
+                        navigator.clipboard.writeText(text);
                         const btn = document.getElementById("copy-plan-btn");
-                        if(btn){btn.textContent="✓ Copied!";setTimeout(()=>{btn.textContent="Copy";},2000);}
+                        if(btn){btn.textContent="Copied!";setTimeout(()=>{btn.textContent="Copy";},2000);}
                       }} id="copy-plan-btn" style={{fontFamily:"DM Mono",fontSize:9,color:"rgba(255,255,255,0.4)",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:6,cursor:"pointer",padding:"3px 10px"}}>
                         Copy
                       </button>
