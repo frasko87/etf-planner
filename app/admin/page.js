@@ -237,6 +237,37 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* Conversion Funnel */}
+            {(data?.funnel || []).length > 0 && (
+              <div style={{ ...card, marginBottom:16 }}>
+                <div style={lbl}>CONVERSION FUNNEL</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:8 }}>
+                  {(data.funnel || []).map((step, i) => (
+                    <div key={i}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                        <span style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--text)" }}>{step.label}</span>
+                        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                          <span style={{ fontFamily:"DM Mono", fontSize:12, color:"var(--green)", fontWeight:600 }}>{step.count.toLocaleString()}</span>
+                          <span style={{ fontFamily:"DM Mono", fontSize:11, color:"var(--muted2)", minWidth:36, textAlign:"right" }}>{step.pct}%</span>
+                        </div>
+                      </div>
+                      <div style={{ height:6, background:"var(--bg3)", borderRadius:3, overflow:"hidden" }}>
+                        <div style={{ height:"100%", width:`${step.pct}%`, background: i===0?"#3b82f6": i===1?"var(--green)": i===2?"#c9a84c":"#8b5cf6", borderRadius:3, transition:"width 0.6s ease" }}/>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {data.funnel[1] && data.funnel[0] && (
+                  <div style={{ marginTop:14, padding:"10px 14px", background:"var(--bg3)", borderRadius:8 }}>
+                    <span style={{ fontFamily:"DM Sans", fontSize:12, color:"var(--muted)" }}>
+                      {100 - data.funnel[1].pct}% of signups don't complete onboarding —{" "}
+                      <strong style={{ color:"var(--text)" }}>biggest drop-off point</strong>
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Growth chart */}
             <div style={{ ...card, marginBottom:16 }}>
               <div style={lbl}>WEEKLY SIGNUPS — LAST 12 WEEKS</div>

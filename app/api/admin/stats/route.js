@@ -74,6 +74,26 @@ export async function GET() {
     .slice(0, 20)
     .map(u => ({ id: u.id, email: u.email, created_at: u.created_at, last_sign: u.last_sign_in_at }));
 
+  // Funnel: signups → plans → purchases → newsletter
+  const usersWithPlan    = new Set((plans || []).map(p => p.user_id));
+  const usersWithPurchase = new Set(
+    (await supabase.from("user_monthly_actions")
+      .select("user_id")
+      .not("entry_prices", "is", null)
+      .then(r => r.data || [])
+    ).map(a => a.user_id)
+  );
+  const totalUsers = allUsers.length;
+  const totalWithPlan = usersWithPlan.size;
+  const totalWithPurchase = usersWithPurchase.size;
+
+  const funnel = [
+    { label: "Visited & signed up",  count: totalUsers,                     pct: 100 },
+    { label: "Completed onboarding", count: totalWithPlan,                  pct: totalUsers ? Math.round(totalWithPlan/totalUsers*100) : 0 },
+    { label: "Made first purchase",  count: totalWithPurchase,              pct: totalUsers ? Math.round(totalWithPurchase/totalUsers*100) : 0 },
+    { label: "Newsletter subscribers", count: totalSubs || 0,               pct: totalUsers ? Math.round((totalSubs||0)/totalUsers*100) : 0 },
+  ];
+
   return Response.json({
     stats: {
       totalUsers:   allUsers.length,
@@ -92,5 +112,6 @@ export async function GET() {
     weeklyGrowth:   weeklyGrowth,
     broadcastLogs:  broadcastLogs || [],
     overrides:      overrides || [],
+    funnel,
   });
 }
