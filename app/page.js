@@ -57,11 +57,19 @@ export default function HomePage() {
   const [amount, setAmount] = useState(100);
   const [isMob, setIsMob] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [liveEtfs, setLiveEtfs] = useState(null);
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsLoggedIn(!!session);
     });
+    // Fetch live ETF prices for ticker tape
+    supabase
+      .from("etf_pool")
+      .select("ticker, price, change_pct, cagr")
+      .in("ticker", ["QQQ","VTI","VOO","SCHD","VGT","TQQQ","BND","ARKK"])
+      .then(({ data }) => { if (data?.length) setLiveEtfs(data); });
   }, []);
   const p = PASSIVE[amount];
   useEffect(() => {
@@ -92,13 +100,18 @@ export default function HomePage() {
       {/* ── Ticker tape ─────────────────────────────────────────────────────── */}
       <div style={{overflow:"hidden",background:"var(--text)",padding:"9px 0"}}>
         <div style={{display:"flex",gap:40,animation:"ticker 28s linear infinite",width:"max-content"}}>
-          {tape.map((e,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:10,whiteSpace:"nowrap"}}>
-              <span className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.45)",letterSpacing:0.5}}>{e.ticker}</span>
-              <span className="mono" style={{fontSize:11,color:e.positive!==false?"#00ff88":"#ff6b6b",fontWeight:500}}>{e.ret}</span>
-              <span className="mono" style={{fontSize:9,color:"rgba(255,255,255,0.15)"}}>|</span>
-            </div>
-          ))}
+          {tape.map((e,i)=>{
+            const live = liveEtfs?.find(l=>l.ticker===e.ticker);
+            const ret = live ? (live.change_pct >= 0 ? "+" : "") + (live.change_pct*100).toFixed(2)+"%" : e.ret;
+            const positive = live ? live.change_pct >= 0 : e.positive !== false;
+            return (
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,whiteSpace:"nowrap"}}>
+                <span className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.45)",letterSpacing:0.5}}>{e.ticker}</span>
+                <span className="mono" style={{fontSize:11,color:positive?"#00ff88":"#ff6b6b",fontWeight:500}}>{ret}</span>
+                <span className="mono" style={{fontSize:9,color:"rgba(255,255,255,0.15)"}}>|</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 

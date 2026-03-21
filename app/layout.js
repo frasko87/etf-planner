@@ -40,6 +40,7 @@ export const metadata = {
 };
 
 import CookieBanner from "@/components/CookieBanner";
+import { Analytics } from "@vercel/analytics/react";
 
 export default function RootLayout({ children }) {
   return (
@@ -47,6 +48,7 @@ export default function RootLayout({ children }) {
       <body>
         {children}
         <CookieBanner />
+        <Analytics />
       </body>
     </html>
   );
