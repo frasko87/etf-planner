@@ -793,38 +793,52 @@ export default function DashboardPage() {
 
           {/* ── New user CTA — shows if first visit ─────────────────────────── */}
           {monthlyHistory.length === 0 && !userPlan?.has_bought && (
-            <div style={{
-              background:"linear-gradient(135deg,rgba(0,185,107,0.1),rgba(0,185,107,0.03))",
-              border:"2px solid rgba(0,185,107,0.3)",borderRadius:16,
-              padding:"clamp(20px,3vw,28px)",marginBottom:20,
-              display:"flex",justifyContent:"space-between",alignItems:"center",
-              flexWrap:"wrap",gap:16,
-            }}>
-              <div style={{display:"flex",alignItems:"center",gap:16,flex:1}}>
-                <div style={{width:52,height:52,borderRadius:14,background:"rgba(0,185,107,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>
-                  🛒
-                </div>
-                <div>
-                  <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(16px,3vw,20px)",color:"var(--text)",margin:"0 0 4px",letterSpacing:"-0.3px"}}>
-                    Ready to make your first purchase?
-                  </h3>
-                  <p style={{fontFamily:"DM Sans",fontSize:"clamp(12px,2vw,14px)",color:"var(--muted)",margin:0,lineHeight:1.6}}>
-                    Your plan is set. Follow our step-by-step guide to buy your first ETFs in 15 minutes.
-                  </p>
-                </div>
+            <div style={{background:"var(--text)",borderRadius:16,padding:"clamp(20px,3vw,28px)",marginBottom:20}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:18}}>
+                <div style={{height:3,width:20,background:"var(--green)",borderRadius:2}}/>
+                <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.4)",letterSpacing:2}}>YOUR FIRST 3 STEPS</div>
               </div>
-              <button onClick={()=>setView("library")} style={{
-                fontFamily:"DM Sans",fontWeight:700,fontSize:14,color:"white",
-                background:"var(--green)",border:"none",borderRadius:10,
-                padding:"12px 22px",cursor:"pointer",flexShrink:0,
-                boxShadow:"0 4px 16px rgba(0,185,107,0.3)",whiteSpace:"nowrap",
-              }}>
-                How to buy ETFs →
-              </button>
+              <h3 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(18px,3vw,24px)",color:"white",marginBottom:6,letterSpacing:"-0.3px",lineHeight:1.2}}>
+                Your plan is live. Now make it real.
+              </h3>
+              <p style={{fontFamily:"DM Sans",fontSize:14,color:"rgba(255,255,255,0.45)",marginBottom:20,lineHeight:1.7}}>
+                A plan without action is just a number. Here's exactly what to do next — takes 15 minutes.
+              </p>
+              <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+                {[
+                  { n:"1", icon:"🏦", t:"Open a free broker account", d:"Robinhood, eToro or Interactive Brokers — all free to open, commission-free on ETFs.", cta:"Compare platforms →", link:"/guide/platforms", done:false },
+                  { n:"2", icon:"💸", t:`Buy your ${pc.label} ETFs this month`, d:(() => { const names={VOO:"S&P 500",VTI:"Total Market",QQQ:"Nasdaq-100",SCHD:"Dividends",BND:"Bonds",VGT:"Tech",TQQQ:"3x Nasdaq",ARKK:"Innovation"}; return curTickers.map(t=>`${t} (${names[t]||"ETF"}) — $${Math.round(amount*(allocs[t]||25)/100)}`).join(", "); })(), cta:"Open broker & buy →", link:"/guide/platforms", done:false },
+                  { n:"3", icon:"✅", t:"Come back and mark as bought", d:"Once you've bought, tap 'Mark as bought' below. That's when we start tracking your real gains.", cta:null, link:null, done:false },
+                ].map((s,i)=>(
+                  <div key={i} style={{display:"flex",gap:14,padding:"14px 16px",background:"rgba(255,255,255,0.04)",borderRadius:12,border:"1px solid rgba(255,255,255,0.07)",alignItems:"flex-start"}}>
+                    <div style={{width:32,height:32,borderRadius:"50%",background:"var(--green)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+                      <span style={{fontFamily:"DM Mono",fontSize:12,color:"white",fontWeight:700}}>{s.n}</span>
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:"clamp(13px,2vw,15px)",color:"white",marginBottom:3}}>{s.t}</div>
+                      <div style={{fontFamily:"DM Sans",fontSize:"clamp(11px,1.8vw,13px)",color:"rgba(255,255,255,0.45)",lineHeight:1.6}}>{s.d}</div>
+                      {s.link && (
+                        <a href={s.link} style={{fontFamily:"DM Mono",fontSize:11,color:"var(--green)",textDecoration:"none",marginTop:6,display:"inline-block"}}>
+                          {s.cta}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                <a href="/guide/platforms" style={{fontFamily:"DM Sans",fontWeight:700,fontSize:14,color:"white",background:"var(--green)",padding:"12px 22px",borderRadius:10,textDecoration:"none",boxShadow:"0 4px 16px rgba(0,185,107,0.3)",whiteSpace:"nowrap"}}>
+                  Open a broker account →
+                </a>
+                <button onClick={()=>setView("library")} style={{fontFamily:"DM Sans",fontWeight:500,fontSize:14,color:"rgba(255,255,255,0.5)",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",padding:"12px 20px",borderRadius:10,cursor:"pointer",whiteSpace:"nowrap"}}>
+                  Learn about ETFs first
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Market status */}
+          {/* Market status — only show once user has made a purchase */}
+          {(monthlyHistory.length > 0 || userPlan?.has_bought) && (
           <div style={{background:sc.bg,border:`1.5px solid ${sc.border}`,borderRadius:16,padding:"clamp(16px,3vw,24px) clamp(16px,3vw,28px)",marginBottom:24,boxShadow:"var(--shadow)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16}}>
               <div>
@@ -855,6 +869,8 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+
+          )}
 
           {/* ── Returning user: Your Plan summary ──────────────────────────── */}
           {userPlan ? (

@@ -11,7 +11,9 @@ const PROFILES = {
     etfs:["BND","SCHD","VTI","VOO"],
     allocs:[40,30,20,10],
     risk:"Very Low",
-    gain5yr: { 50:460, 100:920, 150:1379 },
+    gain5yr:    { 50:460,  100:920,  150:1379 },
+    port5yr:    { 50:3460, 100:6920, 150:10379 },
+    passive5yr: { 50:173,  100:346,  150:519 },
   },
   balanced: {
     icon:"⚖️", label:"Balanced", rate:"~9%/yr", color:"#c9a84c",
@@ -19,7 +21,9 @@ const PROFILES = {
     etfs:["VOO","VTI","QQQ","SCHD"],
     allocs:[40,25,25,10],
     risk:"Low–Med",
-    gain5yr: { 50:799, 100:1599, 150:2398 },
+    gain5yr:    { 50:799,  100:1599, 150:2398 },
+    port5yr:    { 50:3799, 100:7599, 150:11398 },
+    passive5yr: { 50:342,  100:684,  150:1026 },
   },
   aggressive: {
     icon:"🚀", label:"Aggressive", rate:"~16%/yr", color:"#ff4757",
@@ -27,7 +31,9 @@ const PROFILES = {
     etfs:["QQQ","VGT","TQQQ","ARKK"],
     allocs:[35,25,25,15],
     risk:"Medium",
-    gain5yr: { 50:1612, 100:3225, 150:4837 },
+    gain5yr:    { 50:1612, 100:3225, 150:4837 },
+    port5yr:    { 50:4612, 100:9225, 150:13837 },
+    passive5yr: { 50:738,  100:1476, 150:2214 },
   },
 };
 
@@ -275,9 +281,9 @@ export default function Onboarding({ user, onComplete }) {
                   </div>
                 </div>
                 <div style={{ textAlign:"right", flexShrink:0 }}>
-                  <div style={{ fontFamily:"DM Mono", fontSize:10, color:"var(--muted2)", marginBottom:2 }}>5yr gain</div>
+                  <div style={{ fontFamily:"DM Mono", fontSize:10, color:"var(--muted2)", marginBottom:2 }}>earns passively/yr after 5yr</div>
                   <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:20, color:p.color }}>
-                    +{fmt(p.gain5yr[amount])}
+                    +{fmt(p.passive5yr?.[amount] || Math.round(p.gain5yr[amount]*0.43))}/yr
                   </div>
                 </div>
               </button>
@@ -343,9 +349,9 @@ export default function Onboarding({ user, onComplete }) {
 
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:8, marginBottom:16 }}>
             {[
-              { l:"12 months", v:fmt(amount * 12 * (1 + parseFloat(pc.rate.replace(/[^0-9.]/g,"")) / 100 * 0.5)) },
-              { l:"5yr gain",  v:"+"+fmt(pc.gain5yr[amount]) },
-              { l:"Risk",      v:pc.risk },
+              { l:"After 12 months", v:fmt((() => { const r=parseFloat(pc.rate.replace(/[^0-9.]/g,""))/100/12; let t=0; for(let i=0;i<12;i++) t=(t+amount)*(1+r); return t; })()) },
+              { l:"Portfolio at 5yr", v:fmt(pc.port5yr?.[amount] || pc.gain5yr[amount]+amount*60) },
+              { l:"Earns passively/yr", v:"+"+fmt(pc.passive5yr?.[amount] || Math.round(pc.gain5yr[amount]*0.43)) },
             ].map(s => (
               <div key={s.l} style={{ background:"rgba(255,255,255,0.06)", borderRadius:10, padding:"10px 12px", textAlign:"center" }}>
                 <div className="mono" style={{ fontSize:9, color:"rgba(255,255,255,0.35)", marginBottom:4 }}>{s.l.toUpperCase()}</div>
@@ -357,12 +363,18 @@ export default function Onboarding({ user, onComplete }) {
           <div>
             <div className="mono" style={{ fontSize:9, color:"rgba(255,255,255,0.4)", marginBottom:8 }}>THIS MONTH YOU'LL BUY</div>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-              {pc.etfs.map((t, i) => (
-                <div key={t} style={{ background:"rgba(255,255,255,0.08)", borderRadius:8, padding:"6px 12px", display:"flex", gap:6, alignItems:"center" }}>
-                  <span style={{ fontFamily:"DM Mono", fontSize:12, color:"white", fontWeight:500 }}>{t}</span>
-                  <span style={{ fontFamily:"DM Mono", fontSize:10, color:pc.color }}>${Math.round(amount * (pc.allocs[i] || Math.floor(100/pc.etfs.length)) / 100)}</span>
+              {pc.etfs.map((t, i) => {
+                const names = {VOO:"S&P 500",VTI:"Total Market",QQQ:"Nasdaq-100",SCHD:"Dividends",BND:"Bonds",VGT:"Tech",TQQQ:"3x Nasdaq",ARKK:"Innovation"};
+                return (
+                <div key={t} style={{ background:"rgba(255,255,255,0.08)", borderRadius:8, padding:"8px 12px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8 }}>
+                  <div>
+                    <span style={{ fontFamily:"DM Mono", fontSize:12, color:"white", fontWeight:600 }}>{t}</span>
+                    <span style={{ fontFamily:"DM Sans", fontSize:10, color:"rgba(255,255,255,0.35)", marginLeft:6 }}>{names[t]||""}</span>
+                  </div>
+                  <span style={{ fontFamily:"DM Mono", fontSize:12, color:pc.color, fontWeight:600 }}>${Math.round(amount * (pc.allocs[i] || Math.floor(100/pc.etfs.length)) / 100)}</span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -426,21 +438,40 @@ export default function Onboarding({ user, onComplete }) {
     return (
       <div style={stepStyle}>
         <div style={{ ...card, maxWidth:520, textAlign:"center" }}>
-          <div style={{ fontSize:56, marginBottom:16 }}>🎉</div>
+          <div style={{ fontSize:56, marginBottom:16 }}>✅</div>
           <div className="pixel" style={{ fontSize:11, color:"var(--text)", marginBottom:16 }}>ETF<span style={{ color:"var(--green)" }}>.</span>PLAN</div>
           <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(22px,4vw,30px)", color:"var(--text)", marginBottom:8, letterSpacing:"-0.5px" }}>
-            Your plan is live!
+            Step 1 done. Now buy your ETFs.
           </h2>
-          <p style={{ fontFamily:"DM Sans", fontSize:15, color:"var(--muted)", lineHeight:1.7, marginBottom:24 }}>
-            {pc.icon} <strong>{pc.label} plan</strong> · <strong>${amount}/month</strong><br/>
-            In 10 years your portfolio generates <strong style={{ color:"var(--green)" }}>+${annualPassive.toLocaleString()}/yr passively.</strong>
+          <p style={{ fontFamily:"DM Sans", fontSize:15, color:"var(--muted)", lineHeight:1.7, marginBottom:20 }}>
+            Your {pc.icon} <strong>{pc.label} plan</strong> is set up. Next step is to actually buy the ETFs — takes 5 minutes on any free broker app.
           </p>
 
-          {/* Share section */}
-          <div style={{ background:"var(--bg3)", borderRadius:14, padding:"20px", marginBottom:20, border:"1px solid var(--border)" }}>
-            <div className="mono" style={{ fontSize:10, color:"var(--muted2)", letterSpacing:1, marginBottom:12 }}>SHARE YOUR PLAN</div>
-            <p style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", marginBottom:16, lineHeight:1.6 }}>
-              Know someone who should be doing this? Share it — it takes 10 seconds and could change their finances.
+          {/* What to do next — clear CTA */}
+          <div style={{ background:"var(--text)", borderRadius:14, padding:"20px", marginBottom:16, textAlign:"left" }}>
+            <div className="mono" style={{ fontSize:10, color:"rgba(255,255,255,0.35)", letterSpacing:1, marginBottom:14 }}>YOUR ACTION PLAN RIGHT NOW</div>
+            {[
+              { n:"1", t:"Open your broker app", d:"Robinhood, eToro, Interactive Brokers — all free. Don't have one? We'll show you.", link:"/guide/platforms", cta:"See platforms →" },
+              { n:"2", t:"Buy these ETFs this month", d:`${pc.etfs.map((t,i)=>`${t} $${Math.round(amount*(pc.allocs[i]||25)/100)}`).join(" · ")}`, link:null, cta:null },
+              { n:"3", t:"Come back and mark as bought", d:"Your dashboard tracks real gains from the moment you mark it. That's when the magic starts.", link:null, cta:null },
+            ].map((s,i)=>(
+              <div key={i} style={{ display:"flex", gap:14, marginBottom:i<2?14:0, paddingBottom:i<2?14:0, borderBottom:i<2?"1px solid rgba(255,255,255,0.06)":"none" }}>
+                <div style={{ width:28, height:28, borderRadius:"50%", background:"var(--green)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <span style={{ fontFamily:"DM Mono", fontSize:11, color:"white", fontWeight:700 }}>{s.n}</span>
+                </div>
+                <div>
+                  <div style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:14, color:"white", marginBottom:3 }}>{s.t}</div>
+                  <div style={{ fontFamily:"DM Sans", fontSize:12, color:"rgba(255,255,255,0.45)", lineHeight:1.6 }}>{s.d}</div>
+                  {s.link && <a href={s.link} style={{ fontFamily:"DM Mono", fontSize:11, color:"var(--green)", textDecoration:"none", marginTop:4, display:"inline-block" }}>{s.cta}</a>}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Share — softer, secondary */}
+          <div style={{ background:"var(--bg3)", borderRadius:14, padding:"16px 20px", marginBottom:16, border:"1px solid var(--border)" }}>
+            <p style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", marginBottom:12, lineHeight:1.6 }}>
+              💬 Know someone with money sitting in a savings account doing nothing?
             </p>
             <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
               <a href={whatsappUrl} target="_blank" rel="noreferrer" style={{
