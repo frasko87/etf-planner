@@ -499,8 +499,53 @@ export default function DashboardPage() {
   }, []);
 
   if (loading) return (
-    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"var(--bg)"}}>
-      <span style={{fontFamily:"DM Mono",fontSize:12,color:"var(--muted)"}}>Loading your dashboard…</span>
+    <div style={{minHeight:"100vh",background:"var(--bg)"}}>
+      {/* Sticky nav skeleton */}
+      <div style={{height:60,background:"rgba(248,248,245,0.97)",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 clamp(14px,3vw,32px)",position:"sticky",top:0,zIndex:100}}>
+        <div style={{display:"flex",alignItems:"center",gap:20}}>
+          <div style={{width:80,height:14,borderRadius:4,background:"var(--bg3)",animation:"shimmer 1.5s infinite"}}/>
+          <div style={{display:"flex",gap:4}}>
+            {[60,50,50,60].map((w,i)=><div key={i} style={{width:w,height:30,borderRadius:8,background:"var(--bg3)",animation:"shimmer 1.5s infinite"}}/>)}
+          </div>
+        </div>
+        <div style={{width:80,height:30,borderRadius:8,background:"var(--bg3)",animation:"shimmer 1.5s infinite"}}/>
+      </div>
+
+      <div style={{maxWidth:1100,margin:"0 auto",padding:"28px clamp(16px,3vw,24px)"}}>
+        {/* Greeting skeleton */}
+        <div style={{background:"var(--text)",borderRadius:16,padding:"clamp(22px,4vw,32px)",marginBottom:16}}>
+          <div style={{width:200,height:20,borderRadius:4,background:"rgba(255,255,255,0.08)",marginBottom:12,animation:"shimmer 1.5s infinite"}}/>
+          <div style={{width:300,height:32,borderRadius:4,background:"rgba(255,255,255,0.08)",marginBottom:8,animation:"shimmer 1.5s infinite"}}/>
+          <div style={{width:180,height:14,borderRadius:4,background:"rgba(255,255,255,0.06)",animation:"shimmer 1.5s infinite"}}/>
+        </div>
+
+        {/* Two column skeleton */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+          {[1,2].map(i=>(
+            <div key={i} style={{background:"white",borderRadius:16,padding:24,border:"1px solid var(--border)"}}>
+              <div style={{width:"60%",height:12,borderRadius:4,background:"var(--bg3)",marginBottom:16,animation:"shimmer 1.5s infinite"}}/>
+              <div style={{width:"40%",height:36,borderRadius:4,background:"var(--bg3)",marginBottom:12,animation:"shimmer 1.5s infinite"}}/>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {[1,2,3,4].map(j=><div key={j} style={{height:48,borderRadius:8,background:"var(--bg3)",animation:"shimmer 1.5s infinite"}}/>)}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Chart skeleton */}
+        <div style={{background:"white",borderRadius:16,padding:24,border:"1px solid var(--border)"}}>
+          <div style={{width:140,height:12,borderRadius:4,background:"var(--bg3)",marginBottom:20,animation:"shimmer 1.5s infinite"}}/>
+          <div style={{height:200,borderRadius:8,background:"var(--bg3)",animation:"shimmer 1.5s infinite"}}/>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes shimmer {
+          0% { opacity: 1; }
+          50% { opacity: 0.4; }
+          100% { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 
