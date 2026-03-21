@@ -9,6 +9,7 @@ const PROFILES = {
     icon:"🛡️", label:"Conservative", rate:"~5%/yr", color:"#3b82f6",
     desc:"Bonds + dividend stocks. Closest to a savings account — but better.",
     etfs:["BND","SCHD","VTI","VOO"],
+    allocs:[40,30,20,10],
     risk:"Very Low",
     gain5yr: { 50:460, 100:920, 150:1379 },
   },
@@ -16,6 +17,7 @@ const PROFILES = {
     icon:"⚖️", label:"Balanced", rate:"~9%/yr", color:"#c9a84c",
     desc:"Growth ETFs + stable large caps. Our most popular plan.",
     etfs:["VOO","VTI","QQQ","SCHD"],
+    allocs:[40,25,25,10],
     risk:"Low–Med",
     gain5yr: { 50:799, 100:1599, 150:2398 },
   },
@@ -23,6 +25,7 @@ const PROFILES = {
     icon:"🚀", label:"Aggressive", rate:"~16%/yr", color:"#ff4757",
     desc:"High-growth ETFs including leveraged positions. More upside, more volatility.",
     etfs:["QQQ","VGT","TQQQ","ARKK"],
+    allocs:[35,25,25,15],
     risk:"Medium",
     gain5yr: { 50:1612, 100:3225, 150:4837 },
   },
@@ -49,7 +52,13 @@ export default function Onboarding({ user, onComplete }) {
       // Save user plan
       const { error: planErr } = await supabase
         .from("user_plans")
-        .upsert({ user_id: user.id, profile, amount, updated_at: new Date().toISOString() });
+        .upsert({
+          user_id: user.id,
+          profile,
+          amount,
+          started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
       if (planErr) throw planErr;
 
       // Record this month's action
@@ -62,14 +71,24 @@ export default function Onboarding({ user, onComplete }) {
           amount,
           tickers:   pc.etfs,
           allocations: Object.fromEntries(
-            pc.etfs.map((t, i) => [t, [40,30,20,10][i] || Math.floor(100/pc.etfs.length)])
+            pc.etfs.map((t, i) => [t, pc.allocs[i] || Math.floor(100/pc.etfs.length)])
           ),
-          entry_prices: {},    // will be filled by fetchData on next run
+          entry_prices: {},
           amounts_invested: Object.fromEntries(
-            pc.etfs.map((t, i) => [t, Math.round(amount * ([40,30,20,10][i] || Math.floor(100/pc.etfs.length)) / 100)])
+            pc.etfs.map((t, i) => [t, Math.round(amount * (pc.allocs[i] || Math.floor(100/pc.etfs.length)) / 100)])
           ),
         });
       if (actionErr) throw actionErr;
+
+      // Register in email_preferences for newsletters
+      await supabase.from("email_preferences").upsert({
+        email:        user.email,
+        user_id:      user.id,
+        unsubscribed: false,
+        welcome_sent: false,
+        source:       "onboarding",
+        subscribed_at: new Date().toISOString(),
+      }, { onConflict: "email" });
 
       // Trigger welcome email (non-blocking)
       fetch("/api/send-welcome", {
@@ -305,7 +324,7 @@ export default function Onboarding({ user, onComplete }) {
 
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:8, marginBottom:16 }}>
             {[
-              { l:"12 months", v:fmt(amount * 12 * (1 + pc.rate.replace("~","").replace("%/yr","") / 100 * 0.5)) },
+              { l:"12 months", v:fmt(amount * 12 * (1 + parseFloat(pc.rate.replace(/[^0-9.]/g,"")) / 100 * 0.5)) },
               { l:"5yr gain",  v:"+"+fmt(pc.gain5yr[amount]) },
               { l:"Risk",      v:pc.risk },
             ].map(s => (
@@ -322,7 +341,7 @@ export default function Onboarding({ user, onComplete }) {
               {pc.etfs.map((t, i) => (
                 <div key={t} style={{ background:"rgba(255,255,255,0.08)", borderRadius:8, padding:"6px 12px", display:"flex", gap:6, alignItems:"center" }}>
                   <span style={{ fontFamily:"DM Mono", fontSize:12, color:"white", fontWeight:500 }}>{t}</span>
-                  <span style={{ fontFamily:"DM Mono", fontSize:10, color:pc.color }}>${Math.round(amount * [40,30,20,10][i] / 100)}</span>
+                  <span style={{ fontFamily:"DM Mono", fontSize:10, color:pc.color }}>${Math.round(amount * (pc.allocs[i] || Math.floor(100/pc.etfs.length)) / 100)}</span>
                 </div>
               ))}
             </div>

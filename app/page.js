@@ -3,11 +3,12 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-// Returns for $50/$100/$150 at ~9% balanced rate (1mo/6mo/12mo)
-const PROJECTIONS = {
-  50:  { r1:"$50",   g1:"+$0",  r6:"$308",  g6:"+$8",   r12:"$630",  g12:"+$30"  },
-  100: { r1:"$101",  g1:"+$1",  r6:"$616",  g6:"+$16",  r12:"$1,260", g12:"+$60" },
-  150: { r1:"$151",  g1:"+$1",  r6:"$924",  g6:"+$24",  r12:"$1,890", g12:"+$90" },
+// Passive income story — what your portfolio generates after N years
+// project(pmt, months, 0.09) using beginning-of-period compound
+const PASSIVE = {
+  50:  { y3p:"$2,073",  y3i:"$16/mo",  y5p:"$3,799",  y5i:"$28/mo",  y10p:"$9,748",  y10i:"$73/mo",  breakeven:"7.8 yrs" },
+  100: { y3p:"$4,146",  y3i:"$31/mo",  y5p:"$7,599",  y5i:"$57/mo",  y10p:"$19,497", y10i:"$146/mo", breakeven:"7.8 yrs" },
+  150: { y3p:"$6,219",  y3i:"$47/mo",  y5p:"$11,398", y5i:"$85/mo",  y10p:"$29,245", y10i:"$219/mo", breakeven:"7.8 yrs" },
 };
 
 // Savings comparison — what your money does in each vehicle
@@ -16,6 +17,7 @@ const SAVINGS_COMPARE = [
   { label:"High-yield savings",       rate:"4.5%",  y1:"$1,230",  y5:"$6,740",  y10:"$15,177", color:"rgba(255,255,255,0.4)",  dim:true  },
   { label:"Conservative ETF plan",    rate:"~5.5%", y1:"$1,236",  y5:"$6,920",  y10:"$16,024", color:"#60a5fa",               dim:false },
   { label:"Balanced ETF plan",        rate:"~9%",   y1:"$1,260",  y5:"$7,599",  y10:"$19,497", color:"#00b96b",               dim:false },
+  { label:"Aggressive ETF plan",      rate:"~16%",  y1:"$1,309",  y5:"$9,225",  y10:"$30,860", color:"#ff4757",               dim:false },
 ];
 
 const PLANS = [
@@ -50,7 +52,7 @@ export default function HomePage() {
       setIsLoggedIn(!!session);
     });
   }, []);
-  const p = PROJECTIONS[amount];
+  const p = PASSIVE[amount];
   useEffect(() => {
     const check = () => setIsMob(window.innerWidth < 680);
     check();
@@ -68,7 +70,7 @@ export default function HomePage() {
         </Link>
         <div style={{display:"flex",gap:"clamp(4px,2vw,20px)",alignItems:"center"}}>
           <Link href="/learn" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>What are ETFs?</Link>
-          <Link href="/login" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>Log in</Link>
+          {!isLoggedIn && <Link href="/login" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>Log in</Link>}
           {isLoggedIn
             ? <Link href="/dashboard" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"var(--green)",padding:"9px clamp(12px,2vw,20px)",borderRadius:8}}>My dashboard →</Link>
             : <Link href="/login?mode=signup" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"var(--green)",padding:"9px clamp(12px,2vw,20px)",borderRadius:8}}>Start saving free →</Link>
@@ -97,15 +99,15 @@ export default function HomePage() {
         </div>
 
         <h1 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(36px,8vw,72px)",color:"var(--text)",lineHeight:1.0,letterSpacing:"-2.5px",marginBottom:24}}>
-          Your savings account<br/>
-          <span style={{color:"var(--green)"}}>is losing the game.</span>
+          $100/month today.<br/>
+          <span style={{color:"var(--green)"}}>$146/month — forever.</span>
         </h1>
 
-        <p style={{fontFamily:"DM Sans",fontWeight:300,fontSize:"clamp(16px,2.5vw,20px)",color:"var(--muted)",lineHeight:1.8,maxWidth:520,margin:"0 auto 16px"}}>
-          While your money sits in a savings account earning 0.5–4%, ETF plans have historically returned 9–13% per year. That's not a risk — that's 50 years of data.
+        <p style={{fontFamily:"DM Sans",fontWeight:300,fontSize:"clamp(16px,2.5vw,20px)",color:"var(--muted)",lineHeight:1.8,maxWidth:540,margin:"0 auto 16px"}}>
+          Put in $100/month for 10 years. Your portfolio hits $19,497 — and starts generating <strong style={{color:"var(--text)"}}>$146 every month on its own</strong>. More than you put in. Without adding another cent.
         </p>
         <p style={{fontFamily:"DM Sans",fontWeight:500,fontSize:"clamp(14px,2vw,17px)",color:"var(--text)",marginBottom:36}}>
-          We build your personalised plan. You contribute from <strong>$50/month</strong>.
+          We build your personalised ETF plan. You contribute from <strong>$50/month</strong>.
         </p>
 
         <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap",marginBottom:16,padding:"0 clamp(0px,2vw,20px)"}}>
@@ -183,12 +185,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Live preview calculator ─────────────────────────────────────────── */}
-      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)",maxWidth:600,margin:"0 auto"}}>
+      {/* ── Passive income calculator ────────────────────────────────────────── */}
+      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)",maxWidth:640,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:24}}>
-          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:12,letterSpacing:1}}>YOUR NUMBERS</div>
-          <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(22px,4vw,38px)",color:"var(--text)",letterSpacing:"-0.5px"}}>
-            How much could you save?
+          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:12,letterSpacing:1}}>YOUR PASSIVE INCOME FORECAST</div>
+          <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(22px,4vw,38px)",color:"var(--text)",letterSpacing:"-0.5px",lineHeight:1.15}}>
+            When does your money<br/>start working for you?
           </h2>
         </div>
 
@@ -198,7 +200,7 @@ export default function HomePage() {
           </p>
 
           {/* Amount selector */}
-          <div style={{display:"flex",gap:8,background:"var(--bg3)",borderRadius:12,padding:4,marginBottom:24}}>
+          <div style={{display:"flex",gap:8,background:"var(--bg3)",borderRadius:12,padding:4,marginBottom:28}}>
             {[50,100,150].map(v=>(
               <button key={v} onClick={()=>setAmount(v)} style={{
                 flex:1, padding:"clamp(11px,2vw,14px) 0", borderRadius:9, border:"none", cursor:"pointer",
@@ -214,36 +216,50 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* 1 / 6 / 12 month results */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,140px),1fr))",gap:"clamp(4px,2vw,10px)",marginBottom:20}}>
+          {/* Passive income timeline */}
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
             {[
-              {l:"1 month",  v:p.r1,  g:p.g1,  accent:false},
-              {l:"6 months", v:p.r6,  g:p.g6,  accent:false},
-              {l:"12 months",v:p.r12, g:p.g12, accent:true },
-            ].map(x=>(
-              <div key={x.l} style={{
-                background: x.accent ? "var(--text)" : "var(--bg3)",
-                borderRadius:12,
-                padding:"clamp(12px,2.5vw,18px) clamp(8px,2vw,12px)",
-                textAlign:"center",
-                border: x.accent ? "none" : "1px solid var(--border)",
+              { yr:"3 years",  invested: amount*36,  portfolio: PASSIVE[amount].y3p,  passive: PASSIVE[amount].y3i,  accent:false },
+              { yr:"5 years",  invested: amount*60,  portfolio: PASSIVE[amount].y5p,  passive: PASSIVE[amount].y5i,  accent:false },
+              { yr:"10 years", invested: amount*120, portfolio: PASSIVE[amount].y10p, passive: PASSIVE[amount].y10i, accent:true  },
+            ].map(row=>(
+              <div key={row.yr} style={{
+                display:"grid", gridTemplateColumns:"80px 1fr auto",
+                gap:12, alignItems:"center",
+                padding:"clamp(12px,2vw,16px) clamp(12px,2vw,16px)",
+                borderRadius:14,
+                background: row.accent ? "var(--text)" : "var(--bg3)",
+                border: row.accent ? "none" : "1px solid var(--border)",
               }}>
-                <div style={{fontFamily:"DM Sans",fontSize:"clamp(10px,1.8vw,12px)",color:x.accent?"rgba(255,255,255,0.5)":"var(--muted)",marginBottom:6}}>{x.l}</div>
-                <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(18px,4vw,28px)",color:x.accent?"white":"var(--text)",letterSpacing:"-0.5px",lineHeight:1.1}}>{x.v}</div>
-                <div className="mono" style={{fontSize:"clamp(9px,1.5vw,11px)",color:"var(--green)",marginTop:5}}>{x.g}</div>
+                <div>
+                  <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(13px,2vw,15px)",color:row.accent?"rgba(255,255,255,0.9)":"var(--text)"}}>{row.yr}</div>
+                  <div style={{fontFamily:"DM Mono",fontSize:9,color:row.accent?"rgba(255,255,255,0.35)":"var(--muted2)",marginTop:1}}>${row.invested.toLocaleString()} in</div>
+                </div>
+                <div>
+                  <div style={{fontFamily:"DM Mono",fontSize:9,color:row.accent?"rgba(255,255,255,0.4)":"var(--muted2)",marginBottom:2}}>PORTFOLIO VALUE</div>
+                  <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(16px,3vw,22px)",color:row.accent?"white":"var(--text)",letterSpacing:"-0.3px"}}>{row.portfolio}</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontFamily:"DM Mono",fontSize:9,color:row.accent?"rgba(255,255,255,0.4)":"var(--muted2)",marginBottom:2}}>EARNS PASSIVELY</div>
+                  <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(16px,3vw,22px)",color:"var(--green)",letterSpacing:"-0.3px"}}>{row.passive}</div>
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Plan context */}
-          <div style={{padding:"12px 16px",background:"var(--green2)",borderRadius:10,border:"1px solid rgba(0,185,107,0.2)",marginBottom:20}}>
-            <p style={{fontFamily:"DM Sans",fontSize:"clamp(11px,1.8vw,13px)",color:"var(--green)",margin:0,lineHeight:1.7}}>
-              📊 Balanced plan · ~9% annual return target · <strong>We show you exactly what to buy.</strong> You execute on <a href="/learn#platforms" style={{color:"var(--green)",fontWeight:600}}>one of our recommended platforms</a> — takes 5 minutes.
+          {/* Break-even callout */}
+          <div style={{padding:"12px 16px",background:"rgba(0,185,107,0.06)",borderRadius:10,border:"1px solid rgba(0,185,107,0.2)",marginBottom:20,textAlign:"center"}}>
+            <p style={{fontFamily:"DM Sans",fontSize:"clamp(12px,1.8vw,14px)",color:"var(--text)",margin:0,lineHeight:1.7}}>
+              🎯 At <strong>~7.8 years</strong> your portfolio generates more per month than you put in — <strong style={{color:"var(--green)"}}>your money outworks you.</strong>
             </p>
           </div>
 
+          <p style={{fontFamily:"DM Mono",fontSize:10,color:"var(--muted2)",textAlign:"center",marginBottom:16}}>
+            Balanced plan · ~9%/yr target · Historical avg · Not a guarantee
+          </p>
+
           <Link href="/login?mode=signup" style={{display:"block",textAlign:"center",fontFamily:"DM Sans",fontWeight:700,fontSize:16,color:"white",background:"var(--green)",padding:"15px 0",borderRadius:10,boxShadow:"0 4px 16px rgba(0,185,107,0.3)"}}>
-            Build my free saving plan →
+            Start building passive income →
           </Link>
         </div>
       </section>
@@ -549,6 +565,31 @@ export default function HomePage() {
             </div>
           </div>
         </Link>
+      </section>
+
+      {/* ── FAQ ──────────────────────────────────────────────────────────────── */}
+      <section style={{padding:"0 clamp(16px,4vw,20px) clamp(52px,7vw,80px)",maxWidth:720,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:36}}>
+          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:12,letterSpacing:1}}>COMMON QUESTIONS</div>
+          <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(24px,4vw,40px)",color:"var(--text)",letterSpacing:"-0.5px"}}>
+            Got questions? We've got answers.
+          </h2>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {[
+            { q:"Do I need a brokerage account?", a:"Yes — ETF.PLAN tells you what to buy, but you execute the trades yourself on a platform like Robinhood, eToro, Interactive Brokers or Vanguard. All are free to open and commission-free for ETFs." },
+            { q:"Is my money safe?", a:"Your money never touches ETF.PLAN — we don't hold any funds. You invest directly through your brokerage which is regulated and insured. We only track what you tell us you bought." },
+            { q:"Can I lose money?", a:"Yes — ETFs can go down in value, especially short term. The ~9% balanced return is a long-term historical average. The longer you hold, the more the numbers smooth out. We always recommend a minimum 3–5 year horizon." },
+            { q:"Why only $50, $100, or $150?", a:"These amounts work cleanly with ETF allocations and are realistic for most people starting out. Once you're comfortable you can invest more — just pick the closest amount and adjust on your brokerage." },
+            { q:"How is this free?", a:"ETF.PLAN is currently 100% free. We plan to add optional premium features in the future, but the core plan will always be free." },
+            { q:"How often do the ETF picks change?", a:"Our scoring engine runs every market day at open and close. The picks update weekly — we rebalance based on momentum, stability and trend scores across 42 ETFs." },
+          ].map((faq, i) => (
+            <div key={i} style={{background:"white",border:"1px solid var(--border)",borderRadius:14,padding:"clamp(16px,3vw,22px)",boxShadow:"var(--shadow)"}}>
+              <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:"clamp(14px,2vw,16px)",color:"var(--text)",marginBottom:8}}>{faq.q}</div>
+              <div style={{fontFamily:"DM Sans",fontSize:"clamp(13px,1.8vw,14px)",color:"var(--muted)",lineHeight:1.75}}>{faq.a}</div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* ── Final CTA ───────────────────────────────────────────────────────── */}
