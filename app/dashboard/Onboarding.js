@@ -170,9 +170,15 @@ export default function Onboarding({ user, onComplete }) {
   if (step === 1) return (
     <div style={stepStyle}>
       <div style={card}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:32 }}>
-          <div className="pixel" style={{ fontSize:11, color:"var(--text)" }}>ETF<span style={{ color:"var(--green)" }}>.</span>PLAN</div>
-          <div className="mono" style={{ fontSize:10, color:"var(--muted2)" }}>STEP 1 OF 3</div>
+        {/* Progress bar */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div className="pixel" style={{ fontSize: 11, color: "var(--text)" }}>ETF<span style={{ color: "var(--green)" }}>.</span>PLAN</div>
+            <div className="mono" style={{ fontSize: 10, color: "var(--muted2)" }}>STEP 1 OF 3</div>
+          </div>
+          <div style={{ height: 3, background: "var(--bg3)", borderRadius: 2, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: "33%", background: "var(--green)", borderRadius: 2 }}/>
+          </div>
         </div>
 
         <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(22px,4vw,32px)", color:"var(--text)", marginBottom:8, letterSpacing:"-0.5px" }}>
@@ -225,9 +231,15 @@ export default function Onboarding({ user, onComplete }) {
   if (step === 2) return (
     <div style={stepStyle}>
       <div style={{ ...card, maxWidth: 560 }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:32 }}>
-          <div className="pixel" style={{ fontSize:11, color:"var(--text)" }}>ETF<span style={{ color:"var(--green)" }}>.</span>PLAN</div>
-          <div className="mono" style={{ fontSize:10, color:"var(--muted2)" }}>STEP 2 OF 3</div>
+        {/* Progress bar */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div className="pixel" style={{ fontSize: 11, color: "var(--text)" }}>ETF<span style={{ color: "var(--green)" }}>.</span>PLAN</div>
+            <div className="mono" style={{ fontSize: 10, color: "var(--muted2)" }}>STEP 2 OF 3</div>
+          </div>
+          <div style={{ height: 3, background: "var(--bg3)", borderRadius: 2, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: "66%", background: "var(--green)", borderRadius: 2 }}/>
+          </div>
         </div>
 
         <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(22px,4vw,32px)", color:"var(--text)", marginBottom:8, letterSpacing:"-0.5px" }}>
@@ -296,9 +308,15 @@ export default function Onboarding({ user, onComplete }) {
   if (step === 3) return (
     <div style={stepStyle}>
       <div style={{ ...card, maxWidth:560 }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:28 }}>
-          <div className="pixel" style={{ fontSize:11, color:"var(--text)" }}>ETF<span style={{ color:"var(--green)" }}>.</span>PLAN</div>
-          <div className="mono" style={{ fontSize:10, color:"var(--muted2)" }}>STEP 3 OF 3</div>
+        {/* Progress bar */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div className="pixel" style={{ fontSize: 11, color: "var(--text)" }}>ETF<span style={{ color: "var(--green)" }}>.</span>PLAN</div>
+            <div className="mono" style={{ fontSize: 10, color: "var(--muted2)" }}>STEP 3 OF 3</div>
+          </div>
+          <div style={{ height: 3, background: "var(--bg3)", borderRadius: 2, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: "100%", background: "var(--green)", borderRadius: 2 }}/>
+          </div>
         </div>
 
         <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(22px,4vw,32px)", color:"var(--text)", marginBottom:6, letterSpacing:"-0.5px" }}>

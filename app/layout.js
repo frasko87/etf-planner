@@ -2,16 +2,52 @@ import "./globals.css";
 
 export const metadata = {
   title: "ETF.PLAN — Build Wealth One Month at a Time",
-  description: "A smart ETF investment plan from $50/month. Real data, real projections.",
+  description: "Put in $100/month for 10 years. Your portfolio generates +$1,755/year passively — that's your phone bill, car insurance, and all your subscriptions paid. Free plan, 2 min setup.",
+  metadataBase: new URL("https://etfplan.app"),
   verification: {
     google: "KG7a0kWH83vNJCwa590sgdPc4WlV5TBwUppzGVPF5fw",
   },
+  openGraph: {
+    title: "ETF.PLAN — $100/month today. +$1,755/year forever.",
+    description: "Start with $50/month. In 10 years your portfolio pays your phone bill, car insurance and streaming — every year, automatically.",
+    url: "https://etfplan.app",
+    siteName: "ETF.PLAN",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "ETF.PLAN — Build passive income from $50/month",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ETF.PLAN — $100/month today. +$1,755/year forever.",
+    description: "Free personalised ETF plan. Your money starts working harder than you do.",
+    images: ["/og-image.png"],
+  },
+  alternates: {
+    canonical: "https://etfplan.app",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
 };
+
+import CookieBanner from "@/components/CookieBanner";
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <CookieBanner />
+      </body>
     </html>
   );
 }

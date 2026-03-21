@@ -3,12 +3,23 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-// Passive income story — what your portfolio generates after N years
-// project(pmt, months, 0.09) using beginning-of-period compound
+// Passive income story — annual numbers + real-world comparisons
 const PASSIVE = {
-  50:  { y3p:"$2,073",  y3i:"$16/mo",  y5p:"$3,799",  y5i:"$28/mo",  y10p:"$9,748",  y10i:"$73/mo",  breakeven:"7.8 yrs" },
-  100: { y3p:"$4,146",  y3i:"$31/mo",  y5p:"$7,599",  y5i:"$57/mo",  y10p:"$19,497", y10i:"$146/mo", breakeven:"7.8 yrs" },
-  150: { y3p:"$6,219",  y3i:"$47/mo",  y5p:"$11,398", y5i:"$85/mo",  y10p:"$29,245", y10i:"$219/mo", breakeven:"7.8 yrs" },
+  50:  {
+    y3p:"$2,073",  y3a:"+$187/yr",  y3c:"covers your streaming bills",
+    y5p:"$3,799",  y5a:"+$342/yr",  y5c:"half your phone bill paid",
+    y10p:"$9,748", y10a:"+$877/yr", y10c:"your entire phone bill, paid every year",
+  },
+  100: {
+    y3p:"$4,146",  y3a:"+$373/yr",  y3c:"Netflix + Spotify + gym",
+    y5p:"$7,599",  y5a:"+$684/yr",  y5c:"your phone bill paid every year",
+    y10p:"$19,497",y10a:"+$1,755/yr",y10c:"phone bill + car insurance paid every year",
+  },
+  150: {
+    y3p:"$6,219",  y3a:"+$560/yr",  y3c:"all your subscriptions paid",
+    y5p:"$11,398", y5a:"+$1,026/yr",y5c:"phone bill + all streaming paid",
+    y10p:"$29,245",y10a:"+$2,632/yr",y10c:"that\'s $219 every month without working",
+  },
 };
 
 // Savings comparison — what your money does in each vehicle
@@ -100,11 +111,11 @@ export default function HomePage() {
 
         <h1 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(36px,8vw,72px)",color:"var(--text)",lineHeight:1.0,letterSpacing:"-2.5px",marginBottom:24}}>
           $100/month today.<br/>
-          <span style={{color:"var(--green)"}}>$146/month — forever.</span>
+          <span style={{color:"var(--green)"}}>+$1,755/year — forever.</span>
         </h1>
 
         <p style={{fontFamily:"DM Sans",fontWeight:300,fontSize:"clamp(16px,2.5vw,20px)",color:"var(--muted)",lineHeight:1.8,maxWidth:540,margin:"0 auto 16px"}}>
-          Put in $100/month for 10 years. Your portfolio hits $19,497 — and starts generating <strong style={{color:"var(--text)"}}>$146 every month on its own</strong>. More than you put in. Without adding another cent.
+          Put in $100/month for 10 years. Your portfolio generates <strong style={{color:"var(--text)"}}>over $1,755 every year on its own</strong> — that's your phone bill, your Netflix, your Spotify, and your gym membership. Paid. Every year. Without touching it.
         </p>
         <p style={{fontFamily:"DM Sans",fontWeight:500,fontSize:"clamp(14px,2vw,17px)",color:"var(--text)",marginBottom:36}}>
           We build your personalised ETF plan. You contribute from <strong>$50/month</strong>.
@@ -219,29 +230,34 @@ export default function HomePage() {
           {/* Passive income timeline */}
           <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
             {[
-              { yr:"3 years",  invested: amount*36,  portfolio: PASSIVE[amount].y3p,  passive: PASSIVE[amount].y3i,  accent:false },
-              { yr:"5 years",  invested: amount*60,  portfolio: PASSIVE[amount].y5p,  passive: PASSIVE[amount].y5i,  accent:false },
-              { yr:"10 years", invested: amount*120, portfolio: PASSIVE[amount].y10p, passive: PASSIVE[amount].y10i, accent:true  },
+              { yr:"3 years",  invested:amount*36,  portfolio:PASSIVE[amount].y3p,  annual:PASSIVE[amount].y3a,  compare:PASSIVE[amount].y3c,  accent:false },
+              { yr:"5 years",  invested:amount*60,  portfolio:PASSIVE[amount].y5p,  annual:PASSIVE[amount].y5a,  compare:PASSIVE[amount].y5c,  accent:false },
+              { yr:"10 years", invested:amount*120, portfolio:PASSIVE[amount].y10p, annual:PASSIVE[amount].y10a, compare:PASSIVE[amount].y10c, accent:true  },
             ].map(row=>(
               <div key={row.yr} style={{
-                display:"grid", gridTemplateColumns:"80px 1fr auto",
-                gap:12, alignItems:"center",
-                padding:"clamp(12px,2vw,16px) clamp(12px,2vw,16px)",
+                padding:"clamp(14px,2vw,18px)",
                 borderRadius:14,
                 background: row.accent ? "var(--text)" : "var(--bg3)",
                 border: row.accent ? "none" : "1px solid var(--border)",
               }}>
-                <div>
-                  <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(13px,2vw,15px)",color:row.accent?"rgba(255,255,255,0.9)":"var(--text)"}}>{row.yr}</div>
-                  <div style={{fontFamily:"DM Mono",fontSize:9,color:row.accent?"rgba(255,255,255,0.35)":"var(--muted2)",marginTop:1}}>${row.invested.toLocaleString()} in</div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8,flexWrap:"wrap",gap:8}}>
+                  <div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(13px,2vw,15px)",color:row.accent?"rgba(255,255,255,0.9)":"var(--text)"}}>{row.yr}</div>
+                    <div style={{fontFamily:"DM Mono",fontSize:9,color:row.accent?"rgba(255,255,255,0.3)":"var(--muted2)",marginTop:1}}>${row.invested.toLocaleString()} invested total</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontFamily:"DM Mono",fontSize:9,color:row.accent?"rgba(255,255,255,0.4)":"var(--muted2)",marginBottom:2}}>GENERATES ANNUALLY</div>
+                    <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(18px,3.5vw,26px)",color:"var(--green)",letterSpacing:"-0.5px"}}>{row.annual}</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{fontFamily:"DM Mono",fontSize:9,color:row.accent?"rgba(255,255,255,0.4)":"var(--muted2)",marginBottom:2}}>PORTFOLIO VALUE</div>
-                  <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(16px,3vw,22px)",color:row.accent?"white":"var(--text)",letterSpacing:"-0.3px"}}>{row.portfolio}</div>
-                </div>
-                <div style={{textAlign:"right"}}>
-                  <div style={{fontFamily:"DM Mono",fontSize:9,color:row.accent?"rgba(255,255,255,0.4)":"var(--muted2)",marginBottom:2}}>EARNS PASSIVELY</div>
-                  <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(16px,3vw,22px)",color:"var(--green)",letterSpacing:"-0.3px"}}>{row.passive}</div>
+                <div style={{
+                  fontFamily:"DM Sans",fontSize:"clamp(11px,1.8vw,13px)",
+                  color:row.accent?"rgba(255,255,255,0.45)":"var(--muted)",
+                  background:row.accent?"rgba(0,185,107,0.1)":"rgba(0,185,107,0.06)",
+                  borderRadius:8,padding:"6px 10px",
+                  border:"1px solid rgba(0,185,107,0.15)",
+                }}>
+                  💡 {row.compare}
                 </div>
               </div>
             ))}
@@ -250,7 +266,7 @@ export default function HomePage() {
           {/* Break-even callout */}
           <div style={{padding:"12px 16px",background:"rgba(0,185,107,0.06)",borderRadius:10,border:"1px solid rgba(0,185,107,0.2)",marginBottom:20,textAlign:"center"}}>
             <p style={{fontFamily:"DM Sans",fontSize:"clamp(12px,1.8vw,14px)",color:"var(--text)",margin:0,lineHeight:1.7}}>
-              🎯 At <strong>~7.8 years</strong> your portfolio generates more per month than you put in — <strong style={{color:"var(--green)"}}>your money outworks you.</strong>
+              🎯 At <strong>~7.8 years</strong> your portfolio generates more per year than you put in — <strong style={{color:"var(--green)"}}>your money earns your contribution back, every year, automatically.</strong>
             </p>
           </div>
 
@@ -579,7 +595,7 @@ export default function HomePage() {
           {[
             { q:"Do I need a brokerage account?", a:"Yes — ETF.PLAN tells you what to buy, but you execute the trades yourself on a platform like Robinhood, eToro, Interactive Brokers or Vanguard. All are free to open and commission-free for ETFs." },
             { q:"Is my money safe?", a:"Your money never touches ETF.PLAN — we don't hold any funds. You invest directly through your brokerage which is regulated and insured. We only track what you tell us you bought." },
-            { q:"Can I lose money?", a:"Yes — ETFs can go down in value, especially short term. The ~9% balanced return is a long-term historical average. The longer you hold, the more the numbers smooth out. We always recommend a minimum 3–5 year horizon." },
+            { q:"Can I lose money?", a:"Yes — any investment can go down short term. But over 10 years, the S&P 500 has never had a negative return on a 10-year hold. The ~9% balanced return is a historical average. The longer you hold, the safer it gets." },
             { q:"Why only $50, $100, or $150?", a:"These amounts work cleanly with ETF allocations and are realistic for most people starting out. Once you're comfortable you can invest more — just pick the closest amount and adjust on your brokerage." },
             { q:"How is this free?", a:"ETF.PLAN is currently 100% free. We plan to add optional premium features in the future, but the core plan will always be free." },
             { q:"How often do the ETF picks change?", a:"Our scoring engine runs every market day at open and close. The picks update weekly — we rebalance based on momentum, stability and trend scores across 42 ETFs." },
