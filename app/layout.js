@@ -37,10 +37,27 @@ export const metadata = {
     initialScale: 1,
     maximumScale: 1,
   },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "ETF.PLAN",
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icon-apple.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 import CookieBanner from "@/components/CookieBanner";
-import { Analytics } from "@vercel/analytics/react";
+import { Suspense } from "react";
+import PageTracker from "@/components/PageTracker";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 export default function RootLayout({ children }) {
   return (
@@ -48,7 +65,10 @@ export default function RootLayout({ children }) {
       <body>
         {children}
         <CookieBanner />
-        <Analytics />
+        <Suspense fallback={null}>
+          <PageTracker />
+          <GoogleAnalytics />
+        </Suspense>
       </body>
     </html>
   );

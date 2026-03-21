@@ -237,6 +237,94 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* ── Live Analytics ─────────────────────────────────────── */}
+            {/* GA4 quick links */}
+            <div style={{...card, marginBottom:16, background:"#1a1a2e"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+                <div>
+                  <div style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.35)",letterSpacing:1,marginBottom:4}}>GOOGLE ANALYTICS 4</div>
+                  <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:15,color:"white",marginBottom:2}}>Real-time visitors, locations, devices, referrers</div>
+                  <div style={{fontFamily:"DM Sans",fontSize:12,color:"rgba(255,255,255,0.4)"}}>Full data lives in GA4 — business funnel data below is from your own DB</div>
+                </div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  <a href="https://analytics.google.com" target="_blank" rel="noreferrer" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"#E37400",padding:"8px 16px",borderRadius:8,textDecoration:"none",whiteSpace:"nowrap"}}>
+                    Open GA4 →
+                  </a>
+                  <a href="https://analytics.google.com/analytics/web/#/p0/realtime/overview" target="_blank" rel="noreferrer" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",padding:"8px 16px",borderRadius:8,textDecoration:"none",whiteSpace:"nowrap"}}>
+                    🔴 Real-time
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {data?.analytics && (
+              <div style={{...card, marginBottom:16}}>
+                <div style={lbl}>TRAFFIC — LAST 7 DAYS (own tracking)</div>
+
+                {/* Today vs week */}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:10,marginBottom:20}}>
+                  {[
+                    { l:"TODAY",        v: data.analytics.todayVisitors,  c:"var(--green)" },
+                    { l:"THIS WEEK",    v: data.analytics.weekVisitors,   c:"var(--text)"  },
+                    { l:"SIGNUPS TODAY",v: (data.analytics.recentSignups||[]).filter(s => new Date(s.created_at) > new Date(new Date().setHours(0,0,0,0))).length, c:"#c9a84c" },
+                    { l:"CONVERSIONS",  v: data.analytics.weekVisitors > 0 ? Math.round((data.analytics.eventCounts?.onboarding_completed||0) / data.analytics.weekVisitors * 100) + "%" : "—", c:"#3b82f6" },
+                  ].map(s=>(
+                    <div key={s.l} style={{background:"var(--bg3)",borderRadius:10,padding:"12px 14px",textAlign:"center",border:"1px solid var(--border)"}}>
+                      <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",letterSpacing:1,marginBottom:4}}>{s.l}</div>
+                      <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:26,color:s.c,letterSpacing:"-0.5px"}}>{v !== undefined ? v : s.v}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Daily chart */}
+                <div style={{marginBottom:20}}>
+                  <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",letterSpacing:1,marginBottom:10}}>DAILY VISITORS</div>
+                  <div style={{display:"flex",alignItems:"flex-end",gap:6,height:80}}>
+                    {(data.analytics.dailyVisitors||[]).map((d,i)=>{
+                      const max = Math.max(...(data.analytics.dailyVisitors||[]).map(x=>x.visitors), 1);
+                      const pct = Math.max((d.visitors/max)*100, 3);
+                      const isToday = i === (data.analytics.dailyVisitors||[]).length - 1;
+                      return (
+                        <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                          <div style={{fontFamily:"DM Mono",fontSize:8,color:"var(--muted2)"}}>{d.visitors||""}</div>
+                          <div style={{width:"100%",height:`${pct}%`,minHeight:4,background:isToday?"var(--green)":"var(--bg3)",border:`1px solid ${isToday?"var(--green)":"var(--border)"}`,borderRadius:4,transition:"height 0.3s"}}/>
+                          <div style={{fontFamily:"DM Mono",fontSize:7,color:"var(--muted2)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>{d.date.split(" ")[0]}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Funnel events */}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+                  {[
+                    { l:"Calculator used",      k:"calculator_interaction" },
+                    { l:"CTA clicked",          k:"cta_click"             },
+                    { l:"Started onboarding",   k:"onboarding_step_1"     },
+                    { l:"Picked risk level",    k:"onboarding_step_2"     },
+                    { l:"Completed signup",     k:"onboarding_completed"  },
+                    { l:"Marked as bought",     k:"mark_as_bought"        },
+                  ].map(e=>(
+                    <div key={e.k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:"var(--bg3)",borderRadius:8,border:"1px solid var(--border)"}}>
+                      <span style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted)"}}>{e.l}</span>
+                      <span style={{fontFamily:"DM Mono",fontSize:13,fontWeight:700,color:"var(--green)"}}>{data.analytics.eventCounts?.[e.k]||0}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Top pages */}
+                <div>
+                  <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",letterSpacing:1,marginBottom:8}}>TOP PAGES THIS WEEK</div>
+                  {(data.analytics.topPages||[]).map((p,i)=>(
+                    <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:i<(data.analytics.topPages||[]).length-1?"1px solid var(--bg3)":"none"}}>
+                      <span style={{fontFamily:"DM Mono",fontSize:11,color:"var(--text)"}}>{p.page||"/"}</span>
+                      <span style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted)"}}>{p.views} views</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Conversion Funnel */}
             {(data?.funnel || []).length > 0 && (
               <div style={{ ...card, marginBottom:16 }}>
