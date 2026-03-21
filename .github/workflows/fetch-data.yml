@@ -46,5 +46,12 @@ jobs:
             node scripts/fetchData.mjs
           fi
 
+      - name: Trigger email sequence
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: https://etfplan.app
+        run: |
+          curl -s -X POST "$SITE_URL/api/email-sequence"             -H "x-cron-secret: $CRON_SECRET"             -H "Content-Type: application/json" || echo "Email sequence skipped"
+
       - name: Done
         run: echo "Fetch complete at $(date)"
