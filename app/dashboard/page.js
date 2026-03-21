@@ -899,7 +899,7 @@ export default function DashboardPage() {
                     <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(22px,4vw,30px)",color:"white",letterSpacing:"-0.5px"}}>
                       {pc.icon} {pc.label}
                     </div>
-                    <div className="mono" style={{fontSize:12,color:pc.accentColor,marginTop:4}}>{pc.rate || "~"+Math.round((pc.targetReturn||0.09)*100)+"%"}/yr target</div>
+                    <div className="mono" style={{fontSize:12,color:pc.accentColor,marginTop:4}}>{pc.rate ? pc.rate+" target" : "~"+Math.round((pc.targetReturn||0.09)*100)+"%/yr target"}</div>
                   </div>
                   <div style={{textAlign:"right"}}>
                     <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4}}>MONTHLY</div>
@@ -1398,7 +1398,7 @@ export default function DashboardPage() {
                         {[
                           {l:"Total Invested",  v:fmt(totalInvested),  c:"var(--muted)"},
                           {l:"Current Value",   v:fmt(estimatedValue), c:"var(--text)"},
-                          {l:"Total Gain",      v:`+${gainPct}%`,      c:"var(--green)"},
+                          {l:"Total Gain",      v:`${gainPct >= 0 ? "+" : ""}${gainPct}%`, c:gain>=0?"var(--green)":"#ff4757"},
                         ].map(s=>(
                           <div key={s.l} style={{background:"var(--bg3)",borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
                             <div className="mono" style={{fontSize:9,color:"var(--muted2)",marginBottom:4}}>{s.l}</div>
@@ -1604,7 +1604,7 @@ export default function DashboardPage() {
                   {[
                     {l:"CPI Inflation",  v:fmtPct(macroData.inflation), c:"#ff6b6b"},
                     {l:"Fed Funds Rate", v:fmtPct(macroData.fed_rate),  c:"#a78bfa"},
-                    {l:"Real Drag",      v:`−${fmtPct(macroData.inflation)}`, c:"#fbbf24"},
+                    {l:"Real Drag",      v:`−${(macroData.inflation*100).toFixed(2)}%`, c:"#fbbf24"},
                     {l:"CPI Date",       v:macroData.cpi_date||"—",     c:"rgba(255,255,255,0.4)"},
                   ].map(x=>(
                     <div key={x.l}>

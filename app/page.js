@@ -208,7 +208,7 @@ export default function HomePage() {
             This isn't gambling. It's structured saving.
           </h2>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,220px),1fr))",gap:14}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,260px),1fr))",gap:14}}>
           {WHY_ETFS.map(w=>(
             <div key={w.title} style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(18px,3vw,24px)",boxShadow:"var(--shadow)"}}>
               <div style={{fontSize:28,marginBottom:14}}>{w.icon}</div>
