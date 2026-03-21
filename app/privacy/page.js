@@ -15,7 +15,7 @@ export default function PrivacyPolicy() {
       {/* Content */}
       <div style={{ maxWidth:720, margin:"0 auto", padding:"48px clamp(16px,4vw,48px) 80px" }}>
         <h1 style={{ fontSize:"clamp(28px,5vw,40px)", fontWeight:700, color:"#1a1a2e", marginBottom:8, letterSpacing:"-1px" }}>Privacy Policy</h1>
-        <p style={{ fontSize:13, color:"#7a7a8a", marginBottom:40, fontFamily:"monospace" }}>Last updated: March 20, 2026</p>
+        <p style={{ fontSize:13, color:"#7a7a8a", marginBottom:40, fontFamily:"monospace" }}>Last updated: March 21, 2026</p>
 
         {[
           {
@@ -32,15 +32,15 @@ export default function PrivacyPolicy() {
           },
           {
             title: "4. Third-party services",
-            body: "We use the following third-party services to operate ETF.PLAN:\n\n• Supabase — database and authentication (supabase.com)\n• Resend — email delivery (resend.com)\n• Vercel — website hosting (vercel.com)\n• Alpha Vantage & Finnhub — market data (no personal data shared)\n\nEach of these services has their own privacy policy. We only share the minimum data necessary for each service to function."
+            body: "We use the following third-party services to operate ETF.PLAN:\n\n• Supabase — database and authentication (supabase.com)\n• Resend — email delivery (resend.com)\n• Vercel — website hosting (vercel.com)\n• Alpha Vantage & Finnhub — market data (no personal data shared)\n• Google Analytics — website analytics, anonymised usage data (google.com/analytics)\n\nEach of these services has their own privacy policy. We only share the minimum data necessary for each service to function."
           },
           {
             title: "5. Google sign-in",
             body: "If you choose to sign in with Google, we receive your email address and public profile name from Google. We do not access your Google Drive, Gmail, contacts, or any other Google services. We only use your Google account for authentication."
           },
           {
-            title: "6. Cookies",
-            body: "We use essential cookies only — these are required for you to stay logged in to your account. We do not use advertising cookies or tracking cookies. We do not use Google Analytics or any third-party tracking scripts."
+            title: "6. Cookies and analytics",
+            body: "We use essential cookies to keep you logged in to your account. We also use Google Analytics (provided by Google LLC) to understand how visitors use our site — this includes anonymised data about pages visited, session duration, and general location. Google Analytics uses cookies to collect this data. We do not use advertising cookies. You can opt out of Google Analytics tracking by installing the Google Analytics Opt-out browser add-on."
           },
           {
             title: "7. Data retention",

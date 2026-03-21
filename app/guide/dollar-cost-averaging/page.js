@@ -1,135 +1,196 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "What is Dollar-Cost Averaging? The Strategy Behind ETF.PLAN | ETF.PLAN",
-  description: "Why investing the same amount every month beats trying to time the market. Simple explanation with real numbers.",
+  title: "Dollar-Cost Averaging: The Strategy That Beats Timing the Market | ETF.PLAN",
+  description: "Dollar-cost averaging explained. Why investing $100 every month beats trying to time the market — backed by 50 years of data. Simple strategy, powerful results.",
+  openGraph: {
+    title: "Dollar-Cost Averaging: Why You Should Never Try to Time the Market",
+    description: "Invest the same amount every month. That's the whole strategy. Here's why it works.",
+  },
 };
 
-export default function DCAGuide() {
-  const TABLE = [
-    { month:"Jan", price:500,  invested:100, shares:0.20, total:100  },
-    { month:"Feb", price:450,  invested:100, shares:0.22, total:200  },
-    { month:"Mar", price:380,  invested:100, shares:0.26, total:300  },
-    { month:"Apr", price:420,  invested:100, shares:0.24, total:400  },
-    { month:"May", price:480,  invested:100, shares:0.21, total:500  },
-    { month:"Jun", price:530,  invested:100, shares:0.19, total:600  },
-  ];
+export default function DollarCostAveraging() {
+  const P = ({ children, style={} }) => <p style={{ fontFamily:"DM Sans", fontSize:"clamp(14px,2vw,16px)", color:"var(--muted)", lineHeight:1.85, marginBottom:14, ...style }}>{children}</p>;
+  const H2 = ({ children }) => <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(19px,3vw,24px)", color:"var(--text)", marginBottom:14, letterSpacing:"-0.3px", lineHeight:1.25 }}>{children}</h2>;
+  const Card = ({ children, bg="white", border=true }) => <div style={{ background:bg, border:border?"1px solid var(--border)":"none", borderRadius:16, padding:"clamp(20px,3vw,32px)", marginBottom:20, boxShadow:bg==="white"?"var(--shadow)":"none" }}>{children}</div>;
 
   return (
     <div style={{ minHeight:"100vh", background:"var(--bg)" }}>
       <nav style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0 clamp(16px,4vw,40px)", height:60, background:"rgba(248,248,245,0.96)", backdropFilter:"blur(12px)", borderBottom:"1px solid var(--border)", position:"sticky", top:0, zIndex:100 }}>
         <Link href="/" className="pixel" style={{ fontSize:11, color:"var(--text)", textDecoration:"none" }}>ETF<span style={{ color:"var(--green)" }}>.</span>PLAN</Link>
-        <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-          <Link href="/dashboard?tab=library" style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", textDecoration:"none", padding:"7px 14px", border:"1px solid var(--border)", borderRadius:8 }}>← Library</Link>
-        </div>
+        <Link href="/login?mode=signup" style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:13, color:"white", background:"var(--green)", padding:"8px 18px", borderRadius:8, textDecoration:"none" }}>Start free →</Link>
       </nav>
 
-      <div style={{ maxWidth:720, margin:"0 auto", padding:"clamp(32px,6vw,64px) clamp(16px,4vw,24px) 80px" }}>
+      <div style={{ maxWidth:740, margin:"0 auto", padding:"clamp(32px,6vw,64px) clamp(16px,4vw,24px) 80px" }}>
 
         <div style={{ fontFamily:"DM Mono", fontSize:11, color:"var(--muted2)", marginBottom:24 }}>
-          <Link href="/dashboard?tab=library" style={{ color:"var(--muted2)", textDecoration:"none" }}>← Library</Link>
+          <Link href="/" style={{ color:"var(--muted2)", textDecoration:"none" }}>Home</Link>
           <span style={{ margin:"0 8px" }}>→</span>
           <span>Dollar-cost averaging</span>
         </div>
 
-        <div style={{ display:"inline-flex", gap:8, background:"rgba(139,92,246,0.08)", border:"1px solid rgba(139,92,246,0.2)", borderRadius:100, padding:"5px 14px", marginBottom:20 }}>
-          <span className="mono" style={{ fontSize:10, color:"#8b5cf6" }}>STRATEGY · 4 MIN READ</span>
+        <div style={{ marginBottom:40 }}>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"var(--green2)", border:"1px solid rgba(0,185,107,0.2)", borderRadius:100, padding:"5px 14px", marginBottom:20 }}>
+            <span className="mono" style={{ fontSize:10, color:"var(--green)" }}>STRATEGY GUIDE · 5 MIN READ</span>
+          </div>
+          <h1 style={{ fontFamily:"DM Sans", fontWeight:800, fontSize:"clamp(32px,6vw,54px)", color:"var(--text)", letterSpacing:"-2px", lineHeight:1.05, marginBottom:16 }}>Why you should never try to time the market</h1>
+          <P style={{ fontSize:"clamp(16px,2.5vw,19px)" }}>Dollar-cost averaging is the strategy of investing the same fixed amount every single month — regardless of whether the market is up, down, or sideways. It sounds boring. It's also why it works.</P>
         </div>
 
-        <h1 style={{ fontFamily:"DM Sans", fontWeight:800, fontSize:"clamp(28px,6vw,50px)", color:"var(--text)", letterSpacing:"-1.5px", lineHeight:1.1, marginBottom:16 }}>
-          Why you should never try to time the market
-        </h1>
-        <p style={{ fontFamily:"DM Sans", fontSize:"clamp(15px,2.5vw,18px)", color:"var(--muted)", lineHeight:1.8, marginBottom:40 }}>
-          Dollar-cost averaging is the strategy of investing the same amount every month — regardless of whether the market is up or down. It sounds boring. It's actually brilliant.
-        </p>
-
-        {/* The big idea */}
-        <div style={{ background:"var(--text)", borderRadius:16, padding:"clamp(24px,4vw,36px)", marginBottom:24 }}>
-          <div className="mono" style={{ fontSize:10, color:"rgba(255,255,255,0.35)", letterSpacing:2, marginBottom:14 }}>THE BIG IDEA</div>
-          <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(20px,3vw,28px)", color:"white", marginBottom:16, letterSpacing:"-0.5px" }}>
-            When prices drop, you automatically buy more
-          </h2>
-          <p style={{ fontFamily:"DM Sans", fontSize:"clamp(14px,2vw,16px)", color:"rgba(255,255,255,0.6)", lineHeight:1.8, marginBottom:16 }}>
-            If you invest $100/month and VOO drops from $500 to $400, your $100 buys you <strong style={{ color:"white" }}>0.25 shares instead of 0.20</strong>. You get 25% more shares for the same money.
-          </p>
-          <p style={{ fontFamily:"DM Sans", fontSize:"clamp(14px,2vw,16px)", color:"rgba(255,255,255,0.6)", lineHeight:1.8 }}>
-            When the market recovers, those extra shares you bought cheap are now worth more. <strong style={{ color:"#00ff88" }}>Market dips become opportunities.</strong>
-          </p>
+        <div style={{ background:"var(--text)", borderRadius:16, padding:"clamp(24px,4vw,36px)", marginBottom:20 }}>
+          <div className="mono" style={{ fontSize:10, color:"rgba(255,255,255,0.35)", letterSpacing:2, marginBottom:12 }}>THE CORE IDEA</div>
+          <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(20px,3vw,28px)", color:"white", marginBottom:14, letterSpacing:"-0.5px" }}>Stop trying to find the perfect moment. There isn't one.</h2>
+          <p style={{ fontFamily:"DM Sans", fontSize:"clamp(14px,2vw,16px)", color:"rgba(255,255,255,0.6)", lineHeight:1.85, marginBottom:14 }}>Most people wait for the "right time" to invest. They wait for the market to drop, or for the news to get better, or for their situation to feel more stable. Years pass. They never start.</p>
+          <p style={{ fontFamily:"DM Sans", fontSize:"clamp(14px,2vw,16px)", color:"rgba(255,255,255,0.6)", lineHeight:1.85, marginBottom:0 }}>Dollar-cost averaging eliminates this problem entirely. <strong style={{ color:"white" }}>You invest every month, no matter what.</strong> When prices are high, you buy less. When prices are low, you buy more. Over time, your average cost per share smooths out — and the compounding does the rest.</p>
         </div>
 
-        {/* Real example table */}
-        <div style={{ background:"white", border:"1px solid var(--border)", borderRadius:16, padding:"clamp(20px,3vw,28px)", marginBottom:24, boxShadow:"var(--shadow)" }}>
-          <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(17px,3vw,22px)", color:"var(--text)", marginBottom:6 }}>Real example: $100/month into VOO</h2>
-          <p style={{ fontFamily:"DM Sans", fontSize:14, color:"var(--muted)", marginBottom:20 }}>Notice what happens in March when the price drops — you buy the most shares.</p>
-          <div style={{ overflowX:"auto" }}>
+        <Card>
+          <H2>How DCA works — a real example</H2>
+          <P>Say you invest $100/month in VOO (S&P 500 ETF). Here's what happens in a volatile 6-month period:</P>
+          <div style={{ overflowX:"auto", marginBottom:16 }}>
             <table style={{ width:"100%", borderCollapse:"collapse" }}>
               <thead>
-                <tr style={{ background:"var(--bg3)" }}>
-                  {["Month","VOO Price","You invest","Shares bought","Total invested"].map(h => (
-                    <th key={h} style={{ fontFamily:"DM Mono", fontSize:10, color:"var(--muted2)", padding:"10px 12px", textAlign:"left", letterSpacing:0.5, whiteSpace:"nowrap" }}>{h}</th>
+                <tr style={{ background:"var(--text)" }}>
+                  {["Month","VOO Price","You invest","Shares bought","Total shares"].map(h => (
+                    <th key={h} style={{ fontFamily:"DM Mono", fontSize:10, color:"rgba(255,255,255,0.5)", padding:"10px 12px", textAlign:"left", letterSpacing:0.5 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {TABLE.map((row,i) => (
-                  <tr key={row.month} style={{ borderBottom:"1px solid var(--bg3)", background:row.price===380?"rgba(0,185,107,0.04)":"transparent" }}>
-                    <td style={{ fontFamily:"DM Sans", fontWeight:500, fontSize:14, padding:"10px 12px" }}>{row.month}</td>
-                    <td style={{ fontFamily:"DM Mono", fontSize:13, padding:"10px 12px", color:row.price===380?"#ff4757":"var(--text)" }}>
-                      ${row.price} {row.price===380 && <span style={{ fontSize:10, color:"var(--green)", marginLeft:4 }}>📉 dip!</span>}
-                    </td>
-                    <td style={{ fontFamily:"DM Mono", fontSize:13, padding:"10px 12px", color:"var(--text)" }}>${row.invested}</td>
-                    <td style={{ fontFamily:"DM Mono", fontSize:13, padding:"10px 12px", color:row.price===380?"var(--green)":"var(--text)", fontWeight:row.price===380?700:400 }}>
-                      {row.shares.toFixed(2)} {row.price===380 && "← most!"}
-                    </td>
-                    <td style={{ fontFamily:"DM Mono", fontSize:13, padding:"10px 12px", color:"var(--muted)" }}>${row.total}</td>
+                {[
+                  { month:"January",  price:"$500", invest:"$100", shares:"0.20", total:"0.20", note:"" },
+                  { month:"February", price:"$450", invest:"$100", shares:"0.22", total:"0.42", note:"📉 Market dips — you buy more" },
+                  { month:"March",    price:"$400", invest:"$100", shares:"0.25", total:"0.67", note:"📉 Crash — you buy even more" },
+                  { month:"April",    price:"$420", invest:"$100", shares:"0.24", total:"0.91", note:"🔄 Recovery starts" },
+                  { month:"May",      price:"$480", invest:"$100", shares:"0.21", total:"1.12", note:"📈 Bouncing back" },
+                  { month:"June",     price:"$520", invest:"$100", shares:"0.19", total:"1.31", note:"📈 New high" },
+                ].map((row,i) => (
+                  <tr key={i} style={{ background:i%2===0?"var(--bg3)":"white", borderBottom:"1px solid var(--border)" }}>
+                    <td style={{ fontFamily:"DM Sans", fontSize:13, padding:"10px 12px", color:"var(--text)", fontWeight:500 }}>{row.month}</td>
+                    <td style={{ fontFamily:"DM Mono", fontSize:13, padding:"10px 12px", color:"var(--muted)" }}>{row.price}</td>
+                    <td style={{ fontFamily:"DM Mono", fontSize:13, padding:"10px 12px", color:"var(--green)", fontWeight:600 }}>{row.invest}</td>
+                    <td style={{ fontFamily:"DM Mono", fontSize:13, padding:"10px 12px", color:"var(--muted)" }}>{row.shares}</td>
+                    <td style={{ fontFamily:"DM Mono", fontSize:13, padding:"10px 12px", color:"var(--text)", fontWeight:600 }}>{row.total}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", marginTop:16, lineHeight:1.7 }}>
-            After 6 months: <strong style={{ color:"var(--text)" }}>$600 invested</strong>, bought <strong style={{ color:"var(--text)" }}>1.32 shares</strong>. Average price paid: ~$455. If VOO is back to $530 after 6 months, your $600 is worth <strong style={{ color:"var(--green)" }}>$699</strong>.
-          </p>
-        </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            <div style={{ padding:"14px 16px", background:"var(--bg3)", borderRadius:10, border:"1px solid var(--border)" }}>
+              <div style={{ fontFamily:"DM Mono", fontSize:9, color:"var(--muted2)", marginBottom:4, letterSpacing:1 }}>TOTAL INVESTED</div>
+              <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:22, color:"var(--text)" }}>$600</div>
+            </div>
+            <div style={{ padding:"14px 16px", background:"rgba(0,185,107,0.06)", borderRadius:10, border:"1px solid rgba(0,185,107,0.2)" }}>
+              <div style={{ fontFamily:"DM Mono", fontSize:9, color:"var(--muted2)", marginBottom:4, letterSpacing:1 }}>PORTFOLIO VALUE (at $520)</div>
+              <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:22, color:"var(--green)" }}>$681 (+13.5%)</div>
+            </div>
+          </div>
+          <P style={{ marginTop:14, marginBottom:0, fontSize:13 }}>Even though prices went DOWN in months 2 and 3, you ended up positive because those dips let you accumulate more shares at lower prices. The crash was actually good for you.</P>
+        </Card>
 
-        {/* DCA vs lump sum */}
-        <div style={{ background:"white", border:"1px solid var(--border)", borderRadius:16, padding:"clamp(20px,3vw,28px)", marginBottom:24, boxShadow:"var(--shadow)" }}>
-          <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(17px,3vw,22px)", color:"var(--text)", marginBottom:16 }}>DCA vs "waiting for the right time"</h2>
-          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+        <Card>
+          <H2>Why timing the market doesn't work</H2>
+          <P>Everyone thinks they can spot the bottom. Even professional fund managers — paid millions to do exactly this — mostly fail.</P>
+          <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:16 }}>
             {[
-              { strategy:"Wait for the dip", desc:"Most people waiting for 'the right time' wait too long and miss the gains entirely. Even professional investors can't consistently time the market.", result:"Usually worse", bad:true },
-              { strategy:"Invest everything at once", desc:"Lump sum investing beats DCA 2/3 of the time historically — but requires you to have a large sum and the courage to invest it all at a market peak.", result:"Good if you have the money", bad:false },
-              { strategy:"Dollar-cost averaging (DCA)", desc:"Investing a fixed amount monthly removes the timing decision entirely. You buy more when cheap, less when expensive — automatically. Proven to work for most people.", result:"Best for regular savers", bad:false },
-            ].map(row => (
-              <div key={row.strategy} style={{ border:`1px solid ${row.bad?"rgba(255,71,87,0.2)":"var(--border)"}`, borderRadius:12, padding:"16px", background:row.bad?"rgba(255,71,87,0.02)":"white" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8, flexWrap:"wrap", gap:8 }}>
-                  <div style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:"clamp(14px,2vw,15px)", color:"var(--text)" }}>{row.strategy}</div>
-                  <div className="mono" style={{ fontSize:10, padding:"2px 10px", borderRadius:6, background:row.bad?"rgba(255,71,87,0.08)":"rgba(0,185,107,0.08)", color:row.bad?"#ff4757":"var(--green)", border:`1px solid ${row.bad?"rgba(255,71,87,0.2)":"rgba(0,185,107,0.2)"}` }}>{row.result}</div>
+              { icon:"📊", stat:"90%", desc:"of professional fund managers underperform the S&P 500 index over 10 years (SPIVA report, S&P Global)" },
+              { icon:"💸", stat:"$1M+", desc:"that an average investor loses trying to time the market over a 30-year career, vs just investing consistently (Dalbar study)" },
+              { icon:"📅", stat:"10 days", desc:"— missing just the 10 best days in the market over 20 years cuts your returns nearly in half. Most of those days happen during crashes, when people are selling, not buying." },
+            ].map((s,i) => (
+              <div key={i} style={{ display:"flex", gap:14, padding:"14px 16px", background:"var(--bg3)", borderRadius:12, border:"1px solid var(--border)" }}>
+                <span style={{ fontSize:24, flexShrink:0 }}>{s.icon}</span>
+                <div>
+                  <div style={{ fontFamily:"DM Sans", fontWeight:800, fontSize:20, color:"var(--green)", marginBottom:4 }}>{s.stat}</div>
+                  <div style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", lineHeight:1.7 }}>{s.desc}</div>
                 </div>
-                <div style={{ fontFamily:"DM Sans", fontSize:"clamp(12px,1.8vw,13px)", color:"var(--muted)", lineHeight:1.75 }}>{row.desc}</div>
               </div>
             ))}
           </div>
+          <P>The only reliable strategy is to <strong style={{ color:"var(--text)" }}>not try to time the market</strong>. Invest consistently. Stay in. Let time do its work.</P>
+        </Card>
+
+        <Card>
+          <H2>DCA vs lump sum: which wins?</H2>
+          <P>Studies show lump sum investing (putting all your money in at once) outperforms DCA about 2/3 of the time — but only if you actually have a large sum to invest. For most people, DCA wins for two reasons:</P>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {[
+              { title:"Most people don't have a lump sum", body:"If you're building wealth from your salary, you invest what you have each month. DCA isn't a choice — it's the only realistic option for most people starting out." },
+              { title:"DCA removes emotion from the equation", body:"When the market drops 20%, most people panic and sell. DCA investors just keep buying. Removing the decision-making is itself a massive advantage." },
+              { title:"DCA reduces timing risk", body:"If you invest your lump sum the day before a crash, you lose big. DCA spreads that risk across many months, smoothing out your average purchase price." },
+            ].map((s,i) => (
+              <div key={i} style={{ padding:"14px 16px", background:"var(--bg3)", borderRadius:10, border:"1px solid var(--border)" }}>
+                <div style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:14, color:"var(--text)", marginBottom:6 }}>{s.title}</div>
+                <div style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", lineHeight:1.7 }}>{s.body}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <H2>What $100/month looks like over time (DCA, 9% avg)</H2>
+          <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
+            {[
+              { yr:"1 year",  in:"$1,200",  val:"$1,260",  gain:"+$60",    note:"Small — but you've started" },
+              { yr:"3 years", in:"$3,600",  val:"$4,146",  gain:"+$546",   note:"Covers your annual streaming bills" },
+              { yr:"5 years", in:"$6,000",  val:"$7,599",  gain:"+$1,599", note:"Your phone bill paid every year passively" },
+              { yr:"10 years",in:"$12,000", val:"$19,497", gain:"+$7,497", note:"Phone + car insurance every year, passively", hl:true },
+              { yr:"20 years",in:"$24,000", val:"$67,290", gain:"+$43,290",note:"$500+/month passive income — forever", hl:true },
+            ].map((row,i) => (
+              <div key={i} style={{ display:"grid", gridTemplateColumns:"70px 1fr 1fr 1fr", gap:8, alignItems:"center", padding:"10px 12px", borderRadius:10, background:row.hl?"var(--text)":"var(--bg3)", border:row.hl?"none":"1px solid var(--border)" }}>
+                <span style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:13, color:row.hl?"rgba(255,255,255,0.8)":"var(--text)" }}>{row.yr}</span>
+                <span style={{ fontFamily:"DM Mono", fontSize:12, color:row.hl?"rgba(255,255,255,0.4)":"var(--muted2)" }}>{row.in} in</span>
+                <span style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:14, color:row.hl?"white":"var(--text)" }}>{row.val}</span>
+                <span style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:13, color:"var(--green)" }}>{row.gain}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding:"12px 16px", background:"rgba(0,185,107,0.06)", border:"1px solid rgba(0,185,107,0.2)", borderRadius:10 }}>
+            <P style={{ margin:0, fontSize:13, color:"var(--text)" }}>💡 The gains accelerate over time because your returns generate their own returns. At year 10, your portfolio adds more value each year than the $1,200 you put in. <strong>Your money outworks you.</strong></P>
+          </div>
+        </Card>
+
+        <Card>
+          <H2>Common questions about DCA</H2>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {[
+              { q:"How often should I invest with DCA?", a:"Monthly is ideal for most people — it matches salary cycles and is frequent enough to smooth out volatility. ETF.PLAN is built around monthly investing: we tell you what to buy on the 1st of every month." },
+              { q:"Should I stop investing when the market crashes?", a:"No — and this is the hardest part. When markets crash, DCA investors should actually feel good: they're buying more shares at lower prices. The worst thing you can do is stop or sell during a dip." },
+              { q:"What if I invest more some months?", a:"That's fine. The core principle is consistency, not a fixed amount. If you can put in $200 one month and $100 the next, both are great. Just don't skip months entirely." },
+              { q:"Does DCA work in a bear market?", a:"Yes — especially in a bear market. Each monthly investment buys more shares at lower prices. When the market recovers (historically, it always has), those extra shares multiply your gains." },
+              { q:"How is this different from what ETF.PLAN does?", a:"ETF.PLAN implements DCA automatically. We score 42 ETFs daily, pick the best ones for your risk profile, and tell you exactly what to buy each month. You execute on your broker. We handle the strategy." },
+            ].map((faq,i) => (
+              <div key={i} style={{ padding:"14px 16px", background:"var(--bg3)", borderRadius:10, border:"1px solid var(--border)" }}>
+                <div style={{ fontFamily:"DM Sans", fontWeight:600, fontSize:14, color:"var(--text)", marginBottom:6 }}>{faq.q}</div>
+                <div style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", lineHeight:1.75 }}>{faq.a}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <div style={{ background:"var(--text)", borderRadius:16, padding:"clamp(24px,4vw,32px)", marginBottom:32, textAlign:"center" }}>
+          <div style={{ fontSize:36, marginBottom:12 }}>📅</div>
+          <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(20px,3vw,26px)", color:"white", marginBottom:12, letterSpacing:"-0.5px" }}>Start your monthly plan today</h2>
+          <p style={{ fontFamily:"DM Sans", fontSize:"clamp(14px,2vw,16px)", color:"rgba(255,255,255,0.5)", lineHeight:1.8, maxWidth:480, margin:"0 auto 24px" }}>ETF.PLAN tells you exactly what to buy each month. You invest, we track. Free forever.</p>
+          <Link href="/login?mode=signup" style={{ display:"inline-block", fontFamily:"DM Sans", fontWeight:700, fontSize:15, color:"white", background:"var(--green)", padding:"13px 28px", borderRadius:10, textDecoration:"none", boxShadow:"0 4px 16px rgba(0,185,107,0.3)" }}>Build my free plan →</Link>
         </div>
 
-        {/* The habit */}
-        <div style={{ background:"var(--green2)", border:"1px solid rgba(0,185,107,0.2)", borderRadius:14, padding:"clamp(18px,3vw,24px)", marginBottom:32 }}>
-          <h3 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(16px,2.5vw,20px)", color:"var(--text)", marginBottom:12 }}>
-            🔁 The most important habit: automate it
-          </h3>
-          <p style={{ fontFamily:"DM Sans", fontSize:"clamp(13px,2vw,15px)", color:"var(--muted)", lineHeight:1.8, marginBottom:10 }}>
-            Set up a recurring bank transfer to your broker on the 1st of every month. Then log in, buy your ETFs, log out.
-          </p>
-          <p style={{ fontFamily:"DM Sans", fontSize:"clamp(13px,2vw,15px)", color:"var(--muted)", lineHeight:1.8, margin:0 }}>
-            <strong style={{ color:"var(--text)" }}>Total time per month: ~2 minutes.</strong> We'll email you a reminder with exactly what to buy.
-          </p>
+        <h2 style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:"clamp(18px,3vw,22px)", color:"var(--text)", marginBottom:16 }}>Continue reading</h2>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,200px),1fr))", gap:12 }}>
+          {[
+            { title:"What are ETFs?", desc:"Start here if you're completely new to investing.", href:"/guide/what-are-etfs", color:"#00b96b", icon:"🧭" },
+            { title:"Pick your risk level", desc:"Conservative, Balanced or Aggressive?", href:"/guide/risk-levels", color:"#3b82f6", icon:"⚖️" },
+            { title:"Which platform to use", desc:"Best free brokers to buy ETFs.", href:"/guide/platforms", color:"#c9a84c", icon:"🏦" },
+          ].map(n => (
+            <Link key={n.title} href={n.href} style={{ display:"block", textDecoration:"none", background:"white", border:`1.5px solid ${n.color}22`, borderRadius:12, padding:"18px", boxShadow:"var(--shadow)" }}>
+              <div style={{ fontSize:24, marginBottom:8 }}>{n.icon}</div>
+              <div style={{ fontFamily:"DM Sans", fontWeight:700, fontSize:14, color:"var(--text)", marginBottom:4 }}>{n.title}</div>
+              <div style={{ fontFamily:"DM Sans", fontSize:12, color:"var(--muted)", marginBottom:10, lineHeight:1.5 }}>{n.desc}</div>
+              <div style={{ fontFamily:"DM Mono", fontSize:10, color:n.color }}>Read guide →</div>
+            </Link>
+          ))}
         </div>
 
-        <div style={{ textAlign:"center" }}>
-          <Link href="/dashboard?tab=library" style={{ display:"inline-block", fontFamily:"DM Sans", fontWeight:600, fontSize:15, color:"var(--text)", background:"white", padding:"13px 28px", borderRadius:12, textDecoration:"none", border:"1px solid var(--border)", boxShadow:"var(--shadow)" }}>
-            ← Back to Library
-          </Link>
-        </div>
       </div>
     </div>
   );

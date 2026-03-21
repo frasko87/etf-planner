@@ -349,7 +349,7 @@ export default function LearnPage() {
             ))}
           </div>
           <p style={{ fontFamily: "DM Mono", fontSize: 11, color: "var(--muted2)", marginTop: 16, textAlign: "center" }}>
-            ETF.PLAN is not affiliated with any of these platforms. We receive no commission for recommendations.
+            ETF.PLAN may receive affiliate commissions if you sign up through links on this page, at no extra cost to you. This does not affect our recommendations.
           </p>
         </section>
 
@@ -388,11 +388,18 @@ export default function LearnPage() {
 
       {/* Footer */}
       <footer style={{ borderTop: "1px solid var(--border)", padding: "24px 40px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <Link href="/" className="pixel" style={{ fontSize: 10, color: "var(--text)" }}>ETF<span style={{ color: "var(--green)" }}>.</span>PLAN</Link>
-        <div style={{ display: "flex", gap: 24 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:20 }}>
+          <Link href="/" className="pixel" style={{ fontSize: 10, color: "var(--text)" }}>ETF<span style={{ color: "var(--green)" }}>.</span>PLAN</Link>
+          <a href="https://www.instagram.com/etfplan/" target="_blank" rel="noreferrer" style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--muted)", textDecoration:"none" }}>@etfplan</a>
+        </div>
+        <div style={{ display: "flex", gap: 20, flexWrap:"wrap", alignItems:"center" }}>
           <Link href="/" style={{ fontFamily: "DM Sans", fontSize: 13, color: "var(--muted)" }}>Home</Link>
           <Link href="/learn" style={{ fontFamily: "DM Sans", fontSize: 13, color: "var(--green)" }}>Learn</Link>
+          <Link href="/guide/what-are-etfs" style={{ fontFamily: "DM Sans", fontSize: 13, color: "var(--muted)" }}>Guides</Link>
+          <Link href="/privacy" style={{ fontFamily: "DM Sans", fontSize: 13, color: "var(--muted)" }}>Privacy</Link>
+          <Link href="/terms" style={{ fontFamily: "DM Sans", fontSize: 13, color: "var(--muted)" }}>Terms</Link>
           <Link href="/login" style={{ fontFamily: "DM Sans", fontSize: 13, color: "var(--muted)" }}>Log in</Link>
+          <Link href="/login?mode=signup" style={{ fontFamily: "DM Sans", fontSize: 13, color: "var(--green)", fontWeight:500 }}>Start free →</Link>
         </div>
       </footer>
 
