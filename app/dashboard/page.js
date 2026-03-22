@@ -108,7 +108,7 @@ const PROFILE_CONFIG = {
   },
   aggressive: {
     label:"Aggressive", icon:"🚀", desc:"12%+ annual return · High risk",
-    accentColor:"#ff4757", rate:"~16%/yr",
+    accentColor:"#c9a84c", rate:"~16%/yr",
     targetReturn: 0.16,
     subtitle: "Growth-focused. Includes leveraged positions.",
     warning:"⚠️ This plan uses leveraged ETFs (TQQQ). These can lose 50–90% of value in a downturn. Only invest money you can afford to lose completely.",
@@ -782,7 +782,7 @@ export default function DashboardPage() {
               <div className="mono" style={{fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:2,marginBottom:8}}>YOUR DASHBOARD</div>
               <h1 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(24px,4vw,34px)",color:"white",margin:0,letterSpacing:"-1px",lineHeight:1.1}}>
                 {(() => {
-                  const raw = user?.email?.split("@")[0] || "";
+                  const raw = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
                   // Clean up common email patterns: john.doe → John, john_doe → John
                   const name = raw.split(/[._+-]/)[0];
                   const clean = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
