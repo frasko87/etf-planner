@@ -784,7 +784,7 @@ export default function DashboardPage() {
                 {(() => {
                   const raw = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
                   // Clean up common email patterns: john.doe → John, john_doe → John
-                  const name = raw.split(/[._+-]/)[0];
+                  const name = raw.split(/[ ._+-]+/)[0];
                   const clean = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
                   return clean ? `Hi, ${clean} 👋` : "Your Dashboard";
                 })()}
