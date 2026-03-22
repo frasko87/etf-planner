@@ -1,12 +1,12 @@
 // app/page.js
-// Fix: "Why it works" 4-card grid — minmax 220px → 260px so 4 cards never orphan on desktop.
+// Fix: "Why it works" 4-card grid — minmax 220px → 420px so 4 cards never orphan on desktop.
 // Only ONE line changes in the entire file. Find and replace exactly this:
 //
 // FIND:
 //   gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,220px),1fr))"
 //
 // REPLACE WITH:
-//   gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,260px),1fr))"
+//   gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,420px),1fr))"
 //
 // That single change forces the 4 WHY_ETFS cards to always sit in a 2×2 grid
 // on desktop instead of 3+1 (orphan). 260px × 4 = 1040px which fits the
@@ -180,8 +180,8 @@ export default function HomePage() {
           <div className="mono" style={{fontSize:11,color:"var(--muted)",marginBottom:12,letterSpacing:1}}>WHY IT WORKS</div>
           <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(24px,4vw,40px)",color:"var(--text)",letterSpacing:"-0.5px"}}>This isn't gambling. It's structured saving.</h2>
         </div>
-        {/* FIXED: 220px → 260px — prevents 4th card from orphaning on desktop */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,260px),1fr))",gap:14}}>
+        {/* FIXED: 420px min — forces 2×2 grid on desktop, 1-col on mobile */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,420px),1fr))",gap:14}}>
           {WHY_ETFS.map(w=>(
             <div key={w.title} style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(18px,3vw,24px)",boxShadow:"var(--shadow)"}}>
               <div style={{fontSize:28,marginBottom:14}}>{w.icon}</div>
