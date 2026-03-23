@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/daily-digest?secret=etfplan2026secret",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/email-sequence",
+      "schedule": "30 13 * * 1-5"
+    },
+    {
+      "path": "/api/email-sequence",
+      "schedule": "5 20 * * 1-5"
+    }
+  ]
+}
