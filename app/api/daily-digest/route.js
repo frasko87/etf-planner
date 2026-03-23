@@ -6,7 +6,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 const RESEND_API = "https://api.resend.com/emails";
-const ADMIN_EMAIL = "hello@etfplan.app";
+const ADMIN_EMAIL = "contact@franciscoestrada.com";
 
 function getSupabase() {
   return createClient(
