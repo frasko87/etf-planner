@@ -2,14 +2,21 @@ name: Fetch ETF Market Data
 
 on:
   schedule:
-    # Daily market OPEN — 9:30 AM ET = 13:30 UTC
+    # Daily market OPEN — 9:30 AM ET = 13:30 UTC (Mon-Fri only)
     - cron: '30 13 * * 1-5'
-    # Daily market CLOSE — 4:05 PM ET = 20:05 UTC
+    # Daily market CLOSE — 4:05 PM ET = 20:05 UTC (Mon-Fri only)
     - cron: '5 20 * * 1-5'
+    # Monthly reminder — 1st of every month at 9:00 AM ET = 14:00 UTC
+    - cron: '0 14 1 * *'
+
   workflow_dispatch:
     inputs:
       run_scoring:
         description: 'Force run scoring engine'
+        required: false
+        default: 'false'
+      send_monthly:
+        description: 'Force send monthly reminder emails'
         required: false
         default: 'false'
 
@@ -31,14 +38,16 @@ jobs:
         run: npm ci
 
       - name: Run ETF data fetch
+        # Skip on the 1st of month cron (that run is just for emails)
+        if: github.event_name != 'schedule' || !contains(github.event.schedule, '0 14 1')
         env:
-          SUPABASE_URL:           ${{ secrets.SUPABASE_URL }}
-          ANTHROPIC_API_KEY:      ${{ secrets.ANTHROPIC_API_KEY }}
-          SUPABASE_SERVICE_KEY:   ${{ secrets.SUPABASE_SERVICE_KEY }}
-          ALPHA_VANTAGE_KEY:      ${{ secrets.ALPHA_VANTAGE_KEY }}
-          FINNHUB_KEY:            ${{ secrets.FINNHUB_KEY }}
-          POLYGON_KEY:            ${{ secrets.POLYGON_KEY }}
-          FRED_KEY:               ${{ secrets.FRED_KEY }}
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          ANTHROPIC_API_KEY:    ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ALPHA_VANTAGE_KEY:    ${{ secrets.ALPHA_VANTAGE_KEY }}
+          FINNHUB_KEY:          ${{ secrets.FINNHUB_KEY }}
+          POLYGON_KEY:          ${{ secrets.POLYGON_KEY }}
+          FRED_KEY:             ${{ secrets.FRED_KEY }}
         run: |
           if [ "${{ github.event.inputs.run_scoring }}" = "true" ]; then
             node scripts/fetchData.mjs --score-now
@@ -46,12 +55,45 @@ jobs:
             node scripts/fetchData.mjs
           fi
 
-      - name: Trigger email sequence
+      - name: Trigger day 3/7/30 drip email sequence
+        # Skip on the 1st of month cron (that run is just for monthly reminder)
+        if: github.event_name != 'schedule' || !contains(github.event.schedule, '0 14 1')
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           SITE_URL: https://etfplan.app
         run: |
-          curl -s -X POST "$SITE_URL/api/email-sequence"             -H "x-cron-secret: $CRON_SECRET"             -H "Content-Type: application/json" || echo "Email sequence skipped"
+          echo "Triggering email sequence..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$SITE_URL/api/email-sequence" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H "Content-Type: application/json")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -1)
+          echo "Response: $BODY"
+          echo "Status: $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Email sequence warning: HTTP $HTTP_CODE"
+          fi
+
+      - name: Send monthly reminder emails (1st of month only)
+        if: |
+          (github.event_name == 'schedule' && contains(github.event.schedule, '0 14 1')) ||
+          github.event.inputs.send_monthly == 'true'
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: https://etfplan.app
+        run: |
+          echo "Sending monthly reminder emails..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$SITE_URL/api/send-monthly-reminder" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H "Content-Type: application/json")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -1)
+          echo "Response: $BODY"
+          echo "Status: $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Monthly reminder error: HTTP $HTTP_CODE"
+            exit 1
+          fi
 
       - name: Done
-        run: echo "Fetch complete at $(date)"
+        run: echo "Run complete at $(date)"
