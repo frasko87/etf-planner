@@ -112,6 +112,31 @@ export default function Onboarding({ user, onComplete }) {
         }).catch(() => {});
       }
 
+      // ── Content attribution — which blog post/writer brought this user ────
+      try {
+        const rawAttr = localStorage.getItem("etfplan_attribution");
+        if (rawAttr) {
+          const attr = JSON.parse(rawAttr);
+          fetch("/api/attribution", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId:      user.id,
+              userEmail:   user.email,
+              profile,
+              amount,
+              postSlug:    attr.postSlug,
+              postTitle:   attr.postTitle,
+              writerCode:  attr.writerCode,
+              locale:      attr.locale,
+              landingUrl:  attr.landingUrl,
+              timeOnPost:  attr.timeOnPost,
+            }),
+          }).then(() => localStorage.removeItem("etfplan_attribution")).catch(() => {});
+        }
+      } catch {}
+      // ─────────────────────────────────────────────────────────────────────
+
       // Register in email_preferences for newsletters
       await supabase.from("email_preferences").upsert({
         email:        user.email,
