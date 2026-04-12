@@ -90,6 +90,21 @@ export default function AdminPage() {
       body: JSON.stringify({ id, password_hash: pwd }),
     });
     setWriterMsg("pwd:" + email);
+    loadWriters();
+  };
+
+  const handleDeleteWriter = async (id, name, postCount) => {
+    const msg = postCount > 0
+      ? `Delete ${name}? Their ${postCount} post(s) will stay published but lose the writer link. This cannot be undone.`
+      : `Delete ${name}? This cannot be undone.`;
+    if (!confirm(msg)) return;
+    const res = await fetch("/api/admin/writers", {
+      method:"DELETE", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ id }),
+    });
+    const d = await res.json();
+    if (d.success) { setWriterMsg("deleted:" + name); loadWriters(); }
+    else setWriterMsg("error:" + (d.error || "Delete failed"));
   };
 
   const handleUnsubscribe = async (email) => {
@@ -710,10 +725,11 @@ export default function AdminPage() {
 
         {/* ── WRITERS TAB ───────────────────────────────────────────────────── */}
         {tab === "writers" && (() => {
-          const createdParts = writerMsg.startsWith("created:") ? writerMsg.split(":") : null;
-          const pwdUpdated   = writerMsg.startsWith("pwd:") ? writerMsg.split("pwd:")[1] : null;
-          const errMsg       = writerMsg.startsWith("error:") ? writerMsg.split("error:")[1] : null;
-          const warnMsg      = !writerMsg.startsWith("created:") && !writerMsg.startsWith("pwd:") && !writerMsg.startsWith("error:") && writerMsg ? writerMsg : null;
+          const createdParts  = writerMsg.startsWith("created:")  ? writerMsg.split(":") : null;
+          const pwdUpdated    = writerMsg.startsWith("pwd:")      ? writerMsg.split("pwd:")[1] : null;
+          const errMsg        = writerMsg.startsWith("error:")    ? writerMsg.split("error:")[1] : null;
+          const deletedName   = writerMsg.startsWith("deleted:")  ? writerMsg.split("deleted:")[1] : null;
+          const warnMsg       = !writerMsg.startsWith("created:") && !writerMsg.startsWith("pwd:") && !writerMsg.startsWith("error:") && !writerMsg.startsWith("deleted:") && writerMsg ? writerMsg : null;
           const S = { fontFamily:"DM Sans", fontSize:14, color:"#1a1a2e" };
           const inp = { width:"100%", padding:"10px 12px", border:"1.5px solid #e8e8e2", borderRadius:8, fontFamily:"DM Sans", fontSize:14, outline:"none" };
           const label = (t) => <div style={{ fontFamily:"DM Mono", fontSize:10, color:"#aaaabc", letterSpacing:1, marginBottom:5 }}>{t}</div>;
@@ -757,15 +773,16 @@ export default function AdminPage() {
                     style={{ padding:"10px 20px", background:"#00b96b", color:"white", border:"none", borderRadius:8, fontFamily:"DM Sans", fontWeight:700, fontSize:14, cursor:"pointer" }}>
                     {writerLoading ? "Creating..." : "Create writer →"}
                   </button>
-                  {warnMsg && <span style={{ fontSize:13, color:"#c9a84c" }}>⚠️ {warnMsg}</span>}
-                  {errMsg  && <span style={{ fontSize:13, color:"#ff4757" }}>❌ {errMsg}</span>}
+                  {warnMsg    && <span style={{ fontSize:13, color:"#c9a84c" }}>⚠️ {warnMsg}</span>}
+                  {errMsg     && <span style={{ fontSize:13, color:"#ff4757" }}>❌ {errMsg}</span>}
                   {pwdUpdated && <span style={{ fontSize:13, color:"#00b96b" }}>✅ Password updated for {pwdUpdated}</span>}
+                  {deletedName && <span style={{ fontSize:13, color:"#00b96b" }}>✅ {deletedName} deleted</span>}
                 </div>
 
                 {/* Credentials card shown after creation */}
                 {createdParts && (
                   <div style={{ marginTop:16, background:"#e8f5ee", border:"1px solid rgba(0,185,107,0.3)", borderRadius:10, padding:"16px 20px" }}>
-                    <div style={{ fontFamily:"DM Mono", fontSize:10, color:"#005a35", letterSpacing:1, marginBottom:10 }}>✅ WRITER CREATED — SEND THESE CREDENTIALS</div>
+                    <div style={{ fontFamily:"DM Mono", fontSize:10, color:"#005a35", letterSpacing:1, marginBottom:10 }}>✅ WRITER CREATED — CREDENTIALS SENT BY EMAIL</div>
                     <div style={{ display:"grid", gap:6 }}>
                       {[
                         ["CMS URL",       "https://etfplan.app/cms"],
@@ -839,6 +856,10 @@ export default function AdminPage() {
                               <button onClick={() => handleResetPassword(w.id, w.email)}
                                 style={{ fontSize:12, padding:"4px 10px", border:"1px solid #e8e8e2", borderRadius:6, background:"white", cursor:"pointer", fontFamily:"DM Sans", color:"#7a7a8a" }}>
                                 Reset pwd
+                              </button>
+                              <button onClick={() => handleDeleteWriter(w.id, w.name, w.post_count)}
+                                style={{ fontSize:12, padding:"4px 10px", border:"1px solid #ffd0d0", borderRadius:6, background:"white", cursor:"pointer", fontFamily:"DM Sans", color:"#ff4757" }}>
+                                Delete
                               </button>
                             </div>
                           </td>
