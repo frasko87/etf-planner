@@ -6,12 +6,8 @@ import { cookies } from "next/headers";
 
 async function checkAdmin() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("admin_token")?.value;
-  if (!token) return false;
-  try {
-    const decoded = Buffer.from(token, "base64").toString("utf8");
-    return decoded === process.env.ADMIN_PASSWORD;
-  } catch { return false; }
+  const session = cookieStore.get("admin_session")?.value;
+  return session === process.env.ADMIN_PASSWORD;
 }
 
 export async function GET(req) {
