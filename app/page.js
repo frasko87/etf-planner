@@ -90,8 +90,10 @@ export default function HomePage() {
           ETF<span style={{color:"var(--green)"}}>.</span>PLAN
         </Link>
         <div style={{display:"flex",gap:"clamp(4px,2vw,20px)",alignItems:"center"}}>
-          <Link href="/learn" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>What are ETFs?</Link>
-          {!isLoggedIn && <Link href="/login" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>Log in</Link>}
+          {!isMob && <Link href="/learn" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>What are ETFs?</Link>}
+          {!isMob && <Link href="/blog" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>Blog</Link>}
+          {!isLoggedIn && !isMob && <Link href="/login" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>Log in</Link>}
+          <Link href="/es" style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted)",padding:"6px 10px",border:"1px solid var(--border)",borderRadius:6,lineHeight:1}}>🇪🇸 ES</Link>
           {isLoggedIn
             ? <Link href="/dashboard" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"var(--green)",padding:"9px clamp(12px,2vw,20px)",borderRadius:8}}>My dashboard →</Link>
             : <Link href="/login?mode=signup" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"var(--green)",padding:"9px clamp(12px,2vw,20px)",borderRadius:8}}>Start saving free →</Link>
@@ -208,7 +210,7 @@ export default function HomePage() {
             This isn't gambling. It's structured saving.
           </h2>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,420px),1fr))",gap:14}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,260px),1fr))",gap:14}}>
           {WHY_ETFS.map(w=>(
             <div key={w.title} style={{background:"white",border:"1px solid var(--border)",borderRadius:16,padding:"clamp(18px,3vw,24px)",boxShadow:"var(--shadow)"}}>
               <div style={{fontSize:28,marginBottom:14}}>{w.icon}</div>
@@ -667,6 +669,8 @@ export default function HomePage() {
         </div>
         <div style={{display:"flex",gap:20,flexWrap:"wrap",alignItems:"center"}}>
           <Link href="/learn" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>What are ETFs?</Link>
+          <Link href="/blog" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>Blog</Link>
+          <Link href="/es" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>🇪🇸 Español</Link>
           <Link href="/privacy" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>Privacy</Link>
           <Link href="/terms" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>Terms</Link>
           <Link href="/login" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>Log in</Link>

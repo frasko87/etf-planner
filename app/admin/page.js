@@ -40,7 +40,57 @@ export default function AdminPage() {
   const isMob = winWidth < 680;
   const isTab = winWidth < 960;
   const [overrideForm, setOverrideForm] = useState({ profile:"balanced", tickers:"", note:"", allocations:"" });
-  const [overrideMsg, setOverrideMsg] = useState(""); // user obj to confirm delete
+  const [overrideMsg, setOverrideMsg] = useState("");
+  const [writers, setWriters] = useState([]);
+  const [writerForm, setWriterForm] = useState({ name:"", email:"", writer_code:"", bio:"", password_hash:"" });
+  const [writerMsg, setWriterMsg] = useState("");
+  const [writerLoading, setWriterLoading] = useState(false);
+  const [writersLoaded, setWritersLoaded] = useState(false);
+
+  const loadWriters = async () => {
+    setWriterLoading(true);
+    const res = await fetch("/api/admin/writers");
+    if (res.ok) { const d = await res.json(); setWriters(d.writers || []); setWritersLoaded(true); }
+    setWriterLoading(false);
+  };
+
+  const handleCreateWriter = async () => {
+    if (!writerForm.name || !writerForm.email || !writerForm.writer_code || !writerForm.password_hash) {
+      setWriterMsg("Fill in all required fields."); return;
+    }
+    setWriterLoading(true); setWriterMsg("");
+    const res = await fetch("/api/admin/writers", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(writerForm),
+    });
+    const d = await res.json();
+    if (d.success) {
+      setWriterMsg("created:" + writerForm.email + ":" + writerForm.password_hash);
+      setWriterForm({ name:"", email:"", writer_code:"", bio:"", password_hash:"" });
+      loadWriters();
+    } else {
+      setWriterMsg("error:" + (d.error || "Failed"));
+    }
+    setWriterLoading(false);
+  };
+
+  const handleToggleWriter = async (id, active) => {
+    await fetch("/api/admin/writers", {
+      method:"PATCH", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ id, active: !active }),
+    });
+    loadWriters();
+  };
+
+  const handleResetPassword = async (id, email) => {
+    const pwd = prompt("New password for " + email + ":");
+    if (!pwd) return;
+    await fetch("/api/admin/writers", {
+      method:"PATCH", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ id, password_hash: pwd }),
+    });
+    setWriterMsg("pwd:" + email);
+  };
 
   const handleUnsubscribe = async (email) => {
     if (!confirm(`Remove ${email} from newsletter?`)) return;
@@ -153,7 +203,7 @@ export default function AdminPage() {
         </div>
         {/* Tab row — horizontally scrollable on mobile */}
         <div style={{ display:"flex", gap:2, overflowX:"auto", padding:"0 clamp(14px,3vw,32px)", paddingBottom:8, scrollbarWidth:"none", msOverflowStyle:"none" }}>
-          {["overview","users","subscribers","newsletter","etf-status"].map(t => (
+          {["overview","users","subscribers","newsletter","etf-status","writers"].map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
               fontFamily:"DM Sans", fontSize:13, fontWeight:tab===t?600:400,
               color: tab===t ? "white" : "rgba(255,255,255,0.4)",
@@ -236,125 +286,6 @@ export default function AdminPage() {
                 })}
               </div>
             </div>
-
-            {/* ── Live Analytics ─────────────────────────────────────── */}
-            {/* GA4 quick links */}
-            <div style={{...card, marginBottom:16, background:"#1a1a2e"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
-                <div>
-                  <div style={{fontFamily:"DM Mono",fontSize:10,color:"rgba(255,255,255,0.35)",letterSpacing:1,marginBottom:4}}>GOOGLE ANALYTICS 4</div>
-                  <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:15,color:"white",marginBottom:2}}>Real-time visitors, locations, devices, referrers</div>
-                  <div style={{fontFamily:"DM Sans",fontSize:12,color:"rgba(255,255,255,0.4)"}}>Full data lives in GA4 — business funnel data below is from your own DB</div>
-                </div>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  <a href="https://analytics.google.com" target="_blank" rel="noreferrer" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"#E37400",padding:"8px 16px",borderRadius:8,textDecoration:"none",whiteSpace:"nowrap"}}>
-                    Open GA4 →
-                  </a>
-                  <a href="https://analytics.google.com/analytics/web/#/p0/realtime/overview" target="_blank" rel="noreferrer" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",padding:"8px 16px",borderRadius:8,textDecoration:"none",whiteSpace:"nowrap"}}>
-                    🔴 Real-time
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            {data?.analytics && (
-              <div style={{...card, marginBottom:16}}>
-                <div style={lbl}>TRAFFIC — LAST 7 DAYS (own tracking)</div>
-
-                {/* Today vs week */}
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:10,marginBottom:20}}>
-                  {[
-                    { l:"TODAY",        v: data.analytics.todayVisitors,  c:"var(--green)" },
-                    { l:"THIS WEEK",    v: data.analytics.weekVisitors,   c:"var(--text)"  },
-                    { l:"SIGNUPS TODAY",v: (data.analytics.recentSignups||[]).filter(s => new Date(s.created_at) > new Date(new Date().setHours(0,0,0,0))).length, c:"#c9a84c" },
-                    { l:"CONVERSIONS",  v: data.analytics.weekVisitors > 0 ? Math.round((data.analytics.eventCounts?.onboarding_completed||0) / data.analytics.weekVisitors * 100) + "%" : "—", c:"#3b82f6" },
-                  ].map(s=>(
-                    <div key={s.l} style={{background:"var(--bg3)",borderRadius:10,padding:"12px 14px",textAlign:"center",border:"1px solid var(--border)"}}>
-                      <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",letterSpacing:1,marginBottom:4}}>{s.l}</div>
-                      <div style={{fontFamily:"DM Sans",fontWeight:700,fontSize:26,color:s.c,letterSpacing:"-0.5px"}}>{v !== undefined ? v : s.v}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Daily chart */}
-                <div style={{marginBottom:20}}>
-                  <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",letterSpacing:1,marginBottom:10}}>DAILY VISITORS</div>
-                  <div style={{display:"flex",alignItems:"flex-end",gap:6,height:80}}>
-                    {(data.analytics.dailyVisitors||[]).map((d,i)=>{
-                      const max = Math.max(...(data.analytics.dailyVisitors||[]).map(x=>x.visitors), 1);
-                      const pct = Math.max((d.visitors/max)*100, 3);
-                      const isToday = i === (data.analytics.dailyVisitors||[]).length - 1;
-                      return (
-                        <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                          <div style={{fontFamily:"DM Mono",fontSize:8,color:"var(--muted2)"}}>{d.visitors||""}</div>
-                          <div style={{width:"100%",height:`${pct}%`,minHeight:4,background:isToday?"var(--green)":"var(--bg3)",border:`1px solid ${isToday?"var(--green)":"var(--border)"}`,borderRadius:4,transition:"height 0.3s"}}/>
-                          <div style={{fontFamily:"DM Mono",fontSize:7,color:"var(--muted2)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>{d.date.split(" ")[0]}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Funnel events */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
-                  {[
-                    { l:"Calculator used",      k:"calculator_interaction" },
-                    { l:"CTA clicked",          k:"cta_click"             },
-                    { l:"Started onboarding",   k:"onboarding_step_1"     },
-                    { l:"Picked risk level",    k:"onboarding_step_2"     },
-                    { l:"Completed signup",     k:"onboarding_completed"  },
-                    { l:"Marked as bought",     k:"mark_as_bought"        },
-                  ].map(e=>(
-                    <div key={e.k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:"var(--bg3)",borderRadius:8,border:"1px solid var(--border)"}}>
-                      <span style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted)"}}>{e.l}</span>
-                      <span style={{fontFamily:"DM Mono",fontSize:13,fontWeight:700,color:"var(--green)"}}>{data.analytics.eventCounts?.[e.k]||0}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Top pages */}
-                <div>
-                  <div style={{fontFamily:"DM Mono",fontSize:9,color:"var(--muted2)",letterSpacing:1,marginBottom:8}}>TOP PAGES THIS WEEK</div>
-                  {(data.analytics.topPages||[]).map((p,i)=>(
-                    <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:i<(data.analytics.topPages||[]).length-1?"1px solid var(--bg3)":"none"}}>
-                      <span style={{fontFamily:"DM Mono",fontSize:11,color:"var(--text)"}}>{p.page||"/"}</span>
-                      <span style={{fontFamily:"DM Mono",fontSize:11,color:"var(--muted)"}}>{p.views} views</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Conversion Funnel */}
-            {(data?.funnel || []).length > 0 && (
-              <div style={{ ...card, marginBottom:16 }}>
-                <div style={lbl}>CONVERSION FUNNEL</div>
-                <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:8 }}>
-                  {(data.funnel || []).map((step, i) => (
-                    <div key={i}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
-                        <span style={{ fontFamily:"DM Sans", fontSize:13, color:"var(--text)" }}>{step.label}</span>
-                        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                          <span style={{ fontFamily:"DM Mono", fontSize:12, color:"var(--green)", fontWeight:600 }}>{step.count.toLocaleString()}</span>
-                          <span style={{ fontFamily:"DM Mono", fontSize:11, color:"var(--muted2)", minWidth:36, textAlign:"right" }}>{step.pct}%</span>
-                        </div>
-                      </div>
-                      <div style={{ height:6, background:"var(--bg3)", borderRadius:3, overflow:"hidden" }}>
-                        <div style={{ height:"100%", width:`${step.pct}%`, background: i===0?"#3b82f6": i===1?"var(--green)": i===2?"#c9a84c":"#8b5cf6", borderRadius:3, transition:"width 0.6s ease" }}/>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {data.funnel[1] && data.funnel[0] && (
-                  <div style={{ marginTop:14, padding:"10px 14px", background:"var(--bg3)", borderRadius:8 }}>
-                    <span style={{ fontFamily:"DM Sans", fontSize:12, color:"var(--muted)" }}>
-                      {100 - data.funnel[1].pct}% of signups don't complete onboarding —{" "}
-                      <strong style={{ color:"var(--text)" }}>biggest drop-off point</strong>
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Growth chart */}
             <div style={{ ...card, marginBottom:16 }}>
@@ -773,8 +704,173 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* ── WRITERS TAB ───────────────────────────────────────────────────── */}
+        {tab === "writers" && (() => {
+          if (!writersLoaded) loadWriters();
+          const createdParts = writerMsg.startsWith("created:") ? writerMsg.split(":") : null;
+          const pwdUpdated   = writerMsg.startsWith("pwd:") ? writerMsg.split("pwd:")[1] : null;
+          const errMsg       = writerMsg.startsWith("error:") ? writerMsg.split("error:")[1] : null;
+          const warnMsg      = !writerMsg.startsWith("created:") && !writerMsg.startsWith("pwd:") && !writerMsg.startsWith("error:") && writerMsg ? writerMsg : null;
+          const S = { fontFamily:"DM Sans", fontSize:14, color:"#1a1a2e" };
+          const inp = { width:"100%", padding:"10px 12px", border:"1.5px solid #e8e8e2", borderRadius:8, fontFamily:"DM Sans", fontSize:14, outline:"none" };
+          const label = (t) => <div style={{ fontFamily:"DM Mono", fontSize:10, color:"#aaaabc", letterSpacing:1, marginBottom:5 }}>{t}</div>;
+          return (
+            <div style={{ display:"grid", gap:20 }}>
+
+              {/* Create writer form */}
+              <div style={{ background:"white", border:"1px solid #e8e8e2", borderRadius:14, padding:"24px" }}>
+                <div style={{ fontFamily:"DM Mono", fontSize:11, color:"#aaaabc", letterSpacing:1, marginBottom:16 }}>CREATE NEW WRITER</div>
+                <div style={{ display:"grid", gridTemplateColumns:isTab?"1fr":"1fr 1fr", gap:12, marginBottom:12 }}>
+                  <div>
+                    {label("NAME *")}
+                    <input style={inp} placeholder="Maria García" value={writerForm.name}
+                      onChange={e=>setWriterForm({...writerForm,name:e.target.value})} />
+                  </div>
+                  <div>
+                    {label("EMAIL *")}
+                    <input style={inp} type="email" placeholder="maria@email.com" value={writerForm.email}
+                      onChange={e=>setWriterForm({...writerForm,email:e.target.value})} />
+                  </div>
+                  <div>
+                    {label("WRITER CODE * (short unique ID, no spaces)")}
+                    <input style={inp} placeholder="maria" value={writerForm.writer_code}
+                      onChange={e=>setWriterForm({...writerForm,writer_code:e.target.value.toLowerCase().replace(/[^a-z0-9]/g,"")})} />
+                    <div style={{ fontSize:11, color:"#aaaabc", marginTop:4 }}>Used in tracking: etfplan.app/?writer={writerForm.writer_code||"maria"}</div>
+                  </div>
+                  <div>
+                    {label("TEMPORARY PASSWORD *")}
+                    <input style={inp} placeholder="TempPass2026!" value={writerForm.password_hash}
+                      onChange={e=>setWriterForm({...writerForm,password_hash:e.target.value})} />
+                    <div style={{ fontSize:11, color:"#aaaabc", marginTop:4 }}>They use this to log in at /cms</div>
+                  </div>
+                  <div style={{ gridColumn:isTab?"":"1 / -1" }}>
+                    {label("SHORT BIO (optional — shown on blog posts)")}
+                    <input style={inp} placeholder="Finance writer specialising in ETF investing." value={writerForm.bio}
+                      onChange={e=>setWriterForm({...writerForm,bio:e.target.value})} />
+                  </div>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+                  <button onClick={handleCreateWriter} disabled={writerLoading}
+                    style={{ padding:"10px 20px", background:"#00b96b", color:"white", border:"none", borderRadius:8, fontFamily:"DM Sans", fontWeight:700, fontSize:14, cursor:"pointer" }}>
+                    {writerLoading ? "Creating..." : "Create writer →"}
+                  </button>
+                  {warnMsg && <span style={{ fontSize:13, color:"#c9a84c" }}>⚠️ {warnMsg}</span>}
+                  {errMsg  && <span style={{ fontSize:13, color:"#ff4757" }}>❌ {errMsg}</span>}
+                  {pwdUpdated && <span style={{ fontSize:13, color:"#00b96b" }}>✅ Password updated for {pwdUpdated}</span>}
+                </div>
+
+                {/* Credentials card shown after creation */}
+                {createdParts && (
+                  <div style={{ marginTop:16, background:"#e8f5ee", border:"1px solid rgba(0,185,107,0.3)", borderRadius:10, padding:"16px 20px" }}>
+                    <div style={{ fontFamily:"DM Mono", fontSize:10, color:"#005a35", letterSpacing:1, marginBottom:10 }}>✅ WRITER CREATED — SEND THESE CREDENTIALS</div>
+                    <div style={{ display:"grid", gap:6 }}>
+                      {[
+                        ["CMS URL",       "https://etfplan.app/cms"],
+                        ["Email",         createdParts[1]],
+                        ["Password",      createdParts[2]],
+                        ["Writer code",   writerForm.writer_code || "(see below)"],
+                        ["Tracking link", `https://etfplan.app/?writer=${writerForm.writer_code||""}`],
+                        ["Writer guide",  "etfplan.app/cms — or send the PDF"],
+                      ].map(([k,v]) => (
+                        <div key={k} style={{ display:"flex", gap:12, alignItems:"baseline", flexWrap:"wrap" }}>
+                          <span style={{ fontFamily:"DM Mono", fontSize:11, color:"#7a7a8a", minWidth:110 }}>{k}</span>
+                          <span style={{ fontFamily:"DM Mono", fontSize:12, color:"#1a1a2e", fontWeight:600 }}>{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={() => {
+                      const text = `ETF.PLAN Content Studio\n\nCMS URL: https://etfplan.app/cms\nEmail: ${createdParts[1]}\nPassword: ${createdParts[2]}\n\nWriter guide: https://etfplan.app/cms\n\nQuestions? Reply to this message.`;
+                      navigator.clipboard.writeText(text);
+                      setWriterMsg("Copied to clipboard!");
+                    }} style={{ marginTop:12, padding:"7px 14px", background:"#1a1a2e", color:"white", border:"none", borderRadius:7, fontFamily:"DM Sans", fontSize:13, cursor:"pointer", fontWeight:600 }}>
+                      Copy credentials to clipboard
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Writers list */}
+              <div style={{ background:"white", border:"1px solid #e8e8e2", borderRadius:14, overflow:"hidden" }}>
+                <div style={{ padding:"16px 20px", borderBottom:"1px solid #f0f0ec", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <span style={{ fontFamily:"DM Mono", fontSize:11, color:"#aaaabc", letterSpacing:1 }}>ALL WRITERS ({writers.length})</span>
+                  <button onClick={loadWriters} style={{ fontFamily:"DM Sans", fontSize:12, color:"#7a7a8a", background:"none", border:"1px solid #e8e8e2", borderRadius:6, padding:"4px 10px", cursor:"pointer" }}>Refresh</button>
+                </div>
+
+                {writerLoading && !writers.length ? (
+                  <div style={{ padding:"32px", textAlign:"center", fontFamily:"DM Mono", fontSize:12, color:"#aaaabc" }}>Loading...</div>
+                ) : writers.length === 0 ? (
+                  <div style={{ padding:"32px", textAlign:"center", color:"#aaaabc" }}>No writers yet. Create one above.</div>
+                ) : (
+                  <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                    <thead>
+                      <tr style={{ borderBottom:"1px solid #f0f0ec" }}>
+                        {["Writer","Code","Posts","Conversions","Status","Actions"].map(h => (
+                          <th key={h} style={{ padding:"10px 16px", textAlign:"left", fontFamily:"DM Mono", fontSize:10, color:"#aaaabc", letterSpacing:1, fontWeight:500 }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {writers.map(w => (
+                        <tr key={w.id} style={{ borderBottom:"1px solid #f8f8f5" }}>
+                          <td style={{ padding:"13px 16px" }}>
+                            <div style={{ fontWeight:600, fontSize:14, color:"#1a1a2e" }}>{w.name}</div>
+                            <div style={{ fontSize:12, color:"#aaaabc" }}>{w.email}</div>
+                            {w.bio && <div style={{ fontSize:12, color:"#7a7a8a", marginTop:2, maxWidth:220 }}>{w.bio}</div>}
+                          </td>
+                          <td style={{ padding:"13px 16px" }}>
+                            <code style={{ fontFamily:"DM Mono", fontSize:12, background:"#f4f4f0", padding:"3px 8px", borderRadius:5, color:"#1a1a2e" }}>{w.writer_code}</code>
+                          </td>
+                          <td style={{ padding:"13px 16px", fontFamily:"DM Mono", fontSize:14, color:"#1a1a2e" }}>{w.post_count ?? 0}</td>
+                          <td style={{ padding:"13px 16px", fontFamily:"DM Mono", fontSize:14, color:"#c9a84c", fontWeight:700 }}>{w.conversion_count ?? 0}</td>
+                          <td style={{ padding:"13px 16px" }}>
+                            <span style={{ fontFamily:"DM Mono", fontSize:11, color:w.active?"#00b96b":"#aaaabc", fontWeight:600 }}>
+                              {w.active ? "● Active" : "○ Inactive"}
+                            </span>
+                          </td>
+                          <td style={{ padding:"13px 16px" }}>
+                            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                              <button onClick={() => handleToggleWriter(w.id, w.active)}
+                                style={{ fontSize:12, padding:"4px 10px", border:"1px solid #e8e8e2", borderRadius:6, background:"white", cursor:"pointer", fontFamily:"DM Sans", color:"#7a7a8a" }}>
+                                {w.active ? "Deactivate" : "Activate"}
+                              </button>
+                              <button onClick={() => handleResetPassword(w.id, w.email)}
+                                style={{ fontSize:12, padding:"4px 10px", border:"1px solid #e8e8e2", borderRadius:6, background:"white", cursor:"pointer", fontFamily:"DM Sans", color:"#7a7a8a" }}>
+                                Reset pwd
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Attribution stats */}
+              <div style={{ background:"white", border:"1px solid #e8e8e2", borderRadius:14, padding:"20px 24px" }}>
+                <div style={{ fontFamily:"DM Mono", fontSize:11, color:"#aaaabc", letterSpacing:1, marginBottom:12 }}>HOW ATTRIBUTION WORKS</div>
+                <div style={{ display:"grid", gridTemplateColumns:isTab?"1fr":"1fr 1fr 1fr", gap:12 }}>
+                  {[
+                    { step:"1", label:"Writer publishes post", desc:"Post is live with writer_code attached" },
+                    { step:"2", label:"Reader visits article", desc:"Attribution cookie saved in browser automatically" },
+                    { step:"3", label:"Reader signs up", desc:"User permanently linked to writer in DB" },
+                  ].map(s => (
+                    <div key={s.step} style={{ display:"flex", gap:12 }}>
+                      <div style={{ width:26, height:26, borderRadius:"50%", background:"#00b96b", color:"white", fontFamily:"DM Mono", fontSize:12, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{s.step}</div>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:600, color:"#1a1a2e", marginBottom:2 }}>{s.label}</div>
+                        <div style={{ fontSize:12, color:"#7a7a8a" }}>{s.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
       </div>
-    {/* Edit note modal */}
+    {/* Edit note modal */}}
     {editNote && !editNote.inline && (
       <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }} onClick={()=>setEditNote(null)}>
         <div style={{ background:"white", borderRadius:16, padding:28, maxWidth:360, width:"100%" }} onClick={e=>e.stopPropagation()}>
