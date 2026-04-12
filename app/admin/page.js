@@ -140,6 +140,10 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
+    if (tab === "writers" && !writersLoaded) loadWriters();
+  }, [tab]);
+
+  useEffect(() => {
     fetch("/api/admin/stats")
       .then(r => { if (r.status === 401) { router.push("/admin/login"); return null; } return r.json(); })
       .then(d => { if (d) { setData(d); setLoading(false); } })
@@ -706,7 +710,6 @@ export default function AdminPage() {
 
         {/* ── WRITERS TAB ───────────────────────────────────────────────────── */}
         {tab === "writers" && (() => {
-          if (!writersLoaded) loadWriters();
           const createdParts = writerMsg.startsWith("created:") ? writerMsg.split(":") : null;
           const pwdUpdated   = writerMsg.startsWith("pwd:") ? writerMsg.split("pwd:")[1] : null;
           const errMsg       = writerMsg.startsWith("error:") ? writerMsg.split("error:")[1] : null;
