@@ -92,7 +92,7 @@ export default function HomePage() {
         <div style={{display:"flex",gap:"clamp(4px,2vw,20px)",alignItems:"center"}}>
           {!isMob && <Link href="/learn" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>What are ETFs?</Link>}
           {!isMob && <Link href="/blog" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>Blog</Link>}
-          {!isLoggedIn && !isMob && <Link href="/login" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>Log in</Link>}
+          {!isLoggedIn && <Link href="/login" style={{fontFamily:"DM Sans",fontSize:14,color:"var(--muted)",padding:"8px 4px"}}>Log in</Link>}
           <Link href="/es" style={{fontFamily:"DM Sans",fontSize:12,color:"var(--muted)",padding:"6px 10px",border:"1px solid var(--border)",borderRadius:6,lineHeight:1}}>🇪🇸 ES</Link>
           {isLoggedIn
             ? <Link href="/dashboard" style={{fontFamily:"DM Sans",fontWeight:600,fontSize:13,color:"white",background:"var(--green)",padding:"9px clamp(12px,2vw,20px)",borderRadius:8}}>My dashboard →</Link>
