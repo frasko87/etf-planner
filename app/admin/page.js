@@ -870,7 +870,7 @@ export default function AdminPage() {
         })()}
 
       </div>
-    {/* Edit note modal */}}
+    {/* Edit note modal */}
     {editNote && !editNote.inline && (
       <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }} onClick={()=>setEditNote(null)}>
         <div style={{ background:"white", borderRadius:16, padding:28, maxWidth:360, width:"100%" }} onClick={e=>e.stopPropagation()}>
