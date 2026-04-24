@@ -123,16 +123,16 @@ export default function HomePage() {
       <section style={{textAlign:"center",padding:"clamp(52px,9vw,100px) clamp(16px,4vw,20px) clamp(40px,6vw,72px)",maxWidth:740,margin:"0 auto"}}>
         <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"var(--green2)",border:"1px solid rgba(0,185,107,0.25)",borderRadius:100,padding:"6px 16px",marginBottom:24}}>
           <span style={{width:6,height:6,borderRadius:"50%",background:"var(--green)",display:"inline-block",animation:"pulse 2s infinite"}}/>
-          <span className="mono" style={{fontSize:10,color:"var(--green)"}}>PICKS UPDATED EVERY MARKET CLOSE · FREE FOREVER</span>
+          <span className="mono" style={{fontSize:10,color:"var(--green)"}}>FREE ETF SAVINGS PLAN · STARTS FROM $50/MONTH</span>
         </div>
 
         <h1 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(36px,8vw,72px)",color:"var(--text)",lineHeight:1.0,letterSpacing:"-2.5px",marginBottom:24}}>
-          $100/month today.<br/>
-          <span style={{color:"var(--green)"}}>+$1,755/year — forever.</span>
+          Your money growing<br/>
+          <span style={{color:"var(--green)"}}>while you sleep.</span>
         </h1>
 
         <p style={{fontFamily:"DM Sans",fontWeight:300,fontSize:"clamp(16px,2.5vw,20px)",color:"var(--muted)",lineHeight:1.8,maxWidth:540,margin:"0 auto 16px"}}>
-          Put in $100/month for 10 years. Your portfolio generates <strong style={{color:"var(--text)"}}>over $1,755 every year on its own</strong> — that's your phone bill, your Netflix, your Spotify, and your gym membership. Paid. Every year. Without touching it.
+          Put in $100/month. After 10 years your portfolio generates <strong style={{color:"var(--text)"}}>+$1,755 every single year on its own</strong> — phone bill, car insurance, and all your subscriptions, covered. Without selling a single share.
         </p>
         <p style={{fontFamily:"DM Sans",fontWeight:500,fontSize:"clamp(14px,2vw,17px)",color:"var(--text)",marginBottom:36}}>
           We build your personalised ETF plan. You contribute from <strong>$50/month</strong>.
@@ -140,7 +140,7 @@ export default function HomePage() {
 
         <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap",marginBottom:16,padding:"0 clamp(0px,2vw,20px)"}}>
           <Link href="/login?mode=signup" onClick={()=>track("cta_click", { location: "hero", text: "start_saving" })} style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:700,fontSize:16,color:"white",background:"var(--green)",padding:"15px clamp(24px,4vw,40px)",borderRadius:12,boxShadow:"0 4px 24px rgba(0,185,107,0.35)"}}>
-            Start saving smarter — free →
+            Build my free ETF plan →
           </Link>
           <Link href="/learn" style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:400,fontSize:15,color:"var(--text)",background:"white",border:"1px solid var(--border)",padding:"15px clamp(16px,3vw,28px)",borderRadius:12,boxShadow:"var(--shadow)"}}>
             How does it work?
@@ -151,7 +151,7 @@ export default function HomePage() {
         </p>
         <div style={{marginTop:16,padding:"10px 18px",background:"rgba(0,185,107,0.06)",borderRadius:10,border:"1px solid rgba(0,185,107,0.15)",display:"inline-block"}}>
           <p style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)",margin:0,lineHeight:1.6}}>
-            💡 <strong style={{color:"var(--text)"}}>Not sure what ETFs are?</strong> Think of them as savings accounts that automatically invest in 500 companies at once — instead of a bank keeping your money, the market grows it.
+            💡 <strong style={{color:"var(--text)"}}>New to ETFs?</strong> Think of them as a basket containing 500 companies at once. Apple, Amazon, Google — all in one purchase. The market grows your money instead of a bank taking it.
           </p>
         </div>
       </section>
@@ -618,12 +618,12 @@ export default function HomePage() {
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           {[
-            { q:"Do I need a brokerage account?", a:"Yes — ETF.PLAN tells you what to buy, but you execute the trades yourself on a platform like Robinhood, eToro, Interactive Brokers or Vanguard. All are free to open and commission-free for ETFs." },
-            { q:"Is my money safe?", a:"Your money never touches ETF.PLAN — we don't hold any funds. You invest directly through your brokerage which is regulated and insured. We only track what you tell us you bought." },
-            { q:"Can I lose money?", a:"Yes — any investment can go down short term. But over 10 years, the S&P 500 has never had a negative return on a 10-year hold. The ~9% balanced return is a historical average. The longer you hold, the safer it gets." },
-            { q:"Why only $50, $100, or $150?", a:"These amounts work cleanly with ETF allocations and are realistic for most people starting out. Once you're comfortable you can invest more — just pick the closest amount and adjust on your brokerage." },
-            { q:"How is this free?", a:"ETF.PLAN is currently 100% free. We plan to add optional premium features in the future, but the core plan will always be free." },
-            { q:"How often do the ETF picks change?", a:"Our scoring engine runs every market day at open and close. The picks update weekly — we rebalance based on momentum, stability and trend scores across 42 ETFs." },
+            { q:"What is an ETF and why should I invest in one?", a:"An ETF (Exchange-Traded Fund) is a basket of hundreds of stocks or bonds that you buy as a single investment. When you buy VOO, for example, you instantly own a tiny slice of Apple, Microsoft, Amazon, Google and 496 other companies. One purchase, instant diversification, minimal fees — that's why millions of people use ETFs as their primary savings vehicle." },
+            { q:"How much money do I need to start investing in ETFs?", a:"As little as $50/month. Most brokers like eToro and Robinhood allow fractional shares, so you don't need to buy a full share. ETF.PLAN is built specifically for people saving $50, $100, or $150 per month." },
+            { q:"Is my money safe with ETF.PLAN?", a:"Your money never touches ETF.PLAN — we don't hold any funds. You invest directly through your own brokerage account (Robinhood, eToro, Interactive Brokers, etc.) which is regulated and insured. We only provide the strategy and track what you tell us you bought." },
+            { q:"Can I lose money investing in ETFs?", a:"Any investment can go down in the short term. However, the S&P 500 has never produced a negative return over any 10-year period in history. The longer you hold, the more risk reduces. Our Balanced plan targets ~9% annually — a historical average, not a guarantee." },
+            { q:"Which broker should I use to buy ETFs?", a:"ETF.PLAN works with any broker. For beginners we recommend eToro (available globally including Europe and Latin America) or Robinhood (US only). Both are free to open, commission-free for ETFs, and support fractional shares so you can start with any amount." },
+            { q:"How often do the ETF picks change?", a:"Our scoring engine runs every market day at open (9:30 AM ET) and close (4:05 PM ET). It evaluates 55 ETFs on momentum, 52-week trend, and 5-year CAGR. Your picks update when the data changes meaningfully — typically staying stable for weeks at a time, rotating when market conditions shift." },
           ].map((faq, i) => (
             <div key={i} style={{background:"white",border:"1px solid var(--border)",borderRadius:14,padding:"clamp(16px,3vw,22px)",boxShadow:"var(--shadow)"}}>
               <div style={{fontFamily:"DM Sans",fontWeight:600,fontSize:"clamp(14px,2vw,16px)",color:"var(--text)",marginBottom:8}}>{faq.q}</div>
@@ -637,14 +637,14 @@ export default function HomePage() {
       <section style={{padding:"0 clamp(16px,4vw,20px) clamp(72px,10vw,120px)"}}>
         <div style={{background:"var(--text)",borderRadius:24,padding:"clamp(44px,7vw,72px) clamp(24px,5vw,40px)",maxWidth:580,margin:"0 auto",textAlign:"center"}}>
           <h2 style={{fontFamily:"DM Sans",fontWeight:700,fontSize:"clamp(28px,6vw,48px)",color:"white",marginBottom:14,letterSpacing:"-1px",lineHeight:1.05}}>
-            Stop saving less.<br/>
-            <span style={{color:"var(--green)"}}>Start saving smarter.</span>
+            Every year you wait<br/>
+            <span style={{color:"var(--green)"}}>costs you ~$18,000.</span>
           </h2>
           <p style={{fontFamily:"DM Sans",fontSize:15,color:"rgba(255,255,255,0.5)",marginBottom:32,lineHeight:1.7}}>
-            Free account. No credit card. Your first plan in 2 minutes.
+            Starting at 25 vs 35 with $100/month — the difference compounds to $180,000. The best time was 10 years ago. The second best time is today.
           </p>
           <Link href="/login?mode=signup" onClick={()=>track("cta_click", { location: "final_cta", text: "create_account" })} style={{display:"inline-block",fontFamily:"DM Sans",fontWeight:700,fontSize:17,color:"white",background:"var(--green)",padding:"16px clamp(28px,5vw,48px)",borderRadius:12,boxShadow:"0 6px 28px rgba(0,185,107,0.4)"}}>
-            Create free account →
+            Build my free ETF plan →
           </Link>
           <p className="mono" style={{fontSize:11,color:"rgba(255,255,255,0.2)",marginTop:16}}>
             Not financial advice · Past performance ≠ future results
@@ -674,6 +674,7 @@ export default function HomePage() {
           <Link href="/privacy" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>Privacy</Link>
           <Link href="/terms" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>Terms</Link>
           <Link href="/login" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>Log in</Link>
+          <a href="https://med.etoro.com/B22256_A129032_TClick_Snew%20etf.aspx" target="_blank" rel="noopener noreferrer sponsored" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--muted)"}}>Open eToro account</a>
           <Link href="/login?mode=signup" style={{fontFamily:"DM Sans",fontSize:13,color:"var(--green)",fontWeight:500}}>Start free →</Link>
         </div>
       </footer>

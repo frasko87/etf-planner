@@ -31,18 +31,19 @@ const PLANS = [
 ];
 
 const WHY = [
-  { icon:"🏦", title:"No es especulación, es como ahorrar pero mejor", desc:"Un ETF tiene cientos de empresas dentro. Si una cae, las otras lo compensan. No estás apostando por nada — estás invirtiendo en toda la economía a la vez." },
+  { icon:"🏦", title:"No es especulación — es ahorro estructurado", desc:"Un ETF tiene cientos de empresas dentro. Si una quiebra, las demás lo compensan. No estás apostando por nada — estás apostando a que la economía mundial sigue existiendo en 10 años. Lo cual es bastante probable." },
   { icon:"📈", title:"El S&P 500 lleva 100 años subiendo", desc:"Ha sobrevivido guerras, crisis, pandemias y recesiones. Siempre ha recuperado. Si hubieras metido $100 al mes hace 10 años, hoy tendrías casi $20.000." },
-  { icon:"🔒", title:"Comisiones ridículamente bajas", desc:"Un ETF como VOO te cobra el 0,03% al año. Eso son $3 por cada $10.000. Los fondos de inversión tradicionales se quedan con el 1-2%, osea entre $100 y $200. La diferencia, en 20 años, es brutal." },
-  { icon:"⏰", title:"Lo configuras una vez y listo", desc:"No tienes que mirar los mercados cada día. Inviertes el día 1 del mes, marcas la compra como hecha, y te olvidas hasta el mes siguiente." },
+  { icon:"🔒", title:"Comisiones ridículamente bajas", desc:"VOO cobra el 0,03% al año — $3 por cada $10.000 invertidos. Un fondo gestionado típico cobra el 1-2%, o sea entre $100 y $200. En 20 años, esa diferencia se come decenas de miles de euros de tus ganancias." },
+  { icon:"⏰", title:"Lo configuras una vez. Luego te olvidas.", desc:"No tienes que mirar los mercados cada día ni entender análisis técnico. Inviertes el día 1 del mes, marcas la compra en tu dashboard, y te olvidas hasta el mes siguiente." },
 ];
 
 const FAQ = [
-  { q:"¿Hace falta saber de bolsa para usar esto?", a:"Para nada. ETF.PLAN te dice exactamente qué comprar, cuánto poner en cada uno y te manda un recordatorio el 1 de cada mes. Solo necesitas abrir una cuenta en un broker gratuito como eToro." },
-  { q:"¿Con cuánto dinero puedo empezar?", a:"Desde $50 al mes. No hay mínimos de nuestra parte. Muchos brokers te permiten comprar fracciones de ETFs, así que puedes empezar con lo que tengas." },
-  { q:"¿Cuándo empiezo a ver resultados?", a:"Los primeros meses verás poco. El interés compuesto empieza a notarse de verdad a partir de los 3-5 años. A los 10 años, la cartera genera dinero sola sin que toques nada." },
-  { q:"¿Qué pasa si el mercado cae?", a:"Ocurre. Pero los mercados siempre han recuperado. Lo interesante es que cuando baja, tu inversión mensual compra más participaciones al mismo precio. Seguir invirtiendo en las caídas es lo que hace que funcione." },
-  { q:"¿Esto es un asesoramiento financiero?", a:"No. ETF.PLAN es una herramienta educativa. Lo que hacemos es mostrarte qué ETFs tienen mejor rendimiento histórico según tu perfil de riesgo. Las decisiones finales son tuyas." },
+  { q:"¿Qué es un ETF y por qué debería invertir en uno?", a:"Un ETF (Fondo Cotizado en Bolsa) es una cesta de cientos de acciones o bonos que compras como una sola inversión. Cuando compras VOO, por ejemplo, tienes al instante una pequeña parte de Apple, Microsoft, Amazon, Google y otras 496 empresas. Una sola compra, diversificación total, comisiones mínimas." },
+  { q:"¿Cuánto dinero necesito para empezar a invertir en ETFs?", a:"Con tan solo 50 € o dólares al mes. Brokers como eToro permiten comprar participaciones fraccionadas, así que no necesitas comprar una participación entera. ETF.PLAN está diseñado específicamente para personas que ahorran 50, 100 o 150 €/$ al mes." },
+  { q:"¿Mi dinero está seguro?", a:"Tu dinero nunca toca ETF.PLAN — no custodiamos fondos. Inviertes directamente a través de tu propio bróker (eToro, Interactive Brokers, Degiro...), que está regulado y asegurado. Nosotros solo te damos la estrategia y registramos lo que nos dices que has comprado." },
+  { q:"¿Puedo perder dinero invirtiendo en ETFs?", a:"Sí — cualquier inversión puede bajar a corto plazo. Sin embargo, el S&P 500 nunca ha tenido una rentabilidad negativa en ningún período de 10 años de su historia. Cuanto más tiempo mantengas, más disminuye el riesgo. El ~9% del plan Equilibrado es una media histórica, no una garantía." },
+  { q:"¿Qué bróker me recomendáis para comprar ETFs?", a:"ETF.PLAN funciona con cualquier bróker. Para principiantes recomendamos eToro (disponible en España, México, Colombia y más de 100 países), Degiro (muy popular en España y Europa) o Interactive Brokers para inversores más avanzados. Todos son gratuitos para abrir." },
+  { q:"¿Con qué frecuencia cambian los ETFs recomendados?", a:"Nuestro motor de puntuación analiza 55 ETFs dos veces al día (apertura y cierre del mercado). Los picks se actualizan cuando los datos cambian de forma significativa — normalmente son estables durante semanas y rotan cuando las condiciones de mercado cambian." },
 ];
 
 const ETFS = [
@@ -100,7 +101,7 @@ export default function HomeES() {
           <Link href="/login" style={{fontSize:14,color:MU,textDecoration:"none"}}>Entrar</Link>
           <Link href="/" style={{fontSize:12,color:MU,padding:"5px 10px",border:`1px solid ${BOR}`,borderRadius:6,textDecoration:"none"}}>🇬🇧 EN</Link>
           <Link href="/login?mode=signup" style={{fontSize:13,fontWeight:700,color:"white",background:G,padding:"8px clamp(12px,2vw,18px)",borderRadius:8,textDecoration:"none",whiteSpace:"nowrap"}}>
-            {isMob?"Empezar →":"Empezar gratis →"}
+            {isMob?"Empezar →":"Crear mi plan gratis →"}
           </Link>
         </div>
       </header>
@@ -127,14 +128,14 @@ export default function HomeES() {
       <section style={{background:`linear-gradient(180deg,${D} 0%,${D} 65%,${BG} 100%)`,padding:"clamp(56px,8vw,88px) clamp(16px,4vw,32px)",textAlign:"center"}}>
         <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(0,185,107,0.12)",border:"1px solid rgba(0,185,107,0.25)",borderRadius:100,padding:"5px 16px",marginBottom:24}}>
           <span style={{width:6,height:6,borderRadius:"50%",background:G,display:"inline-block"}} />
-          <span style={{fontFamily:"DM Mono,monospace",fontSize:10,color:G,letterSpacing:1}}>PLANIFICADOR DE ETFs GRATUITO</span>
+          <span style={{fontFamily:"DM Mono,monospace",fontSize:10,color:G,letterSpacing:1}}>PLAN DE AHORRO EN ETFs · DESDE 50 €/MES · SIEMPRE GRATIS</span>
         </div>
         <h1 style={{fontSize:"clamp(30px,8vw,70px)",fontWeight:800,color:"white",letterSpacing:"-1.5px",lineHeight:1.05,marginBottom:18}}>
-          $100 al mes hoy.<br />
-          <span style={{color:G}}>+$1.755 al año para siempre.</span>
+          Tu dinero creciendo<br />
+          <span style={{color:G}}>mientras duermes.</span>
         </h1>
         <p style={{fontSize:"clamp(14px,2.5vw,17px)",color:"rgba(255,255,255,0.6)",maxWidth:560,margin:"0 auto 32px",lineHeight:1.8}}>
-          Metes $100 al mes durante 10 años. Tu cartera empieza a generar <strong style={{color:"white"}}>+$1.755 al año sola</strong> — sin vender nada, sin mirar mercados. El móvil, el seguro del coche y todas las suscripciones, pagados. Gratis, 2 minutos.
+          Inviertes $100 al mes. A los 10 años tu cartera genera <strong style={{color:"white"}}>+$1.755 al año sola</strong> — el móvil, el seguro del coche y todas tus suscripciones, pagados. Sin vender nada, sin mirar mercados. Gratis, 2 minutos.
         </p>
         <div style={{display:"flex",flexDirection:isMob?"column":"row",gap:12,justifyContent:"center",alignItems:"center"}}>
           <Link href="/login?mode=signup" onClick={()=>track("cta_click",{button:"hero_es"})}
@@ -262,6 +263,23 @@ export default function HomeES() {
             Ver el blog →
           </Link>
         </div>
+        <div style={{background:"rgba(0,185,107,0.05)",border:"1px solid rgba(0,185,107,0.18)",borderRadius:16,padding:isMob?"20px":"20px 28px",display:"flex",flexDirection:isMob?"column":"row",alignItems:isMob?"flex-start":"center",justifyContent:"space-between",gap:14,marginTop:14}}>
+          <div>
+            <div style={{fontFamily:"DM Mono,monospace",fontSize:10,color:G,letterSpacing:1,marginBottom:6}}>BRÓKER RECOMENDADO · AFILIADO</div>
+            <div style={{fontSize:15,fontWeight:700,color:D,marginBottom:3}}>¿No tienes bróker? eToro es gratuito y disponible en España y Latam.</div>
+            <p style={{fontSize:13,color:MU,margin:0}}>Sin comisiones en ETFs · Acciones fraccionadas · Disponible en 100+ países</p>
+          </div>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap",flexShrink:0}}>
+            <a href="https://med.etoro.com/B22256_A129032_TClick_Snew%20etf.aspx" target="_blank" rel="noopener noreferrer sponsored" onClick={()=>track("affiliate_click",{broker:"etoro",button:"etf_es"})}
+              style={{display:"inline-block",background:G,color:"white",fontWeight:700,fontSize:13,padding:"10px 18px",borderRadius:9,textDecoration:"none",whiteSpace:"nowrap"}}>
+              Descubrir ETFs en eToro →
+            </a>
+            <a href="https://med.etoro.com/B20443_A129032_TClick.aspx?" target="_blank" rel="noopener noreferrer sponsored" onClick={()=>track("affiliate_click",{broker:"etoro",button:"tutorial_es"})}
+              style={{display:"inline-block",background:"white",color:D,fontWeight:600,fontSize:13,padding:"10px 18px",borderRadius:9,textDecoration:"none",border:`1px solid ${BOR}`,whiteSpace:"nowrap"}}>
+              Ver tutorial →
+            </a>
+          </div>
+        </div>
       </section>
 
       {/* ── CTA ────────────────────────────────────────────────────────── */}
@@ -272,7 +290,7 @@ export default function HomeES() {
         <p style={{fontSize:"clamp(14px,2vw,16px)",color:"rgba(255,255,255,0.45)",marginBottom:28}}>2 minutos. Para siempre gratis. Sin tarjeta.</p>
         <Link href="/login?mode=signup" onClick={()=>track("cta_click",{button:"bottom_es"})}
           style={{display:"inline-block",background:G,color:"white",fontWeight:700,fontSize:16,padding:"15px 36px",borderRadius:12,textDecoration:"none",boxShadow:"0 4px 24px rgba(0,185,107,0.35)"}}>
-          Quiero mi plan gratis →
+          Crear mi plan de ahorro gratis →
         </Link>
       </section>
 
@@ -292,9 +310,10 @@ export default function HomeES() {
             <Link href="/privacy"  style={{fontSize:13,color:MU,textDecoration:"none"}}>Privacidad</Link>
             <Link href="/terms"    style={{fontSize:13,color:MU,textDecoration:"none"}}>Términos</Link>
             <a href="https://www.instagram.com/etfplan/" target="_blank" rel="noreferrer" style={{fontSize:13,color:MU,textDecoration:"none"}}>@etfplan</a>
+            <a href="https://med.etoro.com/B22256_A129032_TClick_Snew%20etf.aspx" target="_blank" rel="noopener noreferrer sponsored" style={{fontSize:13,color:G,textDecoration:"none"}}>Abrir eToro</a>
             <Link href="/"         style={{fontSize:13,color:MU,textDecoration:"none"}}>🇬🇧 English</Link>
           </div>
-          <p style={{fontSize:12,color:"#cccccc",margin:0}}>No es asesoramiento financiero.</p>
+<p style={{fontSize:12,color:"#cccccc",margin:0}}>No es asesoramiento financiero · Esta página contiene enlaces de afiliado</p>
         </div>
       </footer>
     </>
