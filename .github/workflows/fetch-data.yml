@@ -8,7 +8,6 @@ on:
     - cron: '5 20 * * 1-5'
     # Monthly reminder — 1st of every month at 9:00 AM ET = 14:00 UTC
     - cron: '0 14 1 * *'
-
   workflow_dispatch:
     inputs:
       run_scoring:
@@ -24,6 +23,9 @@ jobs:
   fetch-data:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Fix: opt into Node.js 24 now to avoid deprecation warnings/failures
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout code
@@ -32,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install dependencies
         run: npm ci
@@ -41,13 +43,13 @@ jobs:
         # Skip on the 1st of month cron (that run is just for emails)
         if: github.event_name != 'schedule' || !contains(github.event.schedule, '0 14 1')
         env:
-          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
-          ANTHROPIC_API_KEY:    ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          ALPHA_VANTAGE_KEY:    ${{ secrets.ALPHA_VANTAGE_KEY }}
-          FINNHUB_KEY:          ${{ secrets.FINNHUB_KEY }}
-          POLYGON_KEY:          ${{ secrets.POLYGON_KEY }}
-          FRED_KEY:             ${{ secrets.FRED_KEY }}
+          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}
+          FINNHUB_KEY: ${{ secrets.FINNHUB_KEY }}
+          POLYGON_KEY: ${{ secrets.POLYGON_KEY }}
+          FRED_KEY: ${{ secrets.FRED_KEY }}
         run: |
           if [ "${{ github.event.inputs.run_scoring }}" = "true" ]; then
             node scripts/fetchData.mjs --score-now
