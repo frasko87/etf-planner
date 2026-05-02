@@ -270,40 +270,49 @@ function scoreETF(ticker, data, profile) {
 // Distributes % weights based on score within selected ETFs
 // ─────────────────────────────────────────────────────────────────────────────
 function computeAllocations(selectedTickers, scores) {
-  if (!selectedTickers || selectedTickers.length === 0) return {};
+  // scores can be { TICKER: number } or { TICKER: {score: number, ...} }
+  // getScore handles both — object with .score property OR plain number
+  const getScore = t => {
+    const s = scores[t];
+    if (!s) return 0;
+    return typeof s === "object" ? (s.score || 0) : Number(s) || 0;
+  };
 
-  // Use score if available, otherwise equal weight
-  const weights = {};
-  selectedTickers.forEach(t => {
-    const score = scores?.[t]?.score;
-    weights[t] = (typeof score === "number" && score > 0) ? score : 0.5;
-  });
+  const hasScores = selectedTickers.some(t => getScore(t) > 0);
 
-  const totalWeight = Object.values(weights).reduce((a,b) => a+b, 0);
+  if (!hasScores) {
+    // Equal weight fallback — only fires when scores genuinely missing
+    const eq = Math.floor(100 / selectedTickers.length);
+    const rem = 100 - eq * selectedTickers.length;
+    const alloc = {};
+    selectedTickers.forEach((t, i) => { alloc[t] = eq + (i === 0 ? rem : 0); });
+    return alloc;
+  }
 
-  // Round to nearest 5% and ensure sum = 100
-  const rounded = {};
-  let remaining = 100;
-  const sorted = [...selectedTickers].sort((a,b) => weights[b] - weights[a]);
+  // Score-proportional allocation, rounded to nearest 5%, min 10%
+  const rawScores = selectedTickers.map(t => Math.max(getScore(t), 1));
+  const total = rawScores.reduce((s, v) => s + v, 0);
+  const rawPcts = rawScores.map(v => (v / total) * 100);
 
-  sorted.forEach((t, i) => {
-    if (i === sorted.length - 1) {
-      rounded[t] = Math.max(remaining, 5); // last gets remainder, min 5%
-    } else {
-      const pct = Math.round((weights[t] / totalWeight) * 100 / 5) * 5;
-      rounded[t] = Math.max(pct, 10); // minimum 10%
-      remaining -= rounded[t];
-    }
-  });
+  let rounded = rawPcts.map(p => Math.max(10, Math.round(p / 5) * 5));
 
-  // Verify all values are numbers
-  selectedTickers.forEach(t => {
-    if (typeof rounded[t] !== "number" || isNaN(rounded[t])) {
-      rounded[t] = Math.floor(100 / selectedTickers.length);
-    }
-  });
+  // Adjust until sum = 100
+  let sum = rounded.reduce((s, v) => s + v, 0);
+  let safetyCount = 0;
+  while (sum !== 100 && safetyCount < 20) {
+    const diff = 100 - sum;
+    const step = diff > 0 ? 5 : -5;
+    const idx = diff > 0
+      ? rawScores.indexOf(Math.max(...rawScores))
+      : rawScores.indexOf(Math.min(...rawScores));
+    rounded[idx] += step;
+    sum += step;
+    safetyCount++;
+  }
 
-  return rounded;
+  const alloc = {};
+  selectedTickers.forEach((t, i) => { alloc[t] = rounded[i]; });
+  return alloc;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -453,12 +462,12 @@ async function runWeeklySelection(poolData) {
       await supabase.from("etf_scores").insert({
         ticker:          t,
         profile,
-        score:           scores[t].score,
+        score_total:      scores[t].score,
         score_momentum:  scores[t].score_momentum,
-        score_stability: scores[t].score_stability,
+        score_cagr:      scores[t].score_cagr || 0,
         score_trend:     scores[t].score_trend,
-        rank:            i + 1,
-        selected:        i < cfg.count,
+        rank_in_profile:  i + 1,
+        was_selected:     i < cfg.count,
         week_start:      weekStart,
       });
     }
@@ -475,6 +484,7 @@ async function runWeeklySelection(poolData) {
       week_start:       weekStart,
       tickers:          selected,
       allocations:      allocations,
+      top_scores:       Object.fromEntries(selected.map(t => [t, scores[t]?.score || 0])),
       prev_tickers:     prevTickers,
       prev_allocations: prev?.allocations ?? null,
       changed,
